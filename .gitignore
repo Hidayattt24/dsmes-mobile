@@ -46,3 +46,9 @@ app.*.map.json
 
 #skills
 .agents/
+
+# Environment — local files only (never commit)
+.env.local
+.env.development.local
+.env.staging.local
+.env.production.local

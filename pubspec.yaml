@@ -39,6 +39,9 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
+  # Environment
+  flutter_dotenv: ^5.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -53,7 +56,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # Add assets here when adding images/icons:
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - .env.local
+    - .env.development.local
+    - .env.staging.local
+    - .env.production.local
+    - assets/images/
+    - assets/icons/
