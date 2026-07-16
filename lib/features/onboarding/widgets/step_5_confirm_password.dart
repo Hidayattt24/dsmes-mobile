@@ -50,11 +50,12 @@ class _Step5ConfirmPasswordState extends ConsumerState<Step5ConfirmPassword> {
           height: 56,
           decoration: BoxDecoration(
             border: Border.all(
-              color: confirmPassword.isNotEmpty
-                  ? doMatch
-                      ? AppColors.primary
-                      : AppColors.error
-                  : AppColors.outlineVariant,
+              color:
+                  confirmPassword.isNotEmpty
+                      ? doMatch
+                          ? AppColors.primary
+                          : AppColors.error
+                      : AppColors.outlineVariant,
             ),
             borderRadius: BorderRadius.circular(12),
             color: AppColors.surfaceContainerLowest,
@@ -62,7 +63,11 @@ class _Step5ConfirmPasswordState extends ConsumerState<Step5ConfirmPassword> {
           child: Row(
             children: [
               const SizedBox(width: AppSpacing.lg),
-              const Icon(Icons.lock_outline, color: AppColors.outline, size: 22),
+              const Icon(
+                Icons.lock_outline,
+                color: AppColors.outline,
+                size: 22,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: TextFormField(
@@ -95,7 +100,9 @@ class _Step5ConfirmPasswordState extends ConsumerState<Step5ConfirmPassword> {
                 ),
               IconButton(
                 icon: Icon(
-                  _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: AppColors.outline,
                   size: 22,
                 ),

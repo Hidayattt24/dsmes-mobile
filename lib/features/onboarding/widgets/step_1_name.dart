@@ -43,7 +43,9 @@ class Step1Name extends ConsumerWidget {
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
                   child: TextFormField(
                     onChanged: notifier.onFullNameChanged,
                     keyboardType: TextInputType.name,
@@ -73,7 +75,11 @@ class Step1Name extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         Row(
           children: [
-            const Icon(Icons.info_outline, size: 18, color: AppColors.onSurfaceVariant),
+            const Icon(
+              Icons.info_outline,
+              size: 18,
+              color: AppColors.onSurfaceVariant,
+            ),
             const SizedBox(width: AppSpacing.xs),
             Text(
               'Mohon masukkan nama sesuai dengan KTP Anda.',

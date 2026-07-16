@@ -33,9 +33,8 @@ class Step9BloodType extends ConsumerWidget {
           final isWide = type.length > 4;
           return Padding(
             padding: EdgeInsets.only(
-              bottom: i < AppConstants.bloodTypes.length - 1
-                  ? AppSpacing.sm
-                  : 0,
+              bottom:
+                  i < AppConstants.bloodTypes.length - 1 ? AppSpacing.sm : 0,
             ),
             child: SelectionCard(
               label: type,

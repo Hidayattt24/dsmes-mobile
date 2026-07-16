@@ -17,9 +17,10 @@ class Step8Birthdate extends ConsumerWidget {
     final notifier = ref.read(onboardingProvider.notifier);
     final birthDate = ref.watch(onboardingProvider.select((s) => s.birthDate));
 
-    final displayText = birthDate != null
-        ? DateFormat('dd MMMM yyyy', 'id').format(birthDate)
-        : '';
+    final displayText =
+        birthDate != null
+            ? DateFormat('dd MMMM yyyy', 'id').format(birthDate)
+            : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,15 +52,21 @@ class Step8Birthdate extends ConsumerWidget {
             child: Row(
               children: [
                 const SizedBox(width: AppSpacing.md),
-                const Icon(Icons.calendar_month_outlined, color: AppColors.outline),
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  color: AppColors.outline,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    displayText.isEmpty ? AppStrings.step8FieldHint : displayText,
+                    displayText.isEmpty
+                        ? AppStrings.step8FieldHint
+                        : displayText,
                     style: AppTextStyles.bodyLg.copyWith(
-                      color: displayText.isEmpty
-                          ? AppColors.outlineVariant
-                          : AppColors.onSurface,
+                      color:
+                          displayText.isEmpty
+                              ? AppColors.outlineVariant
+                              : AppColors.onSurface,
                     ),
                   ),
                 ),
@@ -117,15 +124,16 @@ class Step8Birthdate extends ConsumerWidget {
       lastDate: now,
       helpText: AppStrings.step8FieldHint,
       locale: const Locale('id', 'ID'),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
+      builder:
+          (context, child) => Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: Theme.of(context).colorScheme.copyWith(
                 primary: AppColors.primary,
                 onPrimary: AppColors.onPrimary,
               ),
-        ),
-        child: child!,
-      ),
+            ),
+            child: child!,
+          ),
     );
     if (picked != null) {
       notifier.onBirthDateSelected(picked);

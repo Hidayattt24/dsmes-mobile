@@ -51,9 +51,7 @@ class Step7Gender extends ConsumerWidget {
         Text(
           AppStrings.step7Subtitle,
           textAlign: TextAlign.center,
-          style: AppTextStyles.labelMd.copyWith(
-            color: AppColors.outline,
-          ),
+          style: AppTextStyles.labelMd.copyWith(color: AppColors.outline),
         ),
       ],
     );

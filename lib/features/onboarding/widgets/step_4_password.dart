@@ -52,7 +52,11 @@ class _Step4PasswordState extends ConsumerState<Step4Password> {
           child: Row(
             children: [
               const SizedBox(width: AppSpacing.lg),
-              const Icon(Icons.lock_outline, color: AppColors.outline, size: 22),
+              const Icon(
+                Icons.lock_outline,
+                color: AppColors.outline,
+                size: 22,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: TextFormField(
@@ -79,7 +83,9 @@ class _Step4PasswordState extends ConsumerState<Step4Password> {
               ),
               IconButton(
                 icon: Icon(
-                  _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: AppColors.outline,
                   size: 22,
                 ),
@@ -136,7 +142,8 @@ class _PasswordStrengthBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strength = OnboardingFormState(password: password).passwordStrengthText;
+    final strength =
+        OnboardingFormState(password: password).passwordStrengthText;
     const segments = 3;
     final filled = switch (strength) {
       'Kuat' => 3,

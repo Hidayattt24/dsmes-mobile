@@ -159,25 +159,41 @@ class _PersonalSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final birthDate = state.birthDate;
-    final birthText = birthDate != null
-        ? DateFormat('dd MMMM yyyy', 'id').format(birthDate)
-        : '-';
+    final birthText =
+        birthDate != null
+            ? DateFormat('dd MMMM yyyy', 'id').format(birthDate)
+            : '-';
 
     final items = [
       (Icons.person_outline, AppStrings.step13LabelName, state.fullName),
       (Icons.email_outlined, AppStrings.step13LabelEmail, state.email),
-      (Icons.phone_outlined, AppStrings.step13LabelPhone,
-          '+62${state.phoneNumber}'),
+      (
+        Icons.phone_outlined,
+        AppStrings.step13LabelPhone,
+        '+62${state.phoneNumber}',
+      ),
       (Icons.wc, AppStrings.step13LabelGender, state.gender ?? '-'),
       (Icons.cake_outlined, AppStrings.step13LabelBirthDate, birthText),
-      (Icons.bloodtype_outlined, AppStrings.step13LabelBloodType,
-          state.bloodType ?? '-'),
-      (Icons.height, AppStrings.step13LabelHeight,
-          state.heightCm.isEmpty ? '-' : '${state.heightCm} cm'),
-      (Icons.monitor_weight_outlined, AppStrings.step13LabelWeight,
-          state.weightKg.isEmpty ? '-' : '${state.weightKg} kg'),
-      (Icons.directions_run, AppStrings.step13LabelActivity,
-          state.activityLevel ?? '-'),
+      (
+        Icons.bloodtype_outlined,
+        AppStrings.step13LabelBloodType,
+        state.bloodType ?? '-',
+      ),
+      (
+        Icons.height,
+        AppStrings.step13LabelHeight,
+        state.heightCm.isEmpty ? '-' : '${state.heightCm} cm',
+      ),
+      (
+        Icons.monitor_weight_outlined,
+        AppStrings.step13LabelWeight,
+        state.weightKg.isEmpty ? '-' : '${state.weightKg} kg',
+      ),
+      (
+        Icons.directions_run,
+        AppStrings.step13LabelActivity,
+        state.activityLevel ?? '-',
+      ),
     ];
 
     return Column(
@@ -225,13 +241,17 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: showBorder
-          ? const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.outlineVariant, width: 0.5),
-              ),
-            )
-          : null,
+      decoration:
+          showBorder
+              ? const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.outlineVariant,
+                    width: 0.5,
+                  ),
+                ),
+              )
+              : null,
       child: Row(
         children: [
           Container(
@@ -284,9 +304,7 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: AppSpacing.xs),
         Text(
           title,
-          style: AppTextStyles.headlineMd.copyWith(
-            color: AppColors.onSurface,
-          ),
+          style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurface),
         ),
       ],
     );
@@ -379,13 +397,17 @@ class _RecommendationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: showBorder
-          ? const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.outlineVariant, width: 0.5),
-              ),
-            )
-          : null,
+      decoration:
+          showBorder
+              ? const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.outlineVariant,
+                    width: 0.5,
+                  ),
+                ),
+              )
+              : null,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -507,13 +529,17 @@ class _NextStepItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      decoration: showBorder
-          ? const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.outlineVariant, width: 0.5),
-              ),
-            )
-          : null,
+      decoration:
+          showBorder
+              ? const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.outlineVariant,
+                    width: 0.5,
+                  ),
+                ),
+              )
+              : null,
       child: Row(
         children: [
           Container(

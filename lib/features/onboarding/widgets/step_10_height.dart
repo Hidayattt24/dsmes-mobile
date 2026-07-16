@@ -26,10 +26,7 @@ class Step10Height extends ConsumerWidget {
           iconBackgroundColor: AppColors.primaryFixed,
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppNumericDisplay(
-          value: height,
-          unit: AppStrings.step10Unit,
-        ),
+        AppNumericDisplay(value: height, unit: AppStrings.step10Unit),
         const SizedBox(height: AppSpacing.xl),
         AppNumericKeypad(
           onKeyTapped: notifier.onHeightKeyTapped,

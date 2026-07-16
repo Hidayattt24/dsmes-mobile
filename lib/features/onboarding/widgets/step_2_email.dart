@@ -49,7 +49,11 @@ class Step2Email extends ConsumerWidget {
           child: Row(
             children: [
               const SizedBox(width: AppSpacing.lg),
-              const Icon(Icons.email_outlined, color: AppColors.outline, size: 22),
+              const Icon(
+                Icons.email_outlined,
+                color: AppColors.outline,
+                size: 22,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: TextFormField(

@@ -76,7 +76,9 @@ class Step3Phone extends ConsumerWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
                   child: TextFormField(
                     onChanged: notifier.onPhoneChanged,
                     keyboardType: TextInputType.phone,
@@ -134,9 +136,7 @@ class Step3Phone extends ConsumerWidget {
         Text(
           AppStrings.step3Terms,
           textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMd.copyWith(
-            color: AppColors.outline,
-          ),
+          style: AppTextStyles.bodyMd.copyWith(color: AppColors.outline),
         ),
       ],
     );
