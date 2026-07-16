@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
+import '../../features/onboarding/views/daily_routine_setup_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
 import '../../features/welcome/views/welcome_screen.dart';
 import '../constants/app_constants.dart';
@@ -59,6 +60,16 @@ final GoRouter appRouter = GoRouter(
           child: OnboardingFlowScreen(step: step),
         ),
       ),
+
+    // ── Daily Routine Setup ─────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.dailyRoutineSetup,
+      name: RouteNames.nameDailyRoutineSetup,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const DailyRoutineSetupScreen(),
+      ),
+    ),
 
     // ── Home (placeholder) ───────────────────────────────────────────────
     GoRoute(

@@ -190,6 +190,43 @@ abstract final class AppStrings {
   static const String step13NextStepEducationDesc = 'Tingkatkan pengetahuan tentang diabetes.';
   static const String step13NextStepJourney = 'Mulai Perjalanan';
 
+  // ── Daily Routine Setup ────────────────────────────────────────────────────
+  static const String dailyRoutineTitle = 'Kustom Waktu Rutinitas';
+  static const String dailyRoutineSubtitle =
+      'Tentukan jadwal aktivitas sesuai kenyamanan Anda.';
+  static const String dailyRoutineInfo =
+      'Mengatur jam rutin membantu sistem Digital DSMES menyesuaikan waktu pengingat medis dan saran nutrisi yang paling ideal untuk kestabilan gula darah Anda.';
+  static const String dailyRoutineActivity1 = 'Jalan Pagi';
+  static const String dailyRoutineActivity1Desc = '07:00';
+  static const String dailyRoutineActivity2 = 'Minum Air Putih';
+  static const String dailyRoutineActivity2Desc = 'Setiap 2 jam';
+  static const String dailyRoutineActivity3 = 'Cek Gula Darah';
+  static const String dailyRoutineActivity3Desc = 'Setelah bangun';
+  static const String dailyRoutineCustomTimeLabel = 'Waktu Kustom';
+  static const String dailyRoutineAddCustom = 'Tambah Rutinitas Kustom';
+  static const String dailyRoutineAddCustomTime = 'Tambah Waktu Kustom';
+  static const String dailyRoutineAddTitle = 'Tambah Rutinitas Baru';
+  static const String dailyRoutineNameLabel = 'Nama Rutinitas';
+  static const String dailyRoutineNameHint = 'Contoh: Sarapan';
+  static const String dailyRoutineDescHint = 'Deskripsi (opsional)';
+  static const String dailyRoutineTimeLabel = 'Waktu';
+  static const String dailyRoutineAddButton = 'Tambahkan';
+  static const String dailyRoutineReminderQuestion =
+      'Apakah ingin menggunakan reminder otomatis?';
+  static const String dailyRoutineReminderYes = 'Ya';
+  static const String dailyRoutineReminderNo = 'Tidak';
+  static const String dailyRoutineButton = 'Lanjut';
+  static const String routineDeleteLabel = 'Hapus Rutinitas';
+  static const String routineConfirmDeleteTitle = 'Hapus Rutinitas';
+  static const String routineConfirmDeleteMessage =
+      'Apakah Anda yakin ingin menghapus rutinitas ini?';
+  static const String routineIconPickerTitle = 'Pilih Ikon';
+  static const String routineRenameTitle = 'Ubah Nama Rutinitas';
+  static const String routineIconLabel = 'Ikon';
+  static const String labelCancel = 'Batal';
+  static const String labelDelete = 'Hapus';
+  static const String labelSave = 'Simpan';
+
   // ── Common ─────────────────────────────────────────────────────────────────
   static const String buttonNext = 'Lanjut';
   static const String buttonPrevious = 'Kembali';

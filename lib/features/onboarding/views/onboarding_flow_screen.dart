@@ -46,9 +46,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
     if (widget.step < AppConstants.totalOnboardingSteps) {
       context.go(RouteNames.onboardingStep(widget.step + 1));
     } else {
-      ref.read(onboardingProvider.notifier).finishOnboarding().then((_) {
-        if (mounted) context.go(RouteNames.home);
-      });
+      context.go(RouteNames.dailyRoutineSetup);
     }
   }
 
