@@ -13,6 +13,7 @@ abstract final class RouteNames {
 
   static const String home = '/home';
   static const String dailyRoutineSetup = '/daily-routine-setup';
+  static const String accountCreatedSuccess = '/account-created-success';
 
   // ── Onboarding steps ───────────────────────────────────────────────────────
   static String onboardingStep(int step) => '/onboarding/$step';
@@ -24,4 +25,5 @@ abstract final class RouteNames {
   static const String nameOnboarding = 'onboarding';
   static const String nameHome = 'home';
   static const String nameDailyRoutineSetup = 'daily-routine-setup';
+  static const String nameAccountCreatedSuccess = 'account-created-success';
 }

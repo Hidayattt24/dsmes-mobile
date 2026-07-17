@@ -9,6 +9,7 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/info_card.dart';
 import '../constants/routine_icons.dart';
 import '../models/routine_model.dart';
@@ -35,7 +36,7 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.page, 0, AppSpacing.page, AppSpacing.xxl,
+                  AppSpacing.page, 0, AppSpacing.page, AppSpacing.md,
                 ),
                 child: _buildBody(context, ref, state),
               ),
@@ -109,7 +110,6 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
         _buildAddRoutineButton(context, ref, notifier),
         const SizedBox(height: AppSpacing.xl),
         _buildReminderSection(context, ref, state),
-        const SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -131,9 +131,7 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
       onTimeTap: (index) => _onTimeTap(context, ref, routine, index),
       onDeleteTime: (index) => notifier.removeCustomTime(routine.id, index),
       onAddTime: () => notifier.addCustomTime(routine.id),
-      onDeleteRoutine: routine.isPredefined
-          ? null
-          : () => _onDeleteRoutine(context, ref, routine),
+      onDeleteRoutine: () => _onDeleteRoutine(context, ref, routine),
     );
   }
 
@@ -542,38 +540,15 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
           ],
         ),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton(
-          onPressed: () {
-            ref.read(onboardingProvider.notifier).finishOnboarding().then((_) {
-              if (context.mounted) context.go(RouteNames.home);
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryContainer,
-            foregroundColor: AppColors.onPrimaryContainer,
-            shape: const RoundedRectangleBorder(
-              borderRadius: AppRadius.buttonPill,
-            ),
-            elevation: 0,
-            shadowColor: AppColors.primaryContainer.withValues(alpha: 0.2),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                AppStrings.dailyRoutineButton,
-                style: AppTextStyles.poppinsButton.copyWith(
-                  color: AppColors.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              const Icon(Icons.arrow_forward, size: 20),
-            ],
-          ),
-        ),
+      child: AppButton(
+        label: AppStrings.dailyRoutineButton,
+        trailingIcon: Icons.arrow_forward,
+        borderRadius: AppRadius.buttonPill,
+        onPressed: () {
+          ref.read(onboardingProvider.notifier).finishOnboarding().then((_) {
+            if (context.mounted) context.go(RouteNames.accountCreatedSuccess);
+          });
+        },
       ),
     );
   }

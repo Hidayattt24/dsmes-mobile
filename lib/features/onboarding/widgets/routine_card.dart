@@ -60,7 +60,7 @@ class RoutineCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
           ],
           _buildAddButton(),
-          if (!isPredefined && onDeleteRoutine != null) ...[
+          if (onDeleteRoutine != null) ...[
             const Divider(height: AppSpacing.lg),
             _buildDeleteButton(),
           ],

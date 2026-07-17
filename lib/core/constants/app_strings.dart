@@ -227,6 +227,20 @@ abstract final class AppStrings {
   static const String labelDelete = 'Hapus';
   static const String labelSave = 'Simpan';
 
+  // ── Account Created Successfully ───────────────────────────────────────────
+  static const String successTitle = 'Akun Berhasil Dibuat';
+  static const String successSubtitle =
+      'Selamat datang di DSMES Aceh. Akun Anda telah berhasil dibuat dan rutinitas harian Anda telah dikonfigurasi. Anda sekarang siap untuk memulai perjalanan manajemen mandiri diabetes Anda.';
+  static const String successButton = 'Masuk Aplikasi';
+  static const String successFeatureRoutineTitle = 'Rutinitas Harian Dikonfigurasi';
+  static const String successFeatureRoutineDesc = 'Jadwal aktivitas harian Anda telah disesuaikan.';
+  static const String successFeatureProfileTitle = 'Profil Pribadi Diselesaikan';
+  static const String successFeatureProfileDesc = 'Data fisik dan kesehatan Anda telah disimpan dengan aman.';
+  static const String successFeatureBloodSugarTitle = 'Siap Memantau Gula Darah';
+  static const String successFeatureBloodSugarDesc = 'Catat dan pantau perkembangan gula darah secara berkala.';
+  static const String successFeatureEducationTitle = 'Fitur Edukasi Tersedia';
+  static const String successFeatureEducationDesc = 'Akses artikel dan rekomendasi kesehatan kapan saja.';
+
   // ── Common ─────────────────────────────────────────────────────────────────
   static const String buttonNext = 'Lanjut';
   static const String buttonPrevious = 'Kembali';
