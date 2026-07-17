@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
+import '../../features/home/views/home_screen.dart';
 import '../../features/onboarding/views/account_created_success_screen.dart';
 import '../../features/onboarding/views/daily_routine_setup_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
@@ -82,13 +83,13 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
 
-    // ── Home (placeholder) ───────────────────────────────────────────────
+    // ── Home ─────────────────────────────────────────────────────────────
     GoRoute(
       path: RouteNames.home,
       name: RouteNames.nameHome,
       pageBuilder: (context, state) => _buildSlideTransition(
         state: state,
-        child: const _HomePlaceholder(),
+        child: const HomeScreen(),
       ),
     ),
   ],
@@ -126,30 +127,4 @@ CustomTransitionPage<void> _buildSlideTransition({
       );
     },
   );
-}
-
-/// Temporary Home placeholder until Home feature is built.
-class _HomePlaceholder extends StatelessWidget {
-  const _HomePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.home_outlined, size: 64, color: Color(0xFF004f45)),
-            const SizedBox(height: 16),
-            Text(
-              'Beranda',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            const Text('Home screen akan diimplementasikan berikutnya.'),
-          ],
-        ),
-      ),
-    );
-  }
 }
