@@ -5,10 +5,13 @@ import '../../../core/navigation/app_navigation_destinations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import 'home_view.dart';
 
 /// Main Shell screen for the DSMES Mobile application containing the custom Bottom Navigation Bar.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.nowOverride});
+
+  final DateTime? nowOverride;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -23,11 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _screens = [
-      const _PlaceholderTab(
-        title: 'Beranda',
-        icon: Icons.home_rounded,
-        description: 'Pantau kesehatan dan rutinitas harian Anda di sini.',
-      ),
+      HomeView(nowOverride: widget.nowOverride),
       const _PlaceholderTab(
         title: 'Catat Kesehatan',
         icon: Icons.monitor_heart_rounded,
@@ -57,15 +56,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          activeDestination.label,
-          style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary),
-        ),
-      ),
+      appBar: _selectedIndex == 0
+          ? null
+          : AppBar(
+              backgroundColor: AppColors.surface,
+              elevation: 0,
+              centerTitle: true,
+              title: Text(
+                activeDestination.label,
+                style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary),
+              ),
+            ),
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
