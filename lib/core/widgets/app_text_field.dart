@@ -84,11 +84,6 @@ class _AppTextFieldState extends State<AppTextField> {
           hintText: widget.hint,
           filled: true,
           fillColor: AppColors.surfaceContainerLowest,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
           prefixIcon: widget.prefixIcon != null
               ? Icon(widget.prefixIcon, color: AppColors.outline)
               : null,

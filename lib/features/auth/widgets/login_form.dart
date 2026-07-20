@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_text_field.dart';
 import '../viewmodels/login_notifier.dart';
 
 class LoginForm extends ConsumerWidget {
@@ -20,146 +22,67 @@ class LoginForm extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Email ────────────────────────────────────────────────────────
-          Text(
-            AppStrings.loginEmail.toUpperCase(),
-            style: AppTextStyles.labelMd.copyWith(
-              color: AppColors.onBackground,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxs),
-          Container(
-            height: 56,
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.outlineVariant),
-              borderRadius: BorderRadius.circular(12),
-              color: AppColors.surfaceContainerLowest,
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: AppSpacing.md),
-                const Icon(Icons.mail_outline, color: AppColors.outline, size: 22),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: TextFormField(
-                    controller: notifier.emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.email],
-                    style: AppTextStyles.bodyLg.copyWith(
-                      color: AppColors.onBackground,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      hintText: 'Masukkan email Anda',
-                      hintStyle: AppTextStyles.bodyLg.copyWith(
-                        color: AppColors.outlineVariant,
-                      ),
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    validator: notifier.validateEmail,
-                    onChanged: notifier.onEmailChanged,
-                  ),
-                ),
-              ],
-            ),
+          // Email Field
+          AppTextField(
+            label: AppStrings.loginEmail,
+            hint: AppStrings.loginEmailHint,
+            controller: notifier.emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            prefixIcon: Icons.email_outlined,
+            autofillHints: const [AutofillHints.email],
+            semanticLabel: 'Kolom input email',
+            validator: notifier.validateEmail,
+            onChanged: notifier.onEmailChanged,
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // ── Password ─────────────────────────────────────────────────────
-          Text(
-            AppStrings.loginPassword.toUpperCase(),
-            style: AppTextStyles.labelMd.copyWith(
-              color: AppColors.onBackground,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxs),
-          Container(
-            height: 56,
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.outlineVariant),
-              borderRadius: BorderRadius.circular(12),
-              color: AppColors.surfaceContainerLowest,
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: AppSpacing.md),
-                const Icon(Icons.lock_outline, color: AppColors.outline, size: 22),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: TextFormField(
-                    controller: notifier.passwordController,
-                    obscureText: !state.isPasswordVisible,
-                    textInputAction: TextInputAction.done,
-                    autofillHints: const [AutofillHints.password],
-                    style: AppTextStyles.bodyLg.copyWith(
-                      color: AppColors.onBackground,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      hintText: 'Masukkan kata sandi',
-                      hintStyle: AppTextStyles.bodyLg.copyWith(
-                        color: AppColors.outlineVariant,
-                      ),
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    validator: notifier.validatePassword,
-                    onChanged: notifier.onPasswordChanged,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    state.isPasswordVisible
-                        ? Icons.visibility
-                        : Icons.visibility_off,
-                    color: AppColors.outline,
-                    size: 22,
-                  ),
-                  onPressed: notifier.togglePasswordVisibility,
-                  tooltip: state.isPasswordVisible
-                      ? 'Sembunyikan kata sandi'
-                      : 'Tampilkan kata sandi',
-                ),
-              ],
-            ),
+          // Password Field
+          AppTextField(
+            label: AppStrings.loginPassword,
+            hint: AppStrings.loginPasswordHint,
+            controller: notifier.passwordController,
+            isPassword: true,
+            textInputAction: TextInputAction.done,
+            prefixIcon: Icons.lock_outline,
+            autofillHints: const [AutofillHints.password],
+            semanticLabel: 'Kolom input kata sandi',
+            validator: notifier.validatePassword,
+            onChanged: notifier.onPasswordChanged,
           ),
 
-          // ── Error message ─────────────────────────────────────────────────
+          // API Error banner
           if (state.errorMessage != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
+            const SizedBox(height: AppSpacing.md),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
               decoration: BoxDecoration(
-                color: AppColors.errorContainer,
-                borderRadius: BorderRadius.circular(AppSpacing.sm),
+                color: AppColors.errorContainer.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.15),
+                  width: 1,
+                ),
               ),
               child: Row(
                 children: [
                   const Icon(
-                    Icons.error_outline,
+                    Icons.error_outline_rounded,
                     color: AppColors.error,
-                    size: 18,
+                    size: 20,
                   ),
-                  const SizedBox(width: AppSpacing.xs),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       state.errorMessage!,
-                      style: AppTextStyles.labelMd
-                          .copyWith(color: AppColors.error),
+                      style: AppTextStyles.labelMd.copyWith(
+                        color: AppColors.onErrorContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
