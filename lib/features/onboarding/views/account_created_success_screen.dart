@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/route_names.dart';
 
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
@@ -221,8 +224,7 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
                   child: AppButton(
                     label: AppStrings.successButton,
                     onPressed: () {
-                      // TODO: Navigate to Home after backend integration.
-                      debugPrint('TODO: Navigate to Home after backend integration.');
+                      context.go(RouteNames.home);
                     },
                   ),
                 ),

@@ -355,7 +355,7 @@ class _HomeViewState extends State<HomeView> {
         ReminderSection(
           reminders: reminders,
           emptyMessage: state == WeeklyDayState.noRecord ? 'No medication record.' : null,
-          onViewAllPressed: () {},
+          onViewAllPressed: () => context.push(RouteNames.reminders),
           onReminderTapped: (id) {},
         ),
         const SizedBox(height: AppSpacing.lg),

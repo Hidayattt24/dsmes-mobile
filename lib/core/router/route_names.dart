@@ -16,6 +16,7 @@ abstract final class RouteNames {
   static const String accountCreatedSuccess = '/account-created-success';
   static const String notifications = '/notifications';
   static const String bloodSugarEntry = '/blood-sugar-entry';
+  static const String reminders = '/reminders';
 
   // ── Onboarding steps ───────────────────────────────────────────────────────
   static String onboardingStep(int step) => '/onboarding/$step';
@@ -30,4 +31,5 @@ abstract final class RouteNames {
   static const String nameAccountCreatedSuccess = 'account-created-success';
   static const String nameNotifications = 'notifications';
   static const String nameBloodSugarEntry = 'blood-sugar-entry';
+  static const String nameReminders = 'reminders';
 }
