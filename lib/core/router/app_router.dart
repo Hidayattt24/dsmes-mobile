@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/shell/app_shell.dart';
 import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
-import '../../features/home/views/home_screen.dart';
+import '../../features/home/blood_sugar/views/blood_sugar_entry_screen.dart';
+import '../../features/notifications/views/notifications_screen.dart';
 import '../../features/onboarding/views/account_created_success_screen.dart';
 import '../../features/onboarding/views/daily_routine_setup_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
@@ -89,7 +91,27 @@ final GoRouter appRouter = GoRouter(
       name: RouteNames.nameHome,
       pageBuilder: (context, state) => _buildSlideTransition(
         state: state,
-        child: const HomeScreen(),
+        child: const AppShell(),
+      ),
+    ),
+
+    // ── Notifications ──────────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.notifications,
+      name: RouteNames.nameNotifications,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const NotificationsScreen(),
+      ),
+    ),
+
+    // ── Blood Sugar Entry ──────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.bloodSugarEntry,
+      name: RouteNames.nameBloodSugarEntry,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const BloodSugarEntryScreen(),
       ),
     ),
   ],

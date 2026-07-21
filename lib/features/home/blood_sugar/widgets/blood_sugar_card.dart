@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_card.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_card.dart';
 
 class BloodSugarCard extends StatelessWidget {
   const BloodSugarCard({
@@ -111,7 +111,7 @@ class BloodSugarCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'No blood sugar has been recorded.',
+                    'Belum ada catatan gula darah.',
                     style: AppTextStyles.poppinsHeadline.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

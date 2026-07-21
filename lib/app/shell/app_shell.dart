@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../core/navigation/app_bottom_navigation.dart';
-import '../../../core/navigation/app_navigation_destinations.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import 'home_view.dart';
+import '../../core/router/route_names.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../features/home/views/home_view.dart';
+import '../../features/home/history/widgets/calendar_history_bottom_sheet.dart';
+import '../../features/notifications/viewmodels/notifications_notifier.dart';
+import 'app_bottom_navigation.dart';
+import 'app_header.dart';
 
-/// Main Shell screen for the DSMES Mobile application containing the custom Bottom Navigation Bar.
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.nowOverride});
+/// Main Shell screen for the DSMES Mobile application containing the shared AppHeader and AppBottomNavigation.
+class AppShell extends ConsumerStatefulWidget {
+  const AppShell({super.key, this.nowOverride});
 
   final DateTime? nowOverride;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _AppShellState extends ConsumerState<AppShell> {
   int _selectedIndex = 0;
 
   late final List<Widget> _screens;
@@ -50,27 +55,75 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  void _openCalendarHistoryBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CalendarHistoryBottomSheet(
+        initialDate: widget.nowOverride ?? DateTime(2026, 7, 23),
+        onDateSelected: (date) {
+          // Calendar date selected callback
+        },
+      ),
+    );
+  }
+
+  String _getSubtitleForIndex(int index) {
+    return switch (index) {
+      0 => 'Bagaimana perasaan Anda hari ini?',
+      1 => 'Catat gula darah & aktivitas harian Anda',
+      2 => 'Pelajari tips & informasi kesehatan diabetes',
+      3 => 'Evaluasi kesehatan berkala DSMES',
+      4 => 'Informasi profil & pengaturan akun',
+      _ => 'Selamat datang di DSMES Aceh',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    final activeDestination = appNavigationDestinations[_selectedIndex];
+    final unreadNotificationCount = ref.watch(
+      notificationsProvider.select((list) => list.where((n) => n.isUnread).length),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: _selectedIndex == 0
-          ? null
-          : AppBar(
-              backgroundColor: AppColors.surface,
-              elevation: 0,
-              centerTitle: true,
-              title: Text(
-                activeDestination.label,
-                style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Shared Top Header (Persistent across primary navigation destinations)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.page,
+                AppSpacing.page,
+                AppSpacing.page,
+                0,
+              ),
+              child: AppHeader(
+                userName: 'Budi',
+                subtitle: _getSubtitleForIndex(_selectedIndex),
+                notificationCount: unreadNotificationCount,
+                onCalendarTap: _openCalendarHistoryBottomSheet,
+                onNotificationTap: () => context.push(RouteNames.notifications),
+                onProfileTap: () {
+                  setState(() {
+                    _selectedIndex = 4; // Switch to Profil tab
+                  });
+                },
               ),
             ),
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _screens[_selectedIndex],
+            const SizedBox(height: AppSpacing.md),
+            // Active Tab Page View
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: KeyedSubtree(
+                  key: ValueKey<int>(_selectedIndex),
+                  child: _screens[_selectedIndex],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: AppBottomNavigation(

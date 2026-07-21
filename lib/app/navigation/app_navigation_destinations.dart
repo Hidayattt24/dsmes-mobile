@@ -1,17 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Representation of a tab destination in the custom Bottom Navigation Bar.
-class AppNavigationDestination {
-  const AppNavigationDestination({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-}
+import 'app_navigation_destination.dart';
 
 /// Centralized configuration list of Bottom Navigation destinations.
 ///

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_card.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_card.dart';
 
 class DailyCaloriesCard extends StatelessWidget {
   const DailyCaloriesCard({
@@ -73,7 +73,7 @@ class DailyCaloriesCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'No meals have been recorded.',
+                    'Belum ada makanan yang dicatat.',
                     style: AppTextStyles.poppinsHeadline.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

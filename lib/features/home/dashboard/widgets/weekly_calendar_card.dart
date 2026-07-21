@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 enum WeeklyDayState {
   today,
@@ -17,11 +17,13 @@ class WeeklyCalendarCard extends StatelessWidget {
     required this.selectedDate,
     required this.getDayState,
     this.onDateSelected,
+    this.onHistoryPressed,
   });
 
   final DateTime selectedDate;
   final WeeklyDayState Function(DateTime date) getDayState;
   final ValueChanged<DateTime>? onDateSelected;
+  final VoidCallback? onHistoryPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -37,12 +39,41 @@ class WeeklyCalendarCard extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
-          child: Text(
-            'Hari ini',
-            style: AppTextStyles.labelLg.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.onSurface,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Hari ini',
+                style: AppTextStyles.labelLg.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurface,
+                ),
+              ),
+              InkWell(
+                onTap: onHistoryPressed,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Riwayat',
+                        style: AppTextStyles.labelMd.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.primary,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.sm),

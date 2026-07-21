@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
-import '../theme/app_shadows.dart';
-import '../theme/app_spacing.dart';
-import 'app_navigation_destinations.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_shadows.dart';
+import '../../core/theme/app_spacing.dart';
+import '../navigation/app_navigation_destinations.dart';
 import 'app_navigation_item.dart';
 
 /// Reusable AppBottomNavigation widget which accepts index and tap callbacks.

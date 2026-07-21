@@ -52,3 +52,7 @@ app.*.map.json
 .env.development.local
 .env.staging.local
 .env.production.local
+
+#test
+test/
+widget_test.dart

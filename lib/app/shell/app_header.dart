@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_avatar.dart';
-import '../../../core/widgets/app_icon_button.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_avatar.dart';
+import '../../core/widgets/app_icon_button.dart';
 
-class HomeHeader extends StatelessWidget {
-  const HomeHeader({
+/// Application-level shared top header bar.
+///
+/// Contains top-level branding ("DSMES Aceh"), Calendar trigger,
+/// Notification trigger with unread badge count, Profile Avatar,
+/// and contextual greeting/subtitles.
+class AppHeader extends StatelessWidget {
+  const AppHeader({
     super.key,
     required this.userName,
     this.greetingText = 'Halo',

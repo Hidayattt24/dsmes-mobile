@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../widgets/blood_sugar_card.dart';
-import '../widgets/daily_calories_card.dart';
-import '../widgets/home_header.dart';
-import '../widgets/reminder_section.dart';
-import '../widgets/weekly_calendar_card.dart';
-import '../widgets/weekly_summary_section.dart';
+import '../blood_sugar/widgets/blood_sugar_card.dart';
+import '../dashboard/widgets/daily_calories_card.dart';
+import '../dashboard/widgets/weekly_calendar_card.dart';
+import '../dashboard/widgets/weekly_summary_section.dart';
+import '../history/widgets/calendar_history_bottom_sheet.dart';
+import '../reminders/widgets/reminder_section.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key, this.nowOverride});
@@ -45,6 +47,22 @@ class _HomeViewState extends State<HomeView> {
     };
   }
 
+  void _openHistoryBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CalendarHistoryBottomSheet(
+        initialDate: _selectedDate,
+        onDateSelected: (date) {
+          setState(() {
+            _selectedDate = date;
+          });
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = widget.nowOverride ?? DateTime(2026, 7, 23);
@@ -55,16 +73,7 @@ class _HomeViewState extends State<HomeView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Home Header Section (Static greeting)
-          HomeHeader(
-            userName: 'Budi',
-            subtitle: 'Bagaimana perasaan Anda hari ini?',
-            notificationCount: 3,
-            onCalendarTap: () {},
-            onNotificationTap: () {},
-            onProfileTap: () {},
-          ),
-          const SizedBox(height: AppSpacing.lg),
+          // Weekly Calendar Timeline Selector
           // Weekly Calendar Timeline Selector
           WeeklyCalendarCard(
             selectedDate: _selectedDate,
@@ -74,6 +83,7 @@ class _HomeViewState extends State<HomeView> {
                 _selectedDate = date;
               });
             },
+            onHistoryPressed: _openHistoryBottomSheet,
           ),
           const SizedBox(height: AppSpacing.lg),
           // Dynamic cross-fade content switcher
@@ -317,12 +327,12 @@ class _HomeViewState extends State<HomeView> {
                 percentagePosition: bloodSugarPercent,
                 isToday: isSelectedToday,
                 historyMessage: historyMessage,
-                onRecordPressed: () {},
+                onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
               )
             : BloodSugarCard.empty(
                 isToday: isSelectedToday,
                 historyMessage: historyMessage,
-                onRecordPressed: () {},
+                onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
               ),
         const SizedBox(height: AppSpacing.lg),
         // Daily Calories Card
