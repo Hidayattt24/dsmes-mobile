@@ -40,4 +40,20 @@ abstract final class RouteNames {
   static const String nameQuestionnaireDetail = 'questionnaire-detail';
   static const String questionnaireResult = '/questionnaire-result';
   static const String nameQuestionnaireResult = 'questionnaire-result';
+  static const String settings = '/settings';
+  static const String nameSettings = 'settings';
+  static const String editBodyMetrics = '/edit-body-metrics';
+  static const String nameEditBodyMetrics = 'edit-body-metrics';
+  static const String recalculateResult = '/recalculate-result';
+  static const String nameRecalculateResult = 'recalculate-result';
+  static const String personalInformation = '/personal-information';
+  static const String namePersonalInformation = 'personal-information';
+  static const String reminderSettings = '/reminder-settings';
+  static const String nameReminderSettings = 'reminder-settings';
+  static const String securityPrivacy = '/security-privacy';
+  static const String nameSecurityPrivacy = 'security-privacy';
+  static const String helpCenter = '/help-center';
+  static const String nameHelpCenter = 'help-center';
+  static const String about = '/about';
+  static const String nameAbout = 'about';
 }

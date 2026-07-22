@@ -8,6 +8,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../features/education/views/education_screen.dart';
 import '../../features/questionnaire/views/questionnaire_screen.dart';
+import '../../features/settings/views/settings_screen.dart';
 import '../../features/home/views/home_view.dart';
 import '../../features/record/views/record_view.dart';
 import '../../features/home/history/widgets/calendar_history_bottom_sheet.dart';
@@ -38,11 +39,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       const RecordView(),
       const EducationScreen(),
       const QuestionnaireScreen(),
-      const _PlaceholderTab(
-        title: 'Profil Pengguna',
-        icon: Icons.person_rounded,
-        description: 'Kelola informasi pribadi dan pengaturan akun Anda.',
-      ),
+      const SettingsScreen(),
     ];
   }
 

@@ -12,6 +12,14 @@ import '../../features/notifications/views/notifications_screen.dart';
 import '../../features/onboarding/views/account_created_success_screen.dart';
 import '../../features/onboarding/views/daily_routine_setup_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
+import '../../features/settings/views/about_screen.dart';
+import '../../features/settings/views/edit_body_metrics_screen.dart';
+import '../../features/settings/views/help_center_screen.dart';
+import '../../features/settings/views/personal_information_screen.dart';
+import '../../features/settings/views/recalculate_result_screen.dart';
+import '../../features/settings/views/reminder_settings_screen.dart';
+import '../../features/settings/views/security_privacy_screen.dart';
+import '../../features/settings/views/settings_screen.dart';
 import '../../features/welcome/views/welcome_screen.dart';
 import '../constants/app_constants.dart';
 import 'route_names.dart';
@@ -149,6 +157,72 @@ final GoRouter appRouter = GoRouter(
           child: EducationDetailScreen(articleId: id),
         );
       },
+    ),
+
+    // ── Settings ─────────────────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.settings,
+      name: RouteNames.nameSettings,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const SettingsScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.editBodyMetrics,
+      name: RouteNames.nameEditBodyMetrics,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const EditBodyMetricsScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.recalculateResult,
+      name: RouteNames.nameRecalculateResult,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const RecalculateResultScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.personalInformation,
+      name: RouteNames.namePersonalInformation,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const PersonalInformationScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.reminderSettings,
+      name: RouteNames.nameReminderSettings,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const ReminderSettingsScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.securityPrivacy,
+      name: RouteNames.nameSecurityPrivacy,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const SecurityPrivacyScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.helpCenter,
+      name: RouteNames.nameHelpCenter,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const HelpCenterScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.about,
+      name: RouteNames.nameAbout,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const AboutScreen(),
+      ),
     ),
   ],
 
