@@ -34,4 +34,6 @@ abstract final class RouteNames {
   static const String nameReminders = 'reminders';
   static const String mealEntry = '/meal-entry';
   static const String nameMealEntry = 'meal-entry';
+  static const String educationDetail = '/education-detail';
+  static const String nameEducationDetail = 'education-detail';
 }

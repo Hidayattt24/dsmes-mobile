@@ -6,6 +6,7 @@ import '../../core/router/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../features/education/views/education_screen.dart';
 import '../../features/home/views/home_view.dart';
 import '../../features/record/views/record_view.dart';
 import '../../features/home/history/widgets/calendar_history_bottom_sheet.dart';
@@ -34,11 +35,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     _screens = [
       HomeView(nowOverride: widget.nowOverride),
       const RecordView(),
-      const _PlaceholderTab(
-        title: 'Edukasi Diabetes',
-        icon: Icons.menu_book_rounded,
-        description: 'Pelajari tips dan artikel kesehatan terpercaya.',
-      ),
+      const EducationScreen(),
       const _PlaceholderTab(
         title: 'Kuesioner Evaluasi',
         icon: Icons.quiz_rounded,

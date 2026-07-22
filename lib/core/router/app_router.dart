@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/shell/app_shell.dart';
 import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
+import '../../features/education/views/education_detail_screen.dart';
 import '../../features/home/blood_sugar/views/blood_sugar_entry_screen.dart';
 import '../../features/home/meal/views/meal_entry_screen.dart';
 import '../../features/home/reminders/views/reminders_management_screen.dart';
@@ -135,6 +136,19 @@ final GoRouter appRouter = GoRouter(
         state: state,
         child: const MealEntryScreen(),
       ),
+    ),
+
+    // ── Education Detail ─────────────────────────────────────────────────
+    GoRoute(
+      path: '${RouteNames.educationDetail}/:id',
+      name: RouteNames.nameEducationDetail,
+      pageBuilder: (context, state) {
+        final id = state.pathParameters['id'] ?? 'art_featured';
+        return _buildSlideTransition(
+          state: state,
+          child: EducationDetailScreen(articleId: id),
+        );
+      },
     ),
   ],
 
