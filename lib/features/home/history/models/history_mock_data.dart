@@ -15,7 +15,7 @@ class HealthActivityRecord {
   final int caloriesTarget;
   final int physicalActivityMinutes;
   final bool medicationCompleted;
-  final HealthActivityStatus status;
+  final HealthActivityStatus? _explicitStatus;
 
   const HealthActivityRecord({
     required this.date,
@@ -26,8 +26,27 @@ class HealthActivityRecord {
     this.caloriesTarget = 2100,
     this.physicalActivityMinutes = 0,
     this.medicationCompleted = false,
-    required this.status,
-  });
+    HealthActivityStatus? status,
+  }) : _explicitStatus = status;
+
+  int get recordedCategoriesCount {
+    int count = 0;
+    if (bloodSugar != null) count++;
+    if (mealsRecorded > 0 || caloriesConsumed > 0) count++;
+    if (physicalActivityMinutes > 0) count++;
+    if (medicationCompleted) count++;
+    return count;
+  }
+
+  double get progressRatio => (recordedCategoriesCount / 4.0).clamp(0.0, 1.0);
+
+  HealthActivityStatus get status {
+    if (_explicitStatus != null) return _explicitStatus!;
+    final count = recordedCategoriesCount;
+    if (count >= 4) return HealthActivityStatus.completed;
+    if (count >= 1) return HealthActivityStatus.inProgress;
+    return HealthActivityStatus.noActivity;
+  }
 }
 
 abstract final class MockHistoryData {

@@ -98,6 +98,7 @@ class MonthlyCalendarView extends StatelessWidget {
                   isToday: isToday,
                   isSelected: isSelected,
                   status: status,
+                  progressRatio: record?.progressRatio,
                   onTap: () => onDateSelected(date),
                 );
               },

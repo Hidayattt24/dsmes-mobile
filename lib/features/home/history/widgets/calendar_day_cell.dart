@@ -11,6 +11,7 @@ class CalendarDayCell extends StatelessWidget {
     required this.isToday,
     required this.isSelected,
     required this.status,
+    this.progressRatio,
     this.onTap,
   });
 
@@ -18,6 +19,7 @@ class CalendarDayCell extends StatelessWidget {
   final bool isToday;
   final bool isSelected;
   final HealthActivityStatus status;
+  final double? progressRatio;
   final VoidCallback? onTap;
 
   @override
@@ -48,8 +50,8 @@ class CalendarDayCell extends StatelessWidget {
                 strokeWidth: 2.2,
                 color: AppColors.outlineVariant.withValues(alpha: 0.3),
               ),
-              const CircularProgressIndicator(
-                value: 0.5,
+              CircularProgressIndicator(
+                value: progressRatio ?? 0.5,
                 strokeWidth: 2.2,
                 color: AppColors.tertiary, // Orange / Amber
                 strokeCap: StrokeCap.round,

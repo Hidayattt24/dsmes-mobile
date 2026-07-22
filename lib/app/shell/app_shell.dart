@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../features/home/views/home_view.dart';
+import '../../features/record/views/record_view.dart';
 import '../../features/home/history/widgets/calendar_history_bottom_sheet.dart';
 import '../../features/notifications/viewmodels/notifications_notifier.dart';
 import 'app_bottom_navigation.dart';
@@ -32,11 +33,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.initState();
     _screens = [
       HomeView(nowOverride: widget.nowOverride),
-      const _PlaceholderTab(
-        title: 'Catat Kesehatan',
-        icon: Icons.monitor_heart_rounded,
-        description: 'Catat gula darah, makanan, dan aktivitas fisik Anda.',
-      ),
+      const RecordView(),
       const _PlaceholderTab(
         title: 'Edukasi Diabetes',
         icon: Icons.menu_book_rounded,
@@ -101,7 +98,8 @@ class _AppShellState extends ConsumerState<AppShell> {
               ),
               child: AppHeader(
                 userName: 'Budi',
-                subtitle: _getSubtitleForIndex(_selectedIndex),
+                showGreeting: _selectedIndex == 0,
+                subtitle: _selectedIndex == 0 ? _getSubtitleForIndex(_selectedIndex) : null,
                 notificationCount: unreadNotificationCount,
                 onCalendarTap: _openCalendarHistoryBottomSheet,
                 onNotificationTap: () => context.push(RouteNames.notifications),

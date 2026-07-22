@@ -35,22 +35,46 @@ class DailyHistorySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final completedCount = record.recordedCategoriesCount;
+    final isFullyCompleted = completedCount >= 4;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
-          child: Text(
-            _formatIndonesianDate(record.date),
-            style: AppTextStyles.labelLg.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _formatIndonesianDate(record.date),
+              style: AppTextStyles.labelLg.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.onSurface,
+              ),
             ),
-          ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isFullyCompleted
+                    ? AppColors.secondaryContainer
+                    : AppColors.tertiaryContainer.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                isFullyCompleted ? 'Lengkap (4/4)' : 'Sebagian ($completedCount/4)',
+                style: AppTextStyles.labelMd.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isFullyCompleted
+                      ? AppColors.onSecondaryContainer
+                      : AppColors.tertiary,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // Blood Sugar Record (if any)
+        // 1. Blood Sugar Record (Gula Darah)
         if (record.bloodSugar != null) ...[
           _buildMetricCard(
             icon: Icons.bloodtype_outlined,
@@ -63,53 +87,64 @@ class DailyHistorySummary extends StatelessWidget {
             statusBadge: _buildStatusBadge(
               label: record.bloodSugarStatus ?? 'Normal',
               isError: record.bloodSugarStatus == 'Tinggi',
+              isSuccess: record.bloodSugarStatus == 'Normal',
             ),
           ),
           const SizedBox(height: AppSpacing.md),
         ],
 
-        // Calories & Meals Record
-        _buildMetricCard(
-          icon: Icons.restaurant_rounded,
-          iconColor: AppColors.primary,
-          iconBgColor: AppColors.primary.withValues(alpha: 0.1),
-          title: 'Makanan & Kalori',
-          value: '${record.mealsRecorded} kali makan tercatat',
-          subtitle: '${record.caloriesConsumed} / ${record.caloriesTarget} kcal',
-          progressValue: record.caloriesTarget > 0 ? record.caloriesConsumed / record.caloriesTarget : 0.0,
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        // Physical Activity Record
-        _buildMetricCard(
-          icon: Icons.directions_run_rounded,
-          iconColor: AppColors.secondary,
-          iconBgColor: AppColors.secondary.withValues(alpha: 0.1),
-          title: 'Aktivitas Fisik',
-          value: '${record.physicalActivityMinutes} menit',
-          subtitle: record.physicalActivityMinutes >= 30
-              ? 'Target Harian Tercapai'
-              : 'Belum Mencapai Target (Min. 30 Mnt)',
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        // Medication Record
-        _buildMetricCard(
-          icon: Icons.medication_outlined,
-          iconColor: record.medicationCompleted ? AppColors.secondary : AppColors.tertiary,
-          iconBgColor: (record.medicationCompleted ? AppColors.secondary : AppColors.tertiary)
-              .withValues(alpha: 0.1),
-          title: 'Obat-obatan',
-          value: record.medicationCompleted ? 'Kepatuhan Obat Selesai' : 'Belum Selesai',
-          subtitle: record.medicationCompleted
-              ? 'Semua obat diminum sesuai jadwal'
-              : 'Ada obat yang belum tercatat diminum',
-          statusBadge: _buildStatusBadge(
-            label: record.medicationCompleted ? 'Selesai' : 'Sebagian',
-            isSuccess: record.medicationCompleted,
-            isWarning: !record.medicationCompleted,
+        // 2. Makanan & Kalori (Food)
+        if (record.mealsRecorded > 0 || record.caloriesConsumed > 0) ...[
+          _buildMetricCard(
+            icon: Icons.restaurant_rounded,
+            iconColor: AppColors.tertiary,
+            iconBgColor: AppColors.tertiaryFixed,
+            title: 'Makanan & Kalori',
+            value: '${record.mealsRecorded} kali makan tercatat',
+            subtitle: '${record.caloriesConsumed} / ${record.caloriesTarget} kcal',
+            progressValue: record.caloriesTarget > 0 ? record.caloriesConsumed / record.caloriesTarget : 0.0,
+            statusBadge: _buildStatusBadge(
+              label: '${record.mealsRecorded} Makanan',
+              isSuccess: true,
+            ),
           ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+
+        // 3. Physical Activity Record (Aktivitas Fisik)
+        if (record.physicalActivityMinutes > 0) ...[
+          _buildMetricCard(
+            icon: Icons.directions_walk_rounded,
+            iconColor: AppColors.secondary,
+            iconBgColor: AppColors.secondaryFixed,
+            title: 'Aktivitas Fisik',
+            value: '${record.physicalActivityMinutes} menit',
+            subtitle: record.physicalActivityMinutes >= 30
+                ? 'Target Harian Tercapai (Min. 30 Mnt)'
+                : 'Aktivitas Fisik Ringan',
+            statusBadge: _buildStatusBadge(
+              label: record.physicalActivityMinutes >= 30 ? 'Tercapai' : 'Ringan',
+              isSuccess: record.physicalActivityMinutes >= 30,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+
+        // 4. Medication Record (Obat-obatan)
+        if (record.medicationCompleted) ...[
+          _buildMetricCard(
+            icon: Icons.medication_outlined,
+            iconColor: AppColors.primary,
+            iconBgColor: AppColors.surfaceContainerHighest,
+            title: 'Obat-obatan',
+            value: 'Kepatuhan Obat Selesai',
+            subtitle: 'Semua obat diminum sesuai jadwal',
+            statusBadge: _buildStatusBadge(
+              label: 'Sudah Minum',
+              isSuccess: true,
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -23,6 +23,7 @@ class AppHeader extends StatelessWidget {
     this.onProfileTap,
     this.notificationCount = 0,
     this.showLogo = true,
+    this.showGreeting = true,
   });
 
   final String userName;
@@ -34,6 +35,7 @@ class AppHeader extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final int notificationCount;
   final bool showLogo;
+  final bool showGreeting;
 
   @override
   Widget build(BuildContext context) {
@@ -89,24 +91,26 @@ class AppHeader extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.lg),
-        // Greeting & Subtitle
-        Text(
-          '$greetingText, $userName',
-          style: AppTextStyles.poppinsHeadline.copyWith(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppColors.onSurface,
-          ),
-        ),
-        if (subtitle != null) ...[
-          const SizedBox(height: AppSpacing.xxs),
+        if (showGreeting) ...[
+          const SizedBox(height: AppSpacing.lg),
+          // Greeting & Subtitle
           Text(
-            subtitle!,
-            style: AppTextStyles.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
+            '$greetingText, $userName',
+            style: AppTextStyles.poppinsHeadline.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: AppColors.onSurface,
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              subtitle!,
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ],
     );
