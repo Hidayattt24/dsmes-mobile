@@ -36,4 +36,8 @@ abstract final class RouteNames {
   static const String nameMealEntry = 'meal-entry';
   static const String educationDetail = '/education-detail';
   static const String nameEducationDetail = 'education-detail';
+  static const String questionnaireDetail = '/questionnaire-detail';
+  static const String nameQuestionnaireDetail = 'questionnaire-detail';
+  static const String questionnaireResult = '/questionnaire-result';
+  static const String nameQuestionnaireResult = 'questionnaire-result';
 }
