@@ -5,6 +5,7 @@ import '../../app/shell/app_shell.dart';
 import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
 import '../../features/home/blood_sugar/views/blood_sugar_entry_screen.dart';
+import '../../features/home/meal/views/meal_entry_screen.dart';
 import '../../features/home/reminders/views/reminders_management_screen.dart';
 import '../../features/notifications/views/notifications_screen.dart';
 import '../../features/onboarding/views/account_created_success_screen.dart';
@@ -123,6 +124,16 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _buildSlideTransition(
         state: state,
         child: const RemindersManagementScreen(),
+      ),
+    ),
+
+    // ── Meal Entry ────────────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.mealEntry,
+      name: RouteNames.nameMealEntry,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const MealEntryScreen(),
       ),
     ),
   ],

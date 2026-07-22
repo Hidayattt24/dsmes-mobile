@@ -343,12 +343,12 @@ class _HomeViewState extends State<HomeView> {
                 target: target,
                 isToday: isSelectedToday,
                 historyMessage: historyMessage,
-                onRecordFoodPressed: () {},
+                onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
               )
             : DailyCaloriesCard.empty(
                 isToday: isSelectedToday,
                 historyMessage: historyMessage,
-                onRecordFoodPressed: () {},
+                onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
               ),
         const SizedBox(height: AppSpacing.lg),
         // Reminder List
