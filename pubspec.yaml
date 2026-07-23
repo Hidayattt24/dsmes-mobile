@@ -32,6 +32,10 @@ dependencies:
   shared_preferences: ^2.3.5
   flutter_secure_storage: ^9.2.4
 
+  # Networking
+  dio: ^5.7.0
+
+
   # Utils
   equatable: ^2.0.7
   intl: ^0.20.2

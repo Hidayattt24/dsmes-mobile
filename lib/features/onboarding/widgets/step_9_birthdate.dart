@@ -9,8 +9,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_onboarding_question.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step8Birthdate extends ConsumerWidget {
-  const Step8Birthdate({super.key});
+class Step9Birthdate extends ConsumerWidget {
+  const Step9Birthdate({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

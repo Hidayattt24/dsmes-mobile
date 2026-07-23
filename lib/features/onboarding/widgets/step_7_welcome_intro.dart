@@ -6,8 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 
-class Step6WelcomeIntro extends ConsumerWidget {
-  const Step6WelcomeIntro({super.key});
+class Step7WelcomeIntro extends ConsumerWidget {
+  const Step7WelcomeIntro({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

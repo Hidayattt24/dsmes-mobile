@@ -5,6 +5,7 @@ class OnboardingFormState {
   const OnboardingFormState({
     this.currentStep = 1,
     this.fullName = '',
+    this.nickname = '',
     this.email = '',
     this.phoneNumber = '',
     this.password = '',
@@ -15,12 +16,14 @@ class OnboardingFormState {
     this.heightCm = '',
     this.weightKg = '',
     this.activityLevel,
+    this.calorieResult,
     this.isLoading = false,
     this.errorMessage,
   });
 
   final int currentStep;
   final String fullName;
+  final String nickname;
   final String email;
   final String phoneNumber;
   final String password;
@@ -31,10 +34,12 @@ class OnboardingFormState {
   final String heightCm;
   final String weightKg;
   final String? activityLevel;
+  final Map<String, dynamic>? calorieResult;
   final bool isLoading;
   final String? errorMessage;
 
-  double get progressPercent => currentStep / 13;
+
+  double get progressPercent => currentStep / 14;
 
   int get age {
     if (birthDate == null) return 0;
@@ -79,18 +84,19 @@ class OnboardingFormState {
   bool get canProceedCurrentStep {
     return switch (currentStep) {
       1 => fullName.trim().isNotEmpty,
-      2 => _isValidEmail(email),
-      3 => phoneNumber.trim().length >= 10,
-      4 => password.length >= 8,
-      5 => confirmPassword.isNotEmpty && confirmPassword == password,
-      6 => true,
-      7 => gender != null,
-      8 => birthDate != null,
-      9 => bloodType != null,
-      10 => heightValue > 50 && heightValue < 250,
-      11 => weightValue > 20 && weightValue < 300,
-      12 => activityLevel != null,
-      13 => true,
+      2 => nickname.trim().isNotEmpty,
+      3 => _isValidEmail(email),
+      4 => phoneNumber.trim().length >= 10,
+      5 => password.length >= 8,
+      6 => confirmPassword.isNotEmpty && confirmPassword == password,
+      7 => true,
+      8 => gender != null,
+      9 => birthDate != null,
+      10 => bloodType != null,
+      11 => heightValue > 50 && heightValue < 250,
+      12 => weightValue > 20 && weightValue < 300,
+      13 => activityLevel != null,
+      14 => true,
       _ => false,
     };
   }
@@ -103,6 +109,7 @@ class OnboardingFormState {
   OnboardingFormState copyWith({
     int? currentStep,
     String? fullName,
+    String? nickname,
     String? email,
     String? phoneNumber,
     String? password,
@@ -113,6 +120,7 @@ class OnboardingFormState {
     String? heightCm,
     String? weightKg,
     String? activityLevel,
+    Map<String, dynamic>? calorieResult,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
@@ -120,6 +128,7 @@ class OnboardingFormState {
     return OnboardingFormState(
       currentStep: currentStep ?? this.currentStep,
       fullName: fullName ?? this.fullName,
+      nickname: nickname ?? this.nickname,
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       password: password ?? this.password,
@@ -130,10 +139,13 @@ class OnboardingFormState {
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
       activityLevel: activityLevel ?? this.activityLevel,
+      calorieResult: calorieResult ?? this.calorieResult,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
+
+
 
   String get emailError {
     if (email.isEmpty) return 'Email wajib diisi';

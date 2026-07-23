@@ -9,12 +9,13 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_onboarding_question.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step3Phone extends ConsumerWidget {
-  const Step3Phone({super.key});
+class Step4Phone extends ConsumerWidget {
+  const Step4Phone({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(onboardingProvider.notifier);
+    final phone = ref.watch(onboardingProvider.select((s) => s.phoneNumber));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,6 +81,7 @@ class Step3Phone extends ConsumerWidget {
                     horizontal: AppSpacing.sm,
                   ),
                   child: TextFormField(
+                    initialValue: phone,
                     onChanged: notifier.onPhoneChanged,
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.done,

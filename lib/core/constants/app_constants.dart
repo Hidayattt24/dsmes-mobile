@@ -4,12 +4,19 @@ abstract final class AppConstants {
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
 
+  static const String baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://10.0.2.2:8080/api/v1',
+  );
+
+
   static const String keyAuthToken = 'auth_token';
   static const String keyRefreshToken = 'refresh_token';
   static const String keyOnboardingComplete = 'onboarding_complete';
   static const String keyUserId = 'user_id';
 
-  static const int totalOnboardingSteps = 13;
+  static const int totalOnboardingSteps = 14;
+
 
   static const int defaultPageSize = 20;
 

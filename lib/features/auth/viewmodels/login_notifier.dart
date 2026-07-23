@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../models/login_form_state.dart';
+
 
 /// ViewModel for the login form.
 ///
@@ -73,27 +76,24 @@ class LoginNotifier extends Notifier<LoginFormState> {
     return null;
   }
 
-  // ── Submission ────────────────────────────────────────────────────────────
-
-  /// Validates the form and performs login.
-  ///
-  /// TODO: Connect to AuthRepository when backend integration is ready.
+  /// Validates the form and performs login via AuthRepository.
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) return;
 
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      // Simulate network delay — replace with real API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      // TODO: Replace with:
-      // await ref.read(authRepositoryProvider).login(
-      //   email: state.email,
-      //   password: state.password,
-      // );
+      await ref.read(authRepositoryProvider).login(
+            email: emailController.text.trim(),
+            password: passwordController.text,
+          );
 
       state = state.copyWith(isLoading: false);
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -102,6 +102,7 @@ class LoginNotifier extends Notifier<LoginFormState> {
     }
   }
 }
+
 
 /// Provider for [LoginNotifier].
 final loginProvider = NotifierProvider<LoginNotifier, LoginFormState>(

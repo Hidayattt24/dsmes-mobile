@@ -8,8 +8,8 @@ import '../../../core/widgets/app_numeric_keypad.dart';
 import '../../../core/widgets/app_onboarding_question.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step10Height extends ConsumerWidget {
-  const Step10Height({super.key});
+class Step11Height extends ConsumerWidget {
+  const Step11Height({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -523,6 +523,7 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
   }
 
   Widget _buildFooter(BuildContext context, WidgetRef ref, double bottomPadding) {
+    final state = ref.watch(dailyRoutineProvider);
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.page,
@@ -544,14 +545,29 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
         label: AppStrings.dailyRoutineButton,
         trailingIcon: Icons.arrow_forward,
         borderRadius: AppRadius.buttonPill,
-        onPressed: () {
-          ref.read(onboardingProvider.notifier).finishOnboarding().then((_) {
-            if (context.mounted) context.go(RouteNames.accountCreatedSuccess);
-          });
+        isLoading: state.isLoading,
+        onPressed: () async {
+          final ok = await ref.read(dailyRoutineProvider.notifier).finishOnboarding();
+          if (context.mounted) {
+            if (ok) {
+              context.go(RouteNames.accountCreatedSuccess);
+            } else {
+              final currState = ref.read(dailyRoutineProvider);
+              if (currState.errorMessage != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(currState.errorMessage!),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            }
+          }
         },
       ),
     );
   }
+
 }
 
 class _OptionCard extends StatelessWidget {

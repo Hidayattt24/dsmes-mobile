@@ -60,6 +60,15 @@ abstract final class AppStrings {
   static const String step1FieldLabel = 'Nama Lengkap';
   static const String step1FieldHint = 'Contoh: Budi Santoso';
 
+  // ── Step 2: Nama Panggilan ─────────────────────────────────────────────────
+  static const String stepNicknameTitle = 'Siapa nama panggilan Anda?';
+  static const String stepNicknameSubtitle =
+      'Nama panggilan Anda akan digunakan untuk menyapa Anda di dalam aplikasi.';
+  static const String stepNicknameFieldLabel = 'Nama Panggilan';
+  static const String stepNicknameFieldHint = 'Contoh: Budi';
+  static const String step13LabelNickname = 'Nama Panggilan';
+
+
   // ── Step 2: Email ──────────────────────────────────────────────────────────
   static const String step2Title = 'Apa alamat email Anda?';
   static const String step2Subtitle =

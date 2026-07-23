@@ -9,8 +9,8 @@ import '../../../core/widgets/app_onboarding_question.dart';
 import '../../../core/widgets/selection_card.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step9BloodType extends ConsumerWidget {
-  const Step9BloodType({super.key});
+class Step10BloodType extends ConsumerWidget {
+  const Step10BloodType({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

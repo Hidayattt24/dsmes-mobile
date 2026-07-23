@@ -11,8 +11,8 @@ import '../../../core/widgets/app_card.dart';
 import '../models/onboarding_form_state.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step13Summary extends ConsumerWidget {
-  const Step13Summary({super.key});
+class Step14Summary extends ConsumerWidget {
+  const Step14Summary({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,8 +23,9 @@ class Step13Summary extends ConsumerWidget {
       children: [
         const _CelebrationHeader(),
         const SizedBox(height: AppSpacing.lg),
-        const _CalorieCard(),
+        _CalorieCard(state: state),
         const SizedBox(height: AppSpacing.lg),
+
         _PersonalSummary(state: state),
         const SizedBox(height: AppSpacing.lg),
         const _HealthRecommendations(),
@@ -85,10 +86,21 @@ class _CelebrationHeader extends StatelessWidget {
 }
 
 class _CalorieCard extends StatelessWidget {
-  const _CalorieCard();
+  const _CalorieCard({required this.state});
+
+  final OnboardingFormState state;
 
   @override
   Widget build(BuildContext context) {
+    final res = state.calorieResult;
+    final int tdee = res != null ? (res['tdee'] as num?)?.toInt() ?? 2150 : 2150;
+    final rec = res?['recommendedCalories'] as Map<String, dynamic>?;
+    final int weightLoss = rec != null ? (rec['weightLoss'] as num?)?.toInt() ?? (tdee - 500) : (tdee - 500);
+    final int maintenance = rec != null ? (rec['maintenance'] as num?)?.toInt() ?? tdee : tdee;
+    final int weightGain = rec != null ? (rec['weightGain'] as num?)?.toInt() ?? (tdee + 500) : (tdee + 500);
+
+    final formatter = NumberFormat('#,###', 'id_ID');
+
     return AppCard(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -113,7 +125,7 @@ class _CalorieCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            '2,150',
+            formatter.format(tdee),
             style: GoogleFonts.poppins(
               fontSize: 56,
               fontWeight: FontWeight.w800,
@@ -145,8 +157,77 @@ class _CalorieCard extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _TargetCalorieColumn(
+                  label: 'Turun BB',
+                  calories: '${formatter.format(weightLoss)} kcal',
+                ),
+                Container(
+                  height: 30,
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
+                _TargetCalorieColumn(
+                  label: 'Pemeliharaan',
+                  calories: '${formatter.format(maintenance)} kcal',
+                ),
+                Container(
+                  height: 30,
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
+                _TargetCalorieColumn(
+                  label: 'Naik BB',
+                  calories: '${formatter.format(weightGain)} kcal',
+                ),
+              ],
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _TargetCalorieColumn extends StatelessWidget {
+  const _TargetCalorieColumn({
+    required this.label,
+    required this.calories,
+  });
+
+  final String label;
+  final String calories;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelMd.copyWith(
+            color: AppColors.onPrimary.withValues(alpha: 0.85),
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          calories,
+          style: AppTextStyles.labelLg.copyWith(
+            color: AppColors.onPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -166,6 +247,11 @@ class _PersonalSummary extends StatelessWidget {
 
     final items = [
       (Icons.person_outline, AppStrings.step13LabelName, state.fullName),
+      (
+        Icons.badge_outlined,
+        AppStrings.step13LabelNickname,
+        state.nickname.isEmpty ? '-' : state.nickname,
+      ),
       (Icons.email_outlined, AppStrings.step13LabelEmail, state.email),
       (
         Icons.phone_outlined,

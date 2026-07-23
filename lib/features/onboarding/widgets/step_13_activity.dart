@@ -8,8 +8,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_onboarding_question.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step12Activity extends ConsumerWidget {
-  const Step12Activity({super.key});
+class Step13Activity extends ConsumerWidget {
+  const Step13Activity({super.key});
 
   static const _options = [
     (AppStrings.step12Sedentary, AppStrings.step12SedentaryDesc),

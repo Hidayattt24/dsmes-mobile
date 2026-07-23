@@ -8,8 +8,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_onboarding_question.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step2Email extends ConsumerWidget {
-  const Step2Email({super.key});
+class Step3Email extends ConsumerWidget {
+  const Step3Email({super.key});
 
   static bool _isValidEmail(String email) {
     final regex = RegExp(r'^[\w.-]+@[\w.-]+\.\w{2,}$');
@@ -57,6 +57,7 @@ class Step2Email extends ConsumerWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: TextFormField(
+                  initialValue: email,
                   onChanged: notifier.onEmailChanged,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.done,

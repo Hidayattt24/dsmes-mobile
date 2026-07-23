@@ -6,36 +6,40 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_onboarding_question.dart';
-import '../models/onboarding_form_state.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step4Password extends ConsumerStatefulWidget {
-  const Step4Password({super.key});
+class Step6ConfirmPassword extends ConsumerStatefulWidget {
+  const Step6ConfirmPassword({super.key});
 
   @override
-  ConsumerState<Step4Password> createState() => _Step4PasswordState();
+  ConsumerState<Step6ConfirmPassword> createState() =>
+      _Step6ConfirmPasswordState();
 }
 
-class _Step4PasswordState extends ConsumerState<Step4Password> {
+class _Step6ConfirmPasswordState extends ConsumerState<Step6ConfirmPassword> {
   bool _obscure = true;
 
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(onboardingProvider.notifier);
+    final confirmPassword = ref.watch(
+      onboardingProvider.select((s) => s.confirmPassword),
+    );
     final password = ref.watch(onboardingProvider.select((s) => s.password));
+    final doMatch = confirmPassword.isNotEmpty && confirmPassword == password;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const AppOnboardingQuestion(
           icon: Icons.lock_outline,
-          question: AppStrings.step4Title,
-          description: AppStrings.step4Subtitle,
+          question: AppStrings.step5Title,
+          description: AppStrings.step5Subtitle,
           iconBackgroundColor: AppColors.primaryFixed,
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          AppStrings.step4FieldLabel,
+          AppStrings.step5FieldLabel,
           style: AppTextStyles.labelLg.copyWith(
             color: AppColors.onSurface,
             fontWeight: FontWeight.w500,
@@ -45,7 +49,14 @@ class _Step4PasswordState extends ConsumerState<Step4Password> {
         Container(
           height: 56,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.outlineVariant),
+            border: Border.all(
+              color:
+                  confirmPassword.isNotEmpty
+                      ? doMatch
+                          ? AppColors.primary
+                          : AppColors.error
+                      : AppColors.outlineVariant,
+            ),
             borderRadius: BorderRadius.circular(12),
             color: AppColors.surfaceContainerLowest,
           ),
@@ -60,7 +71,8 @@ class _Step4PasswordState extends ConsumerState<Step4Password> {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: TextFormField(
-                  onChanged: notifier.onPasswordChanged,
+                  initialValue: confirmPassword,
+                  onChanged: notifier.onConfirmPasswordChanged,
                   obscureText: _obscure,
                   textInputAction: TextInputAction.done,
                   style: AppTextStyles.bodyLg.copyWith(
@@ -72,7 +84,7 @@ class _Step4PasswordState extends ConsumerState<Step4Password> {
                     focusedBorder: InputBorder.none,
                     errorBorder: InputBorder.none,
                     disabledBorder: InputBorder.none,
-                    hintText: AppStrings.step4FieldHint,
+                    hintText: AppStrings.step5FieldHint,
                     hintStyle: AppTextStyles.bodyLg.copyWith(
                       color: AppColors.outline,
                     ),
@@ -81,6 +93,12 @@ class _Step4PasswordState extends ConsumerState<Step4Password> {
                   ),
                 ),
               ),
+              if (confirmPassword.isNotEmpty)
+                Icon(
+                  doMatch ? Icons.check_circle : Icons.cancel,
+                  color: doMatch ? AppColors.primary : AppColors.error,
+                  size: 22,
+                ),
               IconButton(
                 icon: Icon(
                   _obscure
@@ -95,80 +113,14 @@ class _Step4PasswordState extends ConsumerState<Step4Password> {
             ],
           ),
         ),
-        if (password.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          _PasswordStrengthBar(password: password),
-          const SizedBox(height: AppSpacing.xs),
+        if (confirmPassword.isNotEmpty && !doMatch) ...[
+          const SizedBox(height: AppSpacing.sm),
           Text(
-            _strengthText(password),
-            style: AppTextStyles.labelMd.copyWith(
-              color: _strengthColor(password),
-            ),
+            AppStrings.validationPasswordNotMatch,
+            style: AppTextStyles.labelMd.copyWith(color: AppColors.error),
           ),
         ],
       ],
-    );
-  }
-
-  String _strengthText(String pw) {
-    final s = OnboardingFormState(password: pw).passwordStrengthText;
-    switch (s) {
-      case 'Kuat':
-        return 'Kata sandi kuat';
-      case 'Sedang':
-        return 'Kata sandi sedang';
-      default:
-        return 'Kata sandi lemah — gunakan huruf besar, kecil, dan angka';
-    }
-  }
-
-  Color _strengthColor(String pw) {
-    final s = OnboardingFormState(password: pw).passwordStrengthText;
-    switch (s) {
-      case 'Kuat':
-        return AppColors.primary;
-      case 'Sedang':
-        return AppColors.tertiary;
-      default:
-        return AppColors.error;
-    }
-  }
-}
-
-class _PasswordStrengthBar extends StatelessWidget {
-  const _PasswordStrengthBar({required this.password});
-
-  final String password;
-
-  @override
-  Widget build(BuildContext context) {
-    final strength =
-        OnboardingFormState(password: password).passwordStrengthText;
-    const segments = 3;
-    final filled = switch (strength) {
-      'Kuat' => 3,
-      'Sedang' => 2,
-      _ => 1,
-    };
-    final barColor = switch (strength) {
-      'Kuat' => AppColors.primary,
-      'Sedang' => AppColors.tertiary,
-      _ => AppColors.error,
-    };
-
-    return Row(
-      children: List.generate(segments, (i) {
-        return Expanded(
-          child: Container(
-            height: 4,
-            margin: EdgeInsets.only(right: i < segments - 1 ? 4 : 0),
-            decoration: BoxDecoration(
-              color: i < filled ? barColor : AppColors.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        );
-      }),
     );
   }
 }

@@ -9,8 +9,8 @@ import '../../../core/widgets/app_onboarding_question.dart';
 import '../../../core/widgets/selection_card.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step7Gender extends ConsumerWidget {
-  const Step7Gender({super.key});
+class Step8Gender extends ConsumerWidget {
+  const Step8Gender({super.key});
 
   static const _options = [
     ('Laki-laki', Icons.male),

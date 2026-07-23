@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../models/onboarding_form_state.dart';
+
+
 
 class OnboardingNotifier extends Notifier<OnboardingFormState> {
   @override
@@ -10,7 +14,7 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
 
   void nextStep() {
     if (!state.canProceedCurrentStep) return;
-    if (state.currentStep < 13) {
+    if (state.currentStep < 14) {
       state = state.copyWith(currentStep: state.currentStep + 1);
     }
   }
@@ -22,7 +26,7 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
   }
 
   void goToStep(int step) {
-    assert(step >= 1 && step <= 13, 'Step must be between 1 and 13');
+    assert(step >= 1 && step <= 14, 'Step must be between 1 and 14');
     state = state.copyWith(currentStep: step);
   }
 
@@ -31,6 +35,13 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
   void onFullNameChanged(String value) {
     state = state.copyWith(fullName: value);
   }
+
+  // ── Step 2: Nickname ──────────────────────────────────────────────────────
+
+  void onNicknameChanged(String value) {
+    state = state.copyWith(nickname: value);
+  }
+
 
   // ── Step 2: Email ──────────────────────────────────────────────────────────
 
@@ -112,14 +123,54 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
     state = state.copyWith(activityLevel: level);
   }
 
-  // ── Step 13: Submit ───────────────────────────────────────────────────────
+  // ── Step 13: Calculate Calories ───────────────────────────────────────────
+
+  Future<bool> calculateCaloriesFromBackend() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final res = await ref.read(authRepositoryProvider).calculateCalories(state);
+      state = state.copyWith(
+        calorieResult: res,
+        isLoading: false,
+      );
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal menghitung kalori. Silakan coba lagi.',
+      );
+      return false;
+    }
+  }
+
+  // ── Step 14: Submit Account ────────────────────────────────────────────────
 
   Future<void> finishOnboarding() async {
-    state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    state = state.copyWith(isLoading: false);
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await ref.read(authRepositoryProvider).register(state);
+      state = state.copyWith(isLoading: false);
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal membuat akun. Silakan coba lagi.',
+      );
+    }
   }
 }
+
+
 
 final onboardingProvider =
     NotifierProvider<OnboardingNotifier, OnboardingFormState>(
