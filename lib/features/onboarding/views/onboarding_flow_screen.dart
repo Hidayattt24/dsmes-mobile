@@ -45,8 +45,26 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
 
   void _handleNext() async {
     final notifier = ref.read(onboardingProvider.notifier);
-    if (widget.step == 13) {
-      final ok = await notifier.calculateCaloriesFromBackend();
+
+    if (widget.step == 6) {
+      final ok = await notifier.finishAccountRegistration();
+      if (mounted) {
+        if (ok) {
+          context.go(RouteNames.registrationWelcome);
+        } else {
+          final state = ref.read(onboardingProvider);
+          if (state.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      }
+    } else if (widget.step == 13) {
+      final ok = await notifier.setupHealthProfileFromBackend();
       if (mounted) {
         if (ok) {
           notifier.nextStep();
@@ -64,26 +82,12 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
         }
       }
     } else if (widget.step == AppConstants.totalOnboardingSteps) {
-      await notifier.finishOnboarding();
-      final state = ref.read(onboardingProvider);
-      if (mounted) {
-        if (state.errorMessage == null) {
-          context.go(RouteNames.dailyRoutineSetup);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      }
+      context.go(RouteNames.dailyRoutineSetup);
     } else {
       notifier.nextStep();
       context.go('/onboarding/${widget.step + 1}');
     }
   }
-
 
   void _handleBack() {
     final notifier = ref.read(onboardingProvider.notifier);

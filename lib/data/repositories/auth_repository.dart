@@ -17,7 +17,20 @@ abstract class IAuthRepository {
 
   Future<Map<String, dynamic>> register(OnboardingFormState form);
 
+  Future<Map<String, dynamic>> setupHealthProfile(OnboardingFormState form);
+
   Future<Map<String, dynamic>> calculateCalories(OnboardingFormState form);
+
+  Future<Map<String, dynamic>> getPatientProfile();
+
+  Future<Map<String, dynamic>> updatePatientProfile({
+    required String fullName,
+    required String nickname,
+    required String whatsappNumber,
+    required double heightCm,
+    required double weightKg,
+    required String activityLevel,
+  });
 
   Future<void> forgotPassword({required String email});
 
@@ -75,24 +88,13 @@ class AuthRepository implements IAuthRepository {
   @override
   Future<Map<String, dynamic>> register(OnboardingFormState form) async {
     try {
-      final dobStr = form.birthDate != null
-          ? DateFormat('yyyy-MM-dd').format(form.birthDate!)
-          : '';
-
       final payload = {
         'full_name': form.fullName.trim(),
         'nickname': form.nickname.trim(),
         'email': form.email.trim(),
         'phone_number': form.phoneNumber.trim(),
         'password': form.password,
-        'gender': form.gender ?? 'Laki-laki',
-        'date_of_birth': dobStr,
-        'blood_type': form.bloodType ?? 'Tidak Tahu',
-        'height_cm': form.heightValue,
-        'weight_kg': form.weightValue,
-        'activity_level': form.activityLevel ?? 'Ringan',
       };
-
 
       final response = await _dio.post(
         '/auth/register',
@@ -101,7 +103,7 @@ class AuthRepository implements IAuthRepository {
 
       final data = response.data['data'] as Map<String, dynamic>;
 
-      // Save tokens if returned directly upon registration
+      // Save tokens returned directly upon registration
       if (data['tokens'] != null) {
         final tokens = data['tokens'] as Map<String, dynamic>;
         final user = data['user'] as Map<String, dynamic>?;
@@ -114,6 +116,33 @@ class AuthRepository implements IAuthRepository {
       }
 
       return data;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> setupHealthProfile(OnboardingFormState form) async {
+    try {
+      final dobStr = form.birthDate != null
+          ? DateFormat('yyyy-MM-dd').format(form.birthDate!)
+          : '';
+
+      final payload = {
+        'gender': form.gender ?? 'Laki-laki',
+        'date_of_birth': dobStr,
+        'blood_type': form.bloodType ?? 'Tidak Tahu',
+        'height_cm': form.heightValue,
+        'weight_kg': form.weightValue,
+        'activity_level': form.activityLevel ?? 'Ringan',
+      };
+
+      final response = await _dio.post(
+        '/patient/profile/setup',
+        data: payload,
+      );
+
+      return response.data['data'] as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -140,6 +169,43 @@ class AuthRepository implements IAuthRepository {
         data: payload,
       );
 
+      return response.data['data'] as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPatientProfile() async {
+    try {
+      final response = await _dio.get('/patient/me');
+      return response.data['data'] as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updatePatientProfile({
+    required String fullName,
+    required String nickname,
+    required String whatsappNumber,
+    required double heightCm,
+    required double weightKg,
+    required String activityLevel,
+  }) async {
+    try {
+      final response = await _dio.put(
+        '/patient/me',
+        data: {
+          'full_name': fullName,
+          'nickname': nickname,
+          'whatsapp_number': whatsappNumber,
+          'height_cm': heightCm,
+          'weight_kg': weightKg,
+          'physical_activity_level': activityLevel,
+        },
+      );
       return response.data['data'] as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);

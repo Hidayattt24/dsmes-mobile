@@ -11,11 +11,19 @@ class SettingsNotifier extends StateNotifier<BodyMetrics> {
     required double heightCm,
     required double weightKg,
     required String activityLevel,
+    int? calculatedTdee,
+    double? bmiVal,
+    String? bmiCatVal,
+    Map<String, dynamic>? recommendations,
   }) {
     state = state.copyWith(
       heightCm: heightCm,
       weightKg: weightKg,
       activityLevel: activityLevel,
+      calculatedTdee: calculatedTdee,
+      bmiVal: bmiVal,
+      bmiCatVal: bmiCatVal,
+      recommendations: recommendations,
     );
   }
 

@@ -10,6 +10,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_snackbar.dart';
 
+import '../../../data/repositories/auth_repository.dart';
+import '../../onboarding/models/onboarding_form_state.dart';
 import '../viewmodels/settings_notifier.dart';
 import '../widgets/activity_selector.dart';
 import '../widgets/save_button.dart';
@@ -30,6 +32,7 @@ class _EditBodyMetricsScreenState
   late String _selectedActivity;
 
   final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -40,6 +43,41 @@ class _EditBodyMetricsScreenState
     _weightController =
         TextEditingController(text: current.weightKg.toInt().toString());
     _selectedActivity = current.activityLevel;
+
+    _fetchCurrentProfileFromBackend();
+  }
+
+  Future<void> _fetchCurrentProfileFromBackend() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final profile = await authRepo.getPatientProfile();
+      final h = (profile['height_cm'] as num?)?.toDouble();
+      final w = (profile['weight_kg'] as num?)?.toDouble();
+      final act = profile['physical_activity_level'] as String?;
+      final target = (profile['daily_calorie_target'] as num?)?.toInt();
+
+      if (mounted) {
+        if (h != null && h > 0) {
+          _heightController.text = h.toInt().toString();
+        }
+        if (w != null && w > 0) {
+          _weightController.text = w.toInt().toString();
+        }
+        if (act != null && act.isNotEmpty) {
+          setState(() {
+            _selectedActivity = act;
+          });
+        }
+        if (h != null || w != null) {
+          ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
+                heightCm: h ?? 170,
+                weightKg: w ?? 65,
+                activityLevel: act ?? _selectedActivity,
+                calculatedTdee: target,
+              );
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -49,7 +87,8 @@ class _EditBodyMetricsScreenState
     super.dispose();
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     final height = double.tryParse(_heightController.text) ?? 0;
@@ -67,14 +106,56 @@ class _EditBodyMetricsScreenState
       return;
     }
 
-    ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
-          heightCm: height,
-          weightKg: weight,
-          activityLevel: _selectedActivity,
-        );
+    setState(() {
+      _isLoading = true;
+    });
 
-    // Navigate to RecalculateResultScreen
-    context.push(RouteNames.recalculateResult);
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final currentProfile = await authRepo.getPatientProfile();
+      final fullName = (currentProfile['full_name'] as String?) ?? 'Pasien';
+      final nickname = (currentProfile['nickname'] as String?) ?? '';
+      final whatsappNumber = (currentProfile['whatsapp_number'] as String?) ?? '081234567890';
+
+      final updatedResp = await authRepo.updatePatientProfile(
+        fullName: fullName,
+        nickname: nickname,
+        whatsappNumber: whatsappNumber,
+        heightCm: height,
+        weightKg: weight,
+        activityLevel: _selectedActivity,
+      );
+
+      final int newCalorieTarget =
+          (updatedResp['daily_calorie_target'] as num?)?.toInt() ?? 2000;
+      final bmi = (updatedResp['bmi'] as num?)?.toDouble();
+      final bmiCategory = updatedResp['bmi_category'] as String?;
+      final recommendations = updatedResp['recommendations'] as Map<String, dynamic>?;
+
+      ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
+            heightCm: height,
+            weightKg: weight,
+            activityLevel: _selectedActivity,
+            calculatedTdee: newCalorieTarget,
+            bmiVal: bmi,
+            bmiCatVal: bmiCategory,
+            recommendations: recommendations,
+          );
+
+      if (mounted) {
+        context.push(RouteNames.recalculateResult);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(context, e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -222,7 +303,8 @@ class _EditBodyMetricsScreenState
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.page),
                 child: SaveButton(
-                  onPressed: _onSave,
+                  onPressed: _isLoading ? null : _onSave,
+                  isLoading: _isLoading,
                 ),
               ),
             ],

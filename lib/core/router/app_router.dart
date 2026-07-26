@@ -12,6 +12,7 @@ import '../../features/notifications/views/notifications_screen.dart';
 import '../../features/onboarding/views/account_created_success_screen.dart';
 import '../../features/onboarding/views/daily_routine_setup_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
+import '../../features/onboarding/views/registration_welcome_screen.dart';
 import '../../features/settings/views/about_screen.dart';
 import '../../features/settings/views/edit_body_metrics_screen.dart';
 import '../../features/settings/views/help_center_screen.dart';
@@ -65,6 +66,15 @@ final GoRouter appRouter = GoRouter(
     ),
 
     // ── Onboarding ────────────────────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.registrationWelcome,
+      name: 'registration-welcome',
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const RegistrationWelcomeScreen(),
+      ),
+    ),
+
     // Each step is a separate GoRoute for deep-linkability.
     for (int step = 1; step <= AppConstants.totalOnboardingSteps; step++)
       GoRoute(

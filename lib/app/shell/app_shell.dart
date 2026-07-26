@@ -29,18 +29,20 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _screens;
+  Widget _buildScreen(int index) {
+    return switch (index) {
+      0 => HomeView(key: const ValueKey('home'), nowOverride: widget.nowOverride),
+      1 => const RecordView(key: ValueKey('record')),
+      2 => const EducationScreen(key: ValueKey('education')),
+      3 => const QuestionnaireScreen(key: ValueKey('questionnaire')),
+      4 => const SettingsScreen(key: ValueKey('settings')),
+      _ => const SizedBox(),
+    };
+  }
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      HomeView(nowOverride: widget.nowOverride),
-      const RecordView(),
-      const EducationScreen(),
-      const QuestionnaireScreen(),
-      const SettingsScreen(),
-    ];
   }
 
   void _openCalendarHistoryBottomSheet() {
@@ -108,7 +110,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 duration: const Duration(milliseconds: 300),
                 child: KeyedSubtree(
                   key: ValueKey<int>(_selectedIndex),
-                  child: _screens[_selectedIndex],
+                  child: _buildScreen(_selectedIndex),
                 ),
               ),
             ),

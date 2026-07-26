@@ -10,23 +10,57 @@ import '../dashboard/widgets/weekly_summary_section.dart';
 import '../history/widgets/calendar_history_bottom_sheet.dart';
 import '../reminders/widgets/reminder_section.dart';
 
-class HomeView extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/router/route_names.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../data/repositories/auth_repository.dart';
+import '../blood_sugar/widgets/blood_sugar_card.dart';
+import '../dashboard/widgets/daily_calories_card.dart';
+import '../dashboard/widgets/weekly_calendar_card.dart';
+import '../dashboard/widgets/weekly_summary_section.dart';
+import '../history/widgets/calendar_history_bottom_sheet.dart';
+import '../reminders/widgets/reminder_section.dart';
+
+class HomeView extends ConsumerStatefulWidget {
   const HomeView({super.key, this.nowOverride});
 
   final DateTime? nowOverride;
 
   @override
-  State<HomeView> createState() => _HomeViewState();
+  ConsumerState<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
+class _HomeViewState extends ConsumerState<HomeView> {
   late DateTime _selectedDate;
+  int _targetCalorieFromBackend = 2000;
+  bool _isLoadingProfile = true;
 
   @override
   void initState() {
     super.initState();
-    // Default to July 23, 2026 (Thursday) as our mock "Today" timeline base
-    _selectedDate = widget.nowOverride ?? DateTime(2026, 7, 23);
+    _selectedDate = widget.nowOverride ?? DateTime.now();
+    _fetchPatientProfile();
+  }
+
+  Future<void> _fetchPatientProfile() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final profile = await authRepo.getPatientProfile();
+      final target = (profile['daily_calorie_target'] as num?)?.toInt();
+      if (mounted && target != null && target > 0) {
+        setState(() {
+          _targetCalorieFromBackend = target;
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
+    }
   }
 
   WeeklyDayState _resolveDayState(DateTime date, DateTime now) {
@@ -150,7 +184,7 @@ class _HomeViewState extends State<HomeView> {
       _ => 0,
     };
 
-    const int target = 2100;
+    final int target = _targetCalorieFromBackend;
     final int remaining = target - consumed;
 
     // Resolve Helper Text/Banner Message

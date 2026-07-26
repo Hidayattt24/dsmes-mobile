@@ -12,15 +12,54 @@ import '../data/settings_mock_data.dart';
 import '../viewmodels/settings_notifier.dart';
 import '../widgets/bmi_summary_card.dart';
 import '../widgets/body_metric_card.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 
 /// Primary Settings / Profile Screen matching HTML reference design.
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _fetchLatestProfile();
+  }
+
+  Future<void> _fetchLatestProfile() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final profile = await authRepo.getPatientProfile();
+      final h = (profile['height_cm'] as num?)?.toDouble();
+      final w = (profile['weight_kg'] as num?)?.toDouble();
+      final act = profile['physical_activity_level'] as String?;
+      final target = (profile['daily_calorie_target'] as num?)?.toInt();
+
+      final bmi = (profile['bmi'] as num?)?.toDouble();
+      final bmiCategory = profile['bmi_category'] as String?;
+      final recommendations = profile['recommendations'] as Map<String, dynamic>?;
+
+      if (mounted && (h != null || w != null)) {
+        ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
+              heightCm: h ?? 170,
+              weightKg: w ?? 65,
+              activityLevel: act ?? 'Ringan',
+              calculatedTdee: target,
+              bmiVal: bmi,
+              bmiCatVal: bmiCategory,
+              recommendations: recommendations,
+            );
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final metrics = ref.watch(bodyMetricsProvider);
 
     return Scaffold(

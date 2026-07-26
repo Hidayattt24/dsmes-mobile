@@ -93,11 +93,30 @@ class _CalorieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final res = state.calorieResult;
-    final int tdee = res != null ? (res['tdee'] as num?)?.toInt() ?? 2150 : 2150;
-    final rec = res?['recommendedCalories'] as Map<String, dynamic>?;
-    final int weightLoss = rec != null ? (rec['weightLoss'] as num?)?.toInt() ?? (tdee - 500) : (tdee - 500);
-    final int maintenance = rec != null ? (rec['maintenance'] as num?)?.toInt() ?? tdee : tdee;
-    final int weightGain = rec != null ? (rec['weightGain'] as num?)?.toInt() ?? (tdee + 500) : (tdee + 500);
+    final int tdee = res != null
+        ? ((res['daily_calorie_target'] as num?)?.toInt() ?? (res['tdee'] as num?)?.toInt() ?? 2150)
+        : 2150;
+    final rec = res?['recommendations'] as Map<String, dynamic>?;
+
+    Map<String, dynamic> getRecDetail(String key) {
+      if (rec != null && rec.containsKey(key)) {
+        final val = rec[key];
+        if (val is Map) {
+          return Map<String, dynamic>.from(val);
+        }
+      }
+      return {};
+    }
+
+    final maintainData = getRecDetail('maintain');
+    final mildLossData = getRecDetail('mild_loss');
+    final weightLossData = getRecDetail('weight_loss');
+    final extremeLossData = getRecDetail('extreme_loss');
+
+    final maintainCal = maintainData['calories'] as int? ?? tdee;
+    final mildCal = mildLossData['calories'] as int? ?? (tdee - 250);
+    final weightCal = weightLossData['calories'] as int? ?? (tdee - 500);
+    final extremeCal = extremeLossData['calories'] as int? ?? (tdee - 1000);
 
     final formatter = NumberFormat('#,###', 'id_ID');
 
@@ -140,6 +159,35 @@ class _CalorieCard extends StatelessWidget {
               color: AppColors.onPrimary.withValues(alpha: 0.85),
             ),
           ),
+          if (res != null && (res.containsKey('bmi') || res.containsKey('bmi_category'))) ...[
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.speed_rounded,
+                    color: AppColors.onPrimary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'BMI: ${(res['bmi'] as num?)?.toStringAsFixed(1) ?? ''} • ${res['bmi_category'] ?? ''}',
+                    style: AppTextStyles.labelMd.copyWith(
+                      color: AppColors.onPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           Container(
             width: 48,
@@ -164,30 +212,30 @@ class _CalorieCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: Column(
               children: [
-                _TargetCalorieColumn(
-                  label: 'Turun BB',
-                  calories: '${formatter.format(weightLoss)} kcal',
+                _TargetCalorieRow(
+                  label: 'Pertahankan BB',
+                  calories: '${formatter.format(maintainCal)} kcal/hari',
+                  percentage: '100%',
                 ),
-                Container(
-                  height: 30,
-                  width: 1,
-                  color: Colors.white.withValues(alpha: 0.3),
+                const Divider(color: Colors.white24, height: 16),
+                _TargetCalorieRow(
+                  label: 'Turun BB Ringan',
+                  calories: '${formatter.format(mildCal)} kcal/hari',
+                  percentage: '${mildLossData['percentage'] ?? 90}%',
                 ),
-                _TargetCalorieColumn(
-                  label: 'Pemeliharaan',
-                  calories: '${formatter.format(maintenance)} kcal',
+                const Divider(color: Colors.white24, height: 16),
+                _TargetCalorieRow(
+                  label: 'Turun BB Sedang',
+                  calories: '${formatter.format(weightCal)} kcal/hari',
+                  percentage: '${weightLossData['percentage'] ?? 80}%',
                 ),
-                Container(
-                  height: 30,
-                  width: 1,
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-                _TargetCalorieColumn(
-                  label: 'Naik BB',
-                  calories: '${formatter.format(weightGain)} kcal',
+                const Divider(color: Colors.white24, height: 16),
+                _TargetCalorieRow(
+                  label: 'Turun BB Ekstrem',
+                  calories: '${formatter.format(extremeCal)} kcal/hari',
+                  percentage: '${extremeLossData['percentage'] ?? 60}%',
                 ),
               ],
             ),
@@ -198,33 +246,56 @@ class _CalorieCard extends StatelessWidget {
   }
 }
 
-class _TargetCalorieColumn extends StatelessWidget {
-  const _TargetCalorieColumn({
+class _TargetCalorieRow extends StatelessWidget {
+  const _TargetCalorieRow({
     required this.label,
     required this.calories,
+    required this.percentage,
   });
 
   final String label;
   final String calories;
+  final String percentage;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.labelMd.copyWith(
-            color: AppColors.onPrimary.withValues(alpha: 0.85),
-            fontSize: 11,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: AppTextStyles.labelMd.copyWith(
+                color: AppColors.onPrimary.withValues(alpha: 0.85),
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              calories,
+              style: AppTextStyles.labelLg.copyWith(
+                color: AppColors.onPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 2),
-        Text(
-          calories,
-          style: AppTextStyles.labelLg.copyWith(
-            color: AppColors.onPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            percentage,
+            style: AppTextStyles.labelMd.copyWith(
+              color: AppColors.onPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
           ),
         ),
       ],

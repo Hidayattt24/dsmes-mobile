@@ -123,12 +123,36 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
     state = state.copyWith(activityLevel: level);
   }
 
-  // ── Step 13: Calculate Calories ───────────────────────────────────────────
+  // ── Step 6: Submit Account Registration ──────────────────────────────────
 
-  Future<bool> calculateCaloriesFromBackend() async {
+  Future<bool> finishAccountRegistration() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final res = await ref.read(authRepositoryProvider).calculateCalories(state);
+      await ref.read(authRepositoryProvider).register(state);
+      state = state.copyWith(isLoading: false);
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal membuat akun. Silakan coba lagi.',
+      );
+      return false;
+    }
+  }
+
+  // ── Step 13: Submit Health Profile Setup & Calculate Summary ─────────────
+
+  Future<bool> setupHealthProfileFromBackend() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final res =
+          await ref.read(authRepositoryProvider).setupHealthProfile(state);
       state = state.copyWith(
         calorieResult: res,
         isLoading: false,
@@ -143,29 +167,9 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Gagal menghitung kalori. Silakan coba lagi.',
+        errorMessage: 'Gagal menyimpan profil kesehatan. Silakan coba lagi.',
       );
       return false;
-    }
-  }
-
-  // ── Step 14: Submit Account ────────────────────────────────────────────────
-
-  Future<void> finishOnboarding() async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      await ref.read(authRepositoryProvider).register(state);
-      state = state.copyWith(isLoading: false);
-    } on ApiException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Gagal membuat akun. Silakan coba lagi.',
-      );
     }
   }
 }

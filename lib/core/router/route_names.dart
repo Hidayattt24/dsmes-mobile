@@ -12,6 +12,7 @@ abstract final class RouteNames {
   static const String signup = '/onboarding/1';
 
   static const String home = '/home';
+  static const String registrationWelcome = '/onboarding/welcome';
   static const String dailyRoutineSetup = '/daily-routine-setup';
   static const String accountCreatedSuccess = '/account-created-success';
   static const String notifications = '/notifications';
