@@ -97,7 +97,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                   ],
                 ),
                 child: const Icon(
-                  Icons.auto_awesome_rounded,
+                  Icons.medical_services_rounded,
                   color: Colors.white,
                   size: 20,
                 ),
@@ -205,7 +205,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
               ],
             ),
             child: const Icon(
-              Icons.auto_awesome_rounded,
+              Icons.medical_services_rounded,
               size: 36,
               color: AppColors.primary,
             ),
@@ -368,7 +368,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                 ),
               ),
               child: const Icon(
-                Icons.auto_awesome_rounded,
+                Icons.medical_services_rounded,
                 color: Colors.white,
                 size: 16,
               ),
@@ -435,7 +435,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
               ),
             ),
             child: const Icon(
-              Icons.auto_awesome_rounded,
+              Icons.medical_services_rounded,
               color: Colors.white,
               size: 16,
             ),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../models/questionnaire.dart';
+import '../models/questionnaire_detail_model.dart';
 
 class QuestionnaireCard extends StatelessWidget {
   const QuestionnaireCard({
@@ -12,27 +12,19 @@ class QuestionnaireCard extends StatelessWidget {
     required this.onStartTap,
     required this.onViewResultTap,
     this.onReadMaterialTap,
+    this.isCompleted = false,
+    this.scorePercentage,
   });
 
-  final Questionnaire questionnaire;
+  final QuestionnaireDetailModel questionnaire;
   final VoidCallback onStartTap;
   final VoidCallback onViewResultTap;
   final VoidCallback? onReadMaterialTap;
-
-  IconData _getIconData(String iconName) {
-    return switch (iconName) {
-      'fitness_center' => Icons.fitness_center_rounded,
-      'check_circle' => Icons.check_circle_rounded,
-      'medication' => Icons.medication_rounded,
-      'water_drop' => Icons.water_drop_rounded,
-      _ => Icons.menu_book_rounded,
-    };
-  }
+  final bool isCompleted;
+  final int? scorePercentage;
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = questionnaire.isCompleted;
-
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -53,7 +45,7 @@ class QuestionnaireCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon Badge Container
+              // Icon Badge
               Container(
                 width: 48,
                 height: 48,
@@ -64,7 +56,9 @@ class QuestionnaireCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  _getIconData(questionnaire.iconName),
+                  questionnaire.isPreTest
+                      ? Icons.assignment_turned_in_rounded
+                      : Icons.quiz_rounded,
                   color: isCompleted
                       ? const Color(0xFF07521D)
                       : AppColors.outline,
@@ -85,52 +79,40 @@ class QuestionnaireCard extends StatelessWidget {
                           child: Text(
                             questionnaire.title,
                             style: AppTextStyles.headlineMd.copyWith(
-                              fontSize: 18,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                               color: AppColors.onSurface,
                             ),
                           ),
                         ),
-                        if (isCompleted && questionnaire.scorePercentage != null)
+                        if (isCompleted && scorePercentage != null)
                           Text(
-                            'Skor: ${questionnaire.scorePercentage!.toInt()}%',
+                            '$scorePercentage',
                             style: AppTextStyles.headlineMd.copyWith(
-                              fontSize: 16,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
 
-                    // Badges Row
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        _buildChip(
-                          text: questionnaire.category,
-                          bgColor: AppColors.surfaceContainerLow,
-                          textColor: AppColors.onSurfaceVariant,
-                        ),
-                        if (questionnaire.educationStatus != null)
-                          _buildChip(
-                            text: questionnaire.educationStatus!,
-                            bgColor: isCompleted
-                                ? const Color(0xFFABF4AC)
-                                : AppColors.surfaceContainerLow,
-                            textColor: isCompleted
-                                ? const Color(0xFF07521D)
-                                : AppColors.onSurfaceVariant,
-                          ),
-                      ],
+                    // Type badge
+                    _buildChip(
+                      text: questionnaire.isPreTest ? 'PRE-TEST' : 'POST-TEST',
+                      bgColor: questionnaire.isPreTest
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.secondary.withValues(alpha: 0.1),
+                      textColor: questionnaire.isPreTest
+                          ? AppColors.primary
+                          : AppColors.secondary,
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: 6),
 
                     // Meta Text
                     Text(
-                      '${questionnaire.questionCount} Pertanyaan • ${questionnaire.estimatedMinutes} Menit',
+                      '${questionnaire.questionCount} Pertanyaan',
                       style: AppTextStyles.bodyMd.copyWith(
                         fontSize: 13,
                         color: AppColors.onSurfaceVariant,
@@ -180,22 +162,19 @@ class QuestionnaireCard extends StatelessWidget {
                   ),
                 ),
                 onPressed: onStartTap,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Mulai Kuesioner',
-                      style: AppTextStyles.poppinsButton.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  questionnaire.isPreTest
+                      ? 'Mulai Pre-Test'
+                      : 'Mulai Post-Test',
+                  style: AppTextStyles.poppinsButton.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
 
-          // Secondary Action / Subtext Caption
+          // Secondary action for post-test
           if (!isCompleted && onReadMaterialTap != null) ...[
             const SizedBox(height: 8),
             Center(
@@ -209,16 +188,6 @@ class QuestionnaireCard extends StatelessWidget {
                     decoration: TextDecoration.underline,
                   ),
                 ),
-              ),
-            ),
-          ] else if (!isCompleted) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Anda dapat langsung mengerjakan kuesioner atau membaca materi edukasi terlebih dahulu.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMd.copyWith(
-                fontSize: 11,
-                color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],

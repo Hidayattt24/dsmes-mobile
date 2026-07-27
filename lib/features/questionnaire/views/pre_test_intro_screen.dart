@@ -1,0 +1,453 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../models/questionnaire_detail_model.dart';
+import '../viewmodels/questionnaire_notifier.dart';
+import 'questionnaire_questions_screen.dart';
+
+class PreTestIntroScreen extends ConsumerWidget {
+  const PreTestIntroScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preTestAsync = ref.watch(activePreTestProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: preTestAsync.when(
+        loading: () => const _PreTestLoadingSkeleton(),
+        error: (err, _) => _PreTestErrorView(
+          message: err.toString().replaceFirst('Exception: ', ''),
+          onRetry: () => ref.read(activePreTestProvider.notifier).refresh(),
+        ),
+        data: (preTest) => _PreTestIntroContent(preTest: preTest),
+      ),
+    );
+  }
+}
+
+// ── Content ──────────────────────────────────────────────────────────────────
+
+class _PreTestIntroContent extends StatelessWidget {
+  const _PreTestIntroContent({required this.preTest});
+
+  final QuestionnaireDetailModel preTest;
+
+  @override
+  Widget build(BuildContext context) {
+    final questionCount = preTest.questionCount;
+
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.page,
+                vertical: AppSpacing.lg,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Hero illustration ──────────────────────────────────
+                  Center(
+                    child: Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.assignment_turned_in_rounded,
+                        size: 72,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // ── Title ──────────────────────────────────────────────
+                  Text(
+                    'Selamat Datang di DSMES',
+                    style: AppTextStyles.headlineLg.copyWith(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // ── Subtitle ───────────────────────────────────────────
+                  Text(
+                    'Sebelum mulai menggunakan aplikasi DSMES, '
+                    'silakan mengerjakan Pre-Test terlebih dahulu.',
+                    style: AppTextStyles.bodyLg.copyWith(
+                      fontSize: 16,
+                      color: AppColors.onSurfaceVariant,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // ── Info card ──────────────────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.info_outline_rounded,
+                                size: 20,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Tentang Pre-Test Ini',
+                              style: AppTextStyles.labelLg.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          preTest.description.isNotEmpty
+                              ? preTest.description
+                              : 'Pre-Test ini hanya dilakukan satu kali dan bertujuan untuk mengetahui tingkat pengetahuan awal Anda mengenai pengelolaan Diabetes sebelum menggunakan aplikasi DSMES.',
+                          style: AppTextStyles.bodyMd.copyWith(
+                            fontSize: 14,
+                            color: AppColors.onSurfaceVariant,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // ── Quick stats ────────────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatChip(
+                          icon: Icons.quiz_rounded,
+                          label: '$questionCount Pertanyaan',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: _StatChip(
+                          icon: Icons.lock_clock_rounded,
+                          label: 'Hanya 1 Kali',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Row(
+                    children: [
+                      Expanded(
+                        child: _StatChip(
+                          icon: Icons.check_circle_outline_rounded,
+                          label: 'Wajib Diisi',
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: _StatChip(
+                          icon: Icons.bar_chart_rounded,
+                          label: 'Nilai dari Backend',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // ── Warning banner ─────────────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF815300).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFF613E00).withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 22,
+                          color: Color(0xFF613E00),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Pre-Test harus diselesaikan dalam satu sesi. '
+                            'Tidak dapat dilewati atau ditunda.',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontSize: 13,
+                              color: AppColors.onSurfaceVariant,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── CTA button (fixed bottom) ──────────────────────────────────
+          Container(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              AppSpacing.md,
+              AppSpacing.page,
+              AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                ),
+              ),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => QuestionnaireQuestionsScreen(
+                        questionnaire: preTest,
+                        isPreTest: true,
+                      ),
+                    ),
+                  );
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.play_arrow_rounded,
+                        size: 24, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mulai Pre-Test',
+                      style: AppTextStyles.poppinsButton.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stat chip ─────────────────────────────────────────────────────────────────
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 16, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.labelMd.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Loading skeleton ──────────────────────────────────────────────────────────
+
+class _PreTestLoadingSkeleton extends StatelessWidget {
+  const _PreTestLoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.page),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: AppSpacing.xl),
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            _shimmer(width: double.infinity, height: 32),
+            const SizedBox(height: 12),
+            _shimmer(width: double.infinity, height: 20),
+            const SizedBox(height: 8),
+            _shimmer(width: 200, height: 20),
+            const SizedBox(height: AppSpacing.xl),
+            _shimmer(width: double.infinity, height: 120),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmer({required double width, required double height}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+}
+
+// ── Error view ────────────────────────────────────────────────────────────────
+
+class _PreTestErrorView extends StatelessWidget {
+  const _PreTestErrorView({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.page),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
+              size: 72,
+              color: AppColors.outline,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Gagal Memuat Pre-Test',
+              style: AppTextStyles.headlineMd.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message.isNotEmpty
+                  ? message
+                  : 'Tidak dapat memuat Pre-Test. Periksa koneksi internet Anda.',
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            SizedBox(
+              width: 200,
+              height: 48,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(
+                  'Coba Lagi',
+                  style: AppTextStyles.poppinsButton.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

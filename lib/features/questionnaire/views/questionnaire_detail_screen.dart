@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../education/views/education_detail_screen.dart';
-import '../data/questionnaire_mock_data.dart';
-import '../models/questionnaire.dart';
+import '../models/questionnaire_detail_model.dart';
 import 'questionnaire_questions_screen.dart';
 
-class QuestionnaireDetailScreen extends StatelessWidget {
+/// Displays detail info & instructions about a questionnaire (Pre-Test or Post-Test)
+/// before the patient begins answering.
+class QuestionnaireDetailScreen extends ConsumerWidget {
   const QuestionnaireDetailScreen({
     super.key,
-    required this.questionnaireId,
+    required this.questionnaire,
   });
 
-  final String questionnaireId;
+  final QuestionnaireDetailModel questionnaire;
 
   @override
-  Widget build(BuildContext context) {
-    final Questionnaire questionnaire =
-        MockQuestionnaireData.getQuestionnaireById(questionnaireId);
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -32,7 +30,7 @@ class QuestionnaireDetailScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Detail Kuesioner',
+          'Detail & Instruksi Kuesioner',
           style: AppTextStyles.headlineMd.copyWith(
             color: AppColors.onSurface,
             fontWeight: FontWeight.bold,
@@ -40,508 +38,390 @@ class QuestionnaireDetailScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.page,
-          vertical: AppSpacing.lg,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hero Image Banner (Height 192px with 24px rounded corners)
-            Container(
-              width: double.infinity,
-              height: 192,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryContainer.withValues(alpha: 0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Image.network(
-                        questionnaire.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.primaryContainer,
-                          child: const Icon(
-                            Icons.quiz_rounded,
-                            size: 64,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.5),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(
+              left: AppSpacing.page,
+              right: AppSpacing.page,
+              top: AppSpacing.lg,
+              bottom: 130,
             ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Category Pill & Title
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                ),
-              ),
-              child: Text(
-                questionnaire.category,
-                style: AppTextStyles.labelMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              questionnaire.title,
-              style: AppTextStyles.headlineLg.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Stats Grid (2 Columns, 5 Items)
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 2.5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatTile(
-                  icon: Icons.check_circle_rounded,
-                  iconColor: AppColors.secondary,
-                  label: 'Status',
-                  value: questionnaire.isCompleted ? 'Sudah Dibaca' : 'Belum Dibaca',
-                  valueColor: AppColors.secondary,
-                ),
-                _buildStatTile(
-                  icon: Icons.list_alt_rounded,
-                  iconColor: AppColors.primary,
-                  label: 'Soal',
-                  value: '${questionnaire.questionCount} Pertanyaan',
-                ),
-                _buildStatTile(
-                  icon: Icons.schedule_rounded,
-                  iconColor: AppColors.primary,
-                  label: 'Estimasi',
-                  value: '${questionnaire.estimatedMinutes} Menit',
-                ),
-                _buildStatTile(
-                  icon: Icons.trending_up_rounded,
-                  iconColor: AppColors.primary,
-                  label: 'Kesulitan',
-                  value: questionnaire.difficulty,
-                ),
-                _buildStatTile(
-                  icon: Icons.menu_book_rounded,
-                  iconColor: AppColors.primary,
-                  label: 'Materi',
-                  value: questionnaire.isEducationCompleted ? 'Sudah Dibaca' : 'Belum Dibaca',
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // About Description Card
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryContainer.withValues(alpha: 0.04),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                // ── Type badge ──────────────────────────────────────────
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: questionnaire.isPreTest
+                        ? AppColors.primary.withValues(alpha: 0.1)
+                        : AppColors.secondary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(
+                      color: questionnaire.isPreTest
+                          ? AppColors.primary.withValues(alpha: 0.3)
+                          : AppColors.secondary.withValues(alpha: 0.3),
+                    ),
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tentang Kuesioner Ini',
-                    style: AppTextStyles.headlineMd.copyWith(
-                      fontSize: 18,
+                  child: Text(
+                    questionnaire.isPreTest
+                        ? 'PRE-TEST EVALUASI'
+                        : 'POST-TEST EDUKASI',
+                    style: AppTextStyles.labelMd.copyWith(
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    questionnaire.description,
-                    style: AppTextStyles.bodyLg.copyWith(
-                      fontSize: 15,
-                      color: AppColors.onSurfaceVariant,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Pre-start Tip Box (Teal border)
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.lightbulb_rounded,
-                              size: 20,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Sebelum Memulai',
-                              style: AppTextStyles.labelLg.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Kami menyarankan Anda membaca materi edukasi terlebih dahulu agar lebih memahami topik yang akan diujikan.',
-                          style: AppTextStyles.bodyMd.copyWith(
-                            fontSize: 13,
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-
-                  // Session Rule Box (Tertiary orange border)
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF815300).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF613E00).withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 20,
-                              color: Color(0xFF613E00),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Aturan Sesi',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF613E00),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Kuesioner harus diselesaikan dalam satu sesi. Jika keluar sebelum selesai, jawaban yang belum dikirim tidak akan disimpan.',
-                          style: AppTextStyles.bodyMd.copyWith(
-                            fontSize: 13,
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Primary & Secondary Action Buttons
-            Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      // Navigate to Page 3: Questionnaire Questions Screen
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => QuestionnaireQuestionsScreen(
-                            questionnaireId: questionnaire.id,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.play_arrow_rounded, size: 24, color: Colors.white),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Mulai Kuesioner',
-                          style: AppTextStyles.poppinsButton.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                      color: questionnaire.isPreTest
+                          ? AppColors.primary
+                          : AppColors.secondary,
                     ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const EducationDetailScreen(articleId: 'art_featured'),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.menu_book_rounded, size: 20, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Baca Materi Edukasi',
-                          style: AppTextStyles.poppinsButton.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
 
-            // Progress Pembelajaran Checklist
-            Text(
-              'Progress Pembelajaran',
-              style: AppTextStyles.headlineMd.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            questionnaire.isEducationCompleted
-                                ? Icons.check_circle_rounded
-                                : Icons.radio_button_unchecked_rounded,
-                            size: 20,
-                            color: questionnaire.isEducationCompleted
-                                ? AppColors.secondary
-                                : AppColors.outline,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Materi Edukasi',
-                            style: AppTextStyles.bodyMd.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        questionnaire.isEducationCompleted ? 'Sudah Dibaca' : 'Belum Dibaca',
-                        style: AppTextStyles.labelMd.copyWith(
-                          fontSize: 12,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                // ── Title & Description ─────────────────────────────────
+                Text(
+                  questionnaire.title,
+                  style: AppTextStyles.headlineLg.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
                   ),
-                  const Divider(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            questionnaire.isCompleted
-                                ? Icons.check_circle_rounded
-                                : Icons.radio_button_unchecked_rounded,
-                            size: 20,
-                            color: questionnaire.isCompleted
-                                ? AppColors.secondary
-                                : AppColors.outline,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Kuesioner',
-                            style: AppTextStyles.bodyMd.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        questionnaire.isCompleted ? 'Selesai' : 'Belum Dimulai',
-                        style: AppTextStyles.labelMd.copyWith(
-                          fontSize: 12,
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                ),
+                if (questionnaire.description.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    questionnaire.description,
+                    style: AppTextStyles.bodyLg.copyWith(
+                      fontSize: 14,
+                      color: AppColors.onSurfaceVariant,
+                      height: 1.5,
+                    ),
                   ),
                 ],
-              ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── Info chips ──────────────────────────────────────────
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _InfoChip(
+                      icon: Icons.quiz_rounded,
+                      label: '${questionnaire.questionCount} Pertanyaan',
+                    ),
+                    if (questionnaire.difficulty != null)
+                      _InfoChip(
+                        icon: Icons.bar_chart_rounded,
+                        label: questionnaire.difficulty!,
+                      ),
+                    if (questionnaire.passingScore != null)
+                      _InfoChip(
+                        icon: Icons.grade_rounded,
+                        label: 'Nilai Lulus: ${questionnaire.passingScore}%',
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── Instructions Banner ──────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded,
+                              color: AppColors.primary, size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'Petunjuk & Instruksi Pengerjaan',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _InstructionPoint(
+                        number: '1',
+                        text: 'Bacalah setiap pertanyaan dengan saksama.',
+                      ),
+                      const SizedBox(height: 8),
+                      _InstructionPoint(
+                        number: '2',
+                        text:
+                            'Pilihlah salah satu jawaban yang paling tepat menurut Anda.',
+                      ),
+                      const SizedBox(height: 8),
+                      _InstructionPoint(
+                        number: '3',
+                        text:
+                            'Nilai dan pembahasan jawaban akan ditampilkan secara otomatis setelah Anda menekan tombol Selesai.',
+                      ),
+                      const SizedBox(height: 8),
+                      _InstructionPoint(
+                        number: '4',
+                        text: questionnaire.isPreTest
+                            ? 'Pre-Test ini wajib diselesaikan 1x sebelum menggunakan aplikasi.'
+                            : 'Anda dapat mengerjakan ulang Post-Test ini kapan saja untuk mengasah pemahaman.',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── Question Categories Section (Pre-Test Only) ─────────────────
+                if (questionnaire.isPreTest && questionnaire.categories.isNotEmpty) ...[
+                  Text(
+                    'Kategori Pertanyaan',
+                    style: AppTextStyles.headlineMd.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  for (final cat in questionnaire.categories)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _CategoryRow(
+                        title: cat.title,
+                        questionCount: cat.questions.length,
+                        description: cat.description,
+                      ),
+                    ),
+                ],
+              ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            Center(
-              child: Text(
-                'Anda tetap dapat mengerjakan kuesioner meskipun belum membaca materi edukasi.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontSize: 12,
-                  color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+
+          // ── Fixed Bottom CTA Button ─────────────────────────────────
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.page,
+                AppSpacing.md,
+                AppSpacing.page,
+                AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surface.withValues(alpha: 0.97),
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => QuestionnaireQuestionsScreen(
+                          questionnaire: questionnaire,
+                          isPreTest: questionnaire.isPreTest,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded,
+                      color: Colors.white, size: 22),
+                  label: Text(
+                    'Mulai Mengerjakan',
+                    style: AppTextStyles.poppinsButton.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatTile({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-    Color? valueColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.outlineVariant.withValues(alpha: 0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryContainer.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Instruction Point Widget ──────────────────────────────────────────────────
+
+class _InstructionPoint extends StatelessWidget {
+  const _InstructionPoint({required this.number, required this.text});
+
+  final String number;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.bodyMd.copyWith(
+              fontSize: 13,
+              color: AppColors.onSurface,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Info chip ─────────────────────────────────────────────────────────────────
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTextStyles.labelMd.copyWith(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Category row ──────────────────────────────────────────────────────────────
+
+class _CategoryRow extends StatelessWidget {
+  const _CategoryRow({
+    required this.title,
+    required this.questionCount,
+    required this.description,
+  });
+
+  final String title;
+  final int questionCount;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: iconColor),
-          const SizedBox(width: 8),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$questionCount',
+                style: AppTextStyles.headlineMd.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  label,
-                  style: AppTextStyles.labelMd.copyWith(
-                    fontSize: 11,
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  title,
                   style: AppTextStyles.bodyMd.copyWith(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: valueColor ?? AppColors.onSurface,
+                    color: AppColors.onSurface,
                   ),
                 ),
+                if (description.isNotEmpty)
+                  Text(
+                    description,
+                    style: AppTextStyles.bodyMd.copyWith(
+                      fontSize: 12,
+                      color: AppColors.outline,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),

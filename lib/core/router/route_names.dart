@@ -15,7 +15,9 @@ abstract final class RouteNames {
   static const String registrationWelcome = '/onboarding/welcome';
   static const String dailyRoutineSetup = '/daily-routine-setup';
   static const String accountCreatedSuccess = '/account-created-success';
+  static const String preTestIntro = '/pre-test-intro';
   static const String notifications = '/notifications';
+
   static const String bloodSugarEntry = '/blood-sugar-entry';
   static const String reminders = '/reminders';
 
@@ -30,7 +32,9 @@ abstract final class RouteNames {
   static const String nameHome = 'home';
   static const String nameDailyRoutineSetup = 'daily-routine-setup';
   static const String nameAccountCreatedSuccess = 'account-created-success';
+  static const String namePreTestIntro = 'pre-test-intro';
   static const String nameNotifications = 'notifications';
+
   static const String nameBloodSugarEntry = 'blood-sugar-entry';
   static const String nameReminders = 'reminders';
   static const String mealEntry = '/meal-entry';

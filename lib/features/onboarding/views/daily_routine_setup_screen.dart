@@ -550,7 +550,7 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
           final ok = await ref.read(dailyRoutineProvider.notifier).finishOnboarding();
           if (context.mounted) {
             if (ok) {
-              context.go(RouteNames.accountCreatedSuccess);
+              context.go(RouteNames.preTestIntro);
             } else {
               final currState = ref.read(dailyRoutineProvider);
               if (currState.errorMessage != null) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/shell/app_shell.dart';
@@ -14,6 +15,8 @@ import '../../features/onboarding/views/account_created_success_screen.dart';
 import '../../features/onboarding/views/daily_routine_setup_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
 import '../../features/onboarding/views/registration_welcome_screen.dart';
+import '../../features/questionnaire/viewmodels/questionnaire_notifier.dart';
+import '../../features/questionnaire/views/pre_test_intro_screen.dart';
 import '../../features/settings/views/about_screen.dart';
 import '../../features/settings/views/edit_body_metrics_screen.dart';
 import '../../features/settings/views/help_center_screen.dart';
@@ -26,18 +29,47 @@ import '../../features/welcome/views/welcome_screen.dart';
 import '../constants/app_constants.dart';
 import 'route_names.dart';
 
+/// Routes that do NOT require Pre-Test completion.
+const _publicRoutes = <String>{
+  RouteNames.welcome,
+  RouteNames.login,
+  RouteNames.forgotPassword,
+  RouteNames.registrationWelcome,
+  RouteNames.dailyRoutineSetup,
+  RouteNames.preTestIntro,
+  RouteNames.accountCreatedSuccess,
+};
+
 /// DSMES Aceh App Router.
 ///
 /// Configured via GoRouter with:
 /// - Named routes for type-safe navigation
 /// - Slide page transitions
-/// - Redirect logic placeholder for auth guard
+/// - Redirect guard to enforce mandatory Pre-Test before accessing /home
 ///
-/// Add [ProviderScope] aware redirect once auth state is wired.
-final GoRouter appRouter = GoRouter(
-  initialLocation: RouteNames.welcome,
-  debugLogDiagnostics: true,
-  routes: [
+/// Provided as a Riverpod [Provider] so that redirects can watch
+/// [hasCompletedPreTestProvider] and call [GoRouter.refresh] when
+/// pre-test state changes.
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final router = GoRouter(
+    initialLocation: RouteNames.welcome,
+    debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final preTestAsync = ref.read(hasCompletedPreTestProvider);
+
+      final location = state.uri.toString();
+
+      final isOnboarding = location.startsWith('/onboarding/');
+      if (_publicRoutes.contains(location) || isOnboarding) return null;
+
+      final completed = preTestAsync.valueOrNull;
+      if (completed == null) return null;
+
+      if (!completed) return RouteNames.preTestIntro;
+
+      return null;
+    },
+    routes: [
     // ── Welcome ───────────────────────────────────────────────────────────
     GoRoute(
       path: RouteNames.welcome,
@@ -94,6 +126,16 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _buildSlideTransition(
         state: state,
         child: const DailyRoutineSetupScreen(),
+      ),
+    ),
+
+    // ── Pre-Test Intro (mandatory after Daily Routine Setup) ────────────
+    GoRoute(
+      path: RouteNames.preTestIntro,
+      name: RouteNames.namePreTestIntro,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const PreTestIntroScreen(),
       ),
     ),
 
@@ -245,15 +287,20 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 
-  // Error page
-  errorPageBuilder: (context, state) => MaterialPage(
-    child: Scaffold(
-      body: Center(
-        child: Text('Halaman tidak ditemukan: ${state.uri}'),
+    // Error page
+    errorPageBuilder: (context, state) => MaterialPage(
+      child: Scaffold(
+        body: Center(
+          child: Text('Halaman tidak ditemukan: ${state.uri}'),
+        ),
       ),
     ),
-  ),
-);
+  );
+
+  ref.listen(hasCompletedPreTestProvider, (_, __) => router.refresh());
+
+  return router;
+});
 
 /// Slide-from-right page transition (consistent across all routes).
 CustomTransitionPage<void> _buildSlideTransition({
