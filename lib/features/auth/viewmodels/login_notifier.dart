@@ -77,8 +77,8 @@ class LoginNotifier extends Notifier<LoginFormState> {
   }
 
   /// Validates the form and performs login via AuthRepository.
-  Future<void> submit() async {
-    if (!formKey.currentState!.validate()) return;
+  Future<bool> submit() async {
+    if (!formKey.currentState!.validate()) return false;
 
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -89,16 +89,19 @@ class LoginNotifier extends Notifier<LoginFormState> {
           );
 
       state = state.copyWith(isLoading: false);
+      return true;
     } on ApiException catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: e.message,
       );
+      return false;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: AppStrings.errorGeneral,
       );
+      return false;
     }
   }
 }

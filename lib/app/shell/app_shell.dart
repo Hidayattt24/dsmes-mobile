@@ -13,6 +13,7 @@ import '../../features/home/views/home_view.dart';
 import '../../features/record/views/record_view.dart';
 import '../../features/home/history/widgets/calendar_history_bottom_sheet.dart';
 import '../../features/notifications/viewmodels/notifications_notifier.dart';
+import '../../features/ai_chat/widgets/floating_ai_chat_button.dart';
 import 'app_bottom_navigation.dart';
 import 'app_header.dart';
 
@@ -79,40 +80,51 @@ class _AppShellState extends ConsumerState<AppShell> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Shared Top Header (Persistent across primary navigation destinations)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.page,
-                AppSpacing.page,
-                AppSpacing.page,
-                0,
-              ),
-              child: AppHeader(
-                userName: 'Budi',
-                showGreeting: _selectedIndex == 0,
-                subtitle: _selectedIndex == 0 ? _getSubtitleForIndex(_selectedIndex) : null,
-                notificationCount: unreadNotificationCount,
-                onCalendarTap: _openCalendarHistoryBottomSheet,
-                onNotificationTap: () => context.push(RouteNames.notifications),
-                onProfileTap: () {
-                  setState(() {
-                    _selectedIndex = 4; // Switch to Profil tab
-                  });
-                },
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // Active Tab Page View
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: KeyedSubtree(
-                  key: ValueKey<int>(_selectedIndex),
-                  child: _buildScreen(_selectedIndex),
+            Column(
+              children: [
+                // Shared Top Header (Persistent across primary navigation destinations)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.page,
+                    AppSpacing.page,
+                    AppSpacing.page,
+                    0,
+                  ),
+                  child: AppHeader(
+                    userName: 'Budi',
+                    showGreeting: _selectedIndex == 0,
+                    subtitle: _selectedIndex == 0 ? _getSubtitleForIndex(_selectedIndex) : null,
+                    notificationCount: unreadNotificationCount,
+                    onCalendarTap: _openCalendarHistoryBottomSheet,
+                    onNotificationTap: () => context.push(RouteNames.notifications),
+                    onProfileTap: () {
+                      setState(() {
+                        _selectedIndex = 4; // Switch to Profil tab
+                      });
+                    },
+                  ),
                 ),
-              ),
+                const SizedBox(height: AppSpacing.md),
+                // Active Tab Page View
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: KeyedSubtree(
+                      key: ValueKey<int>(_selectedIndex),
+                      child: _buildScreen(_selectedIndex),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Global Floating AI Chat Assistant Widget (Consistent Bottom Right on all pages)
+            const Positioned(
+              right: AppSpacing.page,
+              bottom: AppSpacing.md,
+              child: FloatingAiChatButton(),
             ),
           ],
         ),

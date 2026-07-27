@@ -210,11 +210,11 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
                                       child: FilterChip(
                                         label: Text(opt),
                                         selected: isSelected,
-                                        selectedColor: AppColors.primaryContainer,
-                                        checkmarkColor: AppColors.primary,
+                                        selectedColor: AppColors.primary,
+                                        checkmarkColor: Colors.white,
                                         labelStyle: AppTextStyles.labelMd.copyWith(
                                           color: isSelected
-                                              ? AppColors.primary
+                                              ? Colors.white
                                               : AppColors.onSurfaceVariant,
                                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                         ),

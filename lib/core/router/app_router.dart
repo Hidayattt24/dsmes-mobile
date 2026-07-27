@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/shell/app_shell.dart';
+import '../../features/ai_chat/views/ai_chatbot_screen.dart';
 import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
 import '../../features/education/views/education_detail_screen.dart';
@@ -232,6 +233,14 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _buildSlideTransition(
         state: state,
         child: const AboutScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.aiChat,
+      name: RouteNames.nameAiChat,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const AiChatbotScreen(),
       ),
     ),
   ],

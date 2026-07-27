@@ -163,22 +163,55 @@ class MealEntryScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: [
-                        for (final food in filteredFoods) ...[
-                          FoodCard(
-                            food: food,
-                            isSelected: state.selectedFoodIds.contains(food.id),
-                            onAddPressed: () => _onFoodAddPressed(
-                              context,
-                              ref,
-                              food,
+                    child: filteredFoods.isEmpty
+                        ? Container(
+                            padding: const EdgeInsets.all(32),
+                            alignment: Alignment.center,
+                            child: Column(
+                              children: [
+                                const Icon(
+                                  Icons.restaurant_menu_rounded,
+                                  size: 48,
+                                  color: AppColors.outline,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Makanan tidak ditemukan',
+                                  style: AppTextStyles.labelLg.copyWith(
+                                    color: AppColors.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Coba kata kunci pencarian yang lain.',
+                                  style: AppTextStyles.bodyMd.copyWith(
+                                    color: AppColors.outline,
+                                  ),
+                                ),
+                              ],
                             ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: filteredFoods.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 16),
+                            itemBuilder: (context, index) {
+                              final food = filteredFoods[index];
+                              return FoodCard(
+                                food: food,
+                                isSelected:
+                                    state.selectedFoodIds.contains(food.id),
+                                onAddPressed: () => _onFoodAddPressed(
+                                  context,
+                                  ref,
+                                  food,
+                                ),
+                              );
+                            },
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 160),
                 ],

@@ -125,9 +125,8 @@ class LoginScreen extends ConsumerWidget {
                               isLoading: state.isLoading,
                               height: 54,
                               onPressed: () async {
-                                await notifier.submit();
-                                if (context.mounted &&
-                                    state.errorMessage == null) {
+                                final success = await notifier.submit();
+                                if (context.mounted && success) {
                                   context.go(RouteNames.home);
                                 }
                               },

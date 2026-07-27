@@ -624,7 +624,8 @@ class _RecordViewState extends State<RecordView> {
           ],
         ),
       ),
-      // Reduced, well-proportioned Floating Action Button (56x56)
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      // Reduced, well-proportioned Floating Action Button (56x56) on the left side
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: FloatingActionButton(
