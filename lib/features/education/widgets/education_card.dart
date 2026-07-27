@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_smart_image.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -43,26 +44,13 @@ class EducationCard extends StatelessWidget {
           child: Row(
             children: [
               // Thumbnail Image (96x96 px)
-              ClipRRect(
+              AppSmartImage(
+                imageUrl: article.imageUrl,
+                width: 96,
+                height: 96,
+                fit: BoxFit.cover,
                 borderRadius: BorderRadius.circular(20),
-                child: SizedBox(
-                  width: 96,
-                  height: 96,
-                  child: Image.network(
-                    article.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppColors.surfaceContainerHigh,
-                        child: const Icon(
-                          Icons.article_rounded,
-                          color: AppColors.outline,
-                          size: 32,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                fallbackIcon: Icons.article_rounded,
               ),
               const SizedBox(width: AppSpacing.md),
 

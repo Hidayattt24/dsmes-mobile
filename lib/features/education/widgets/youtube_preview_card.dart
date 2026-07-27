@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_smart_image.dart';
 
 class YouTubePreviewCard extends StatefulWidget {
   const YouTubePreviewCard({
@@ -12,6 +16,9 @@ class YouTubePreviewCard extends StatefulWidget {
     required this.channelName,
     required this.imageUrl,
     this.videoUrl,
+    this.isWatched = false,
+    this.onWatchProgress,
+    this.onVideoEnded,
   });
 
   final String videoTitle;
@@ -19,347 +26,329 @@ class YouTubePreviewCard extends StatefulWidget {
   final String channelName;
   final String imageUrl;
   final String? videoUrl;
+  final bool isWatched;
+
+  /// Called while video is playing.
+  /// [watchedSeconds] = total seconds watched, [lastTimestamp] = current position in seconds.
+  final void Function(int watchedSeconds, int lastTimestamp)? onWatchProgress;
+
+  /// Called when the video finishes playing.
+  final VoidCallback? onVideoEnded;
 
   @override
   State<YouTubePreviewCard> createState() => _YouTubePreviewCardState();
 }
 
 class _YouTubePreviewCardState extends State<YouTubePreviewCard> {
-  bool _isPlaying = false;
-  bool _isPaused = false;
-  double _currentProgress = 0.25; // 25% initial playback position for MVP demo
+  YoutubePlayerController? _controller;
+  String? _extractedVideoId;
+  int _watchedSeconds = 0;
+  Timer? _watchTimer;
+  bool _isWatchedManual = false;
+  String? _fetchedTitle;
+  String? _fetchedAuthor;
 
-  void _togglePlayPause() {
-    setState(() {
-      _isPaused = !_isPaused;
+  @override
+  void initState() {
+    super.initState();
+    _isWatchedManual = widget.isWatched;
+    _initPlayer();
+  }
+
+  @override
+  void didUpdateWidget(YouTubePreviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isWatched != oldWidget.isWatched) {
+      setState(() {
+        _isWatchedManual = widget.isWatched;
+      });
+    }
+  }
+
+  void _initPlayer() {
+    if (widget.videoUrl != null && widget.videoUrl!.isNotEmpty) {
+      _extractedVideoId = YoutubePlayer.convertUrlToId(widget.videoUrl!);
+    }
+
+    if (_extractedVideoId != null && _extractedVideoId!.isNotEmpty) {
+      _fetchYoutubeMetadata();
+      _controller = YoutubePlayerController(
+        initialVideoId: _extractedVideoId!,
+        flags: const YoutubePlayerFlags(
+          autoPlay: false,
+          mute: false,
+          enableCaption: true,
+          showLiveFullscreenButton: false,
+        ),
+      )..addListener(_videoListener);
+    }
+  }
+
+  Future<void> _fetchYoutubeMetadata() async {
+    if (_extractedVideoId == null || _extractedVideoId!.isEmpty) return;
+    try {
+      final response = await Dio().get(
+        'https://www.youtube.com/oembed',
+        queryParameters: {
+          'url': 'https://www.youtube.com/watch?v=$_extractedVideoId',
+          'format': 'json',
+        },
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (mounted) {
+          setState(() {
+            _fetchedTitle = data['title'] as String?;
+            _fetchedAuthor = data['author_name'] as String?;
+          });
+        }
+      }
+    } catch (_) {
+      // Fallback silently if offline
+    }
+  }
+
+  void _videoListener() {
+    if (_controller == null) return;
+    final state = _controller!.value.playerState;
+
+    if (state == PlayerState.playing) {
+      _startWatchTimer();
+    } else {
+      _stopWatchTimer();
+    }
+
+    if (state == PlayerState.ended) {
+      widget.onVideoEnded?.call();
+    }
+  }
+
+  void _startWatchTimer() {
+    if (_watchTimer != null && _watchTimer!.isActive) return;
+    _watchTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || _controller == null) return;
+      _watchedSeconds += 5;
+      final currentPos = _controller!.value.position.inSeconds;
+      widget.onWatchProgress?.call(_watchedSeconds, currentPos);
     });
   }
 
-  void _seek(double value) {
-    setState(() {
-      _currentProgress = value;
-    });
+  void _stopWatchTimer() {
+    _watchTimer?.cancel();
+    _watchTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _stopWatchTimer();
+    _controller?.removeListener(_videoListener);
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  String get _thumbnailUrl {
+    if (widget.imageUrl.trim().isNotEmpty) {
+      return widget.imageUrl;
+    }
+    if (_extractedVideoId != null && _extractedVideoId!.isNotEmpty) {
+      return 'https://img.youtube.com/vi/$_extractedVideoId/hqdefault.jpg';
+    }
+    return '';
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_controller == null || _extractedVideoId == null) {
+      return _buildCardContent(_buildFallbackThumbnail());
+    }
+
+    return YoutubePlayerBuilder(
+      player: YoutubePlayer(
+        controller: _controller!,
+        showVideoProgressIndicator: true,
+        progressIndicatorColor: Colors.red,
+        progressColors: const ProgressBarColors(
+          playedColor: Colors.red,
+          handleColor: Colors.redAccent,
+        ),
+      ),
+      builder: (context, player) {
+        return _buildCardContent(player);
+      },
+    );
+  }
+
+  Widget _buildCardContent(Widget mediaWidget) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryContainer.withValues(alpha: 0.12),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: _isPlaying ? _buildActiveInAppPlayer() : _buildPreviewState(),
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              color: Colors.black,
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: mediaWidget,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              color: AppColors.surfaceContainerLowest,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF0000),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          'YOUTUBE',
+                          style: AppTextStyles.labelMd.copyWith(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _fetchedTitle ?? (widget.videoTitle.trim().isNotEmpty ? widget.videoTitle : 'Video Edukasi DSMES'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.headlineMd.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                        Text(
+                          _fetchedAuthor ?? (widget.channelName.trim().isNotEmpty ? widget.channelName : 'DSMES Official'),
+                          style: AppTextStyles.bodyMd.copyWith(
+                            fontSize: 12,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Button to mark video watched explicitly (Uses AppColors design system tokens)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+              child: SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isWatchedManual
+                        ? AppColors.secondaryContainer
+                        : AppColors.primaryContainer,
+                    foregroundColor: _isWatchedManual
+                        ? AppColors.onSecondaryContainer
+                        : Colors.white,
+                    disabledBackgroundColor: AppColors.secondaryContainer,
+                    disabledForegroundColor: AppColors.onSecondaryContainer,
+                    elevation: _isWatchedManual ? 0 : 2,
+                    shadowColor: AppColors.primaryContainer.withValues(alpha: 0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _isWatchedManual
+                      ? null
+                      : () {
+                          setState(() {
+                            _isWatchedManual = true;
+                          });
+                          widget.onVideoEnded?.call();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Video edukasi berhasil ditandai selesai menonton! 🎉'),
+                              backgroundColor: AppColors.primaryContainer,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                  icon: Icon(
+                    _isWatchedManual
+                        ? Icons.check_circle_rounded
+                        : Icons.play_circle_fill_rounded,
+                    size: 20,
+                    color: _isWatchedManual
+                        ? AppColors.onSecondaryContainer
+                        : Colors.white,
+                  ),
+                  label: Text(
+                    _isWatchedManual
+                        ? 'Sudah Selesai Menonton Video ✓'
+                        : 'Tandai Selesai Menonton Video',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: _isWatchedManual
+                          ? AppColors.onSecondaryContainer
+                          : Colors.white,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // State 1: YouTube Preview Card
-  Widget _buildPreviewState() {
+  Widget _buildFallbackThumbnail() {
     return Stack(
       children: [
-        // Thumbnail Image
         Positioned.fill(
-          child: Image.network(
-            widget.imageUrl,
+          child: AppSmartImage(
+            imageUrl: _thumbnailUrl,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: AppColors.surfaceContainerHighest,
-              child: const Icon(Icons.video_library_rounded, size: 48),
-            ),
+            fallbackIcon: Icons.play_circle_fill_rounded,
           ),
         ),
-
-        // Dark Gradient Overlay
         Positioned.fill(
           child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.85),
-                  Colors.black.withValues(alpha: 0.20),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.5, 1.0],
-              ),
-            ),
+            color: Colors.black.withValues(alpha: 0.3),
           ),
         ),
-
-        // Top Badge: "VIDEO EDUKASI"
-        Positioned(
-          top: AppSpacing.sm,
-          left: AppSpacing.sm,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF0000), // YouTube Red
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'VIDEO EDUKASI',
-                  style: AppTextStyles.labelMd.copyWith(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Center YouTube Play Button Overlay
-        Center(
-          child: GestureDetector(
-            onTap: () => setState(() => _isPlaying = true),
-            child: Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF0000), // YouTube Red
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 38,
-              ),
-            ),
-          ),
-        ),
-
-        // Bottom Details (Title, Channel, Duration)
-        Positioned(
-          left: AppSpacing.md,
-          right: AppSpacing.md,
-          bottom: AppSpacing.sm,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.videoTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelLg.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      widget.channelName,
-                      style: AppTextStyles.bodyMd.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Duration Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.75),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  widget.videoDuration,
-                  style: AppTextStyles.labelMd.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // State 2: Active In-App YouTube Player Mode
-  Widget _buildActiveInAppPlayer() {
-    return Stack(
-      children: [
-        // Simulated Video Playback Canvas
-        Positioned.fill(
-          child: Image.network(
-            widget.imageUrl,
-            fit: BoxFit.cover,
-          ),
-        ),
-        // Dimming filter for video interface
-        Positioned.fill(
-          child: Container(
-            color: Colors.black.withValues(alpha: _isPaused ? 0.6 : 0.25),
-          ),
-        ),
-
-        // Top Bar: Active status & Close player
-        Positioned(
-          top: AppSpacing.xs,
-          left: AppSpacing.sm,
-          right: AppSpacing.sm,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Memutar di Aplikasi',
-                    style: AppTextStyles.labelMd.copyWith(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
-                onPressed: () => setState(() => _isPlaying = false),
-              ),
-            ],
-          ),
-        ),
-
-        // Center Control Bar: Re-wind, Play/Pause, Fast-Forward
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.replay_10_rounded, color: Colors.white, size: 32),
-                onPressed: () {
-                  _seek((_currentProgress - 0.1).clamp(0.0, 1.0));
-                },
-              ),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: _togglePlayPause,
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              IconButton(
-                icon: const Icon(Icons.forward_10_rounded, color: Colors.white, size: 32),
-                onPressed: () {
-                  _seek((_currentProgress + 0.1).clamp(0.0, 1.0));
-                },
-              ),
-            ],
-          ),
-        ),
-
-        // Bottom Scrubber Bar & Controls
-        Positioned(
-          left: AppSpacing.sm,
-          right: AppSpacing.sm,
-          bottom: AppSpacing.xs,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SliderTheme(
-                data: SliderThemeData(
-                  trackHeight: 3,
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                  activeTrackColor: Colors.red,
-                  inactiveTrackColor: Colors.white30,
-                  thumbColor: Colors.red,
-                ),
-                child: Slider(
-                  value: _currentProgress,
-                  onChanged: _seek,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '02:12 / ${widget.videoDuration}',
-                      style: AppTextStyles.labelMd.copyWith(
-                        color: Colors.white,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const Icon(
-                      Icons.fullscreen_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+        const Center(
+          child: Icon(
+            Icons.play_circle_fill_rounded,
+            color: Colors.white70,
+            size: 56,
           ),
         ),
       ],

@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../data/education_mock_data.dart';
 import '../models/education_article.dart';
 import '../widgets/education_card.dart';
 import '../widgets/education_category_filter.dart';
 import '../widgets/education_search_bar.dart';
 import '../widgets/featured_article_card.dart';
+import '../widgets/education_skeleton.dart';
+import '../viewmodels/education_notifier.dart';
 import 'all_articles_screen.dart';
 import 'education_detail_screen.dart';
 
-class EducationScreen extends StatefulWidget {
+class EducationScreen extends ConsumerStatefulWidget {
   const EducationScreen({super.key});
 
   @override
-  State<EducationScreen> createState() => _EducationScreenState();
+  ConsumerState<EducationScreen> createState() => _EducationScreenState();
 }
 
-class _EducationScreenState extends State<EducationScreen> {
+class _EducationScreenState extends ConsumerState<EducationScreen> {
   int _activeTabIndex = 0; // 0 = Semua Artikel, 1 = Disimpan / Markah Buku
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -37,8 +39,8 @@ class _EducationScreenState extends State<EducationScreen> {
         builder: (context) => EducationDetailScreen(articleId: article.id),
       ),
     ).then((_) {
-      // Refresh state when returning to reflect bookmark changes
-      setState(() {});
+      ref.invalidate(educationListProvider);
+      ref.invalidate(savedArticlesProvider);
     });
   }
 
@@ -48,41 +50,128 @@ class _EducationScreenState extends State<EducationScreen> {
         builder: (context) => const AllArticlesScreen(),
       ),
     ).then((_) {
-      setState(() {});
+      ref.invalidate(educationListProvider);
+      ref.invalidate(savedArticlesProvider);
     });
   }
 
-  void _toggleBookmark(String articleId) {
-    setState(() {
-      MockEducationData.toggleBookmark(articleId);
-    });
-    final isSaved = MockEducationData.isBookmarked(articleId);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isSaved
-              ? 'Artikel berhasil disimpan di Markah Buku'
-              : 'Artikel dihapus dari Markah Buku',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  Future<void> _toggleBookmark(String articleId) async {
+    try {
+      await ref.read(educationListProvider.notifier).toggleBookmark(articleId);
+      final list = ref.read(educationListProvider).value ?? [];
+      final index = list.indexWhere((a) => a.id == articleId);
+      final isSaved = index != -1 ? list[index].isBookmarked : false;
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isSaved
+                  ? 'Artikel berhasil disimpan di Markah Buku'
+                  : 'Artikel dihapus dari Markah Buku',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal mengubah bookmark. Silakan coba lagi.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bookmarkedArticles = MockEducationData.getBookmarkedArticles();
-    final filteredArticles = MockEducationData.filterArticles(
-      query: _searchQuery,
-      category: _selectedCategory,
-    );
+    final educationListAsync = ref.watch(educationListProvider);
+    final savedArticlesAsync = ref.watch(savedArticlesProvider);
+    final categoriesAsync = ref.watch(educationCategoriesProvider);
+    final categories = categoriesAsync.value ?? const ['Semua'];
 
-    final featured = MockEducationData.featuredArticle;
+    final allArticles = educationListAsync.value ?? [];
+    final bookmarkedArticles = savedArticlesAsync.value ?? allArticles.where((a) => a.isBookmarked).toList();
+
+    // Filter logic
+    final filteredArticles = allArticles.where((article) {
+      final matchesQuery = article.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (article.quoteText.toLowerCase().contains(_searchQuery.toLowerCase()));
+      final matchesCategory = _selectedCategory == 'Semua' ||
+          article.category.toLowerCase() == _selectedCategory.toLowerCase();
+      return matchesQuery && matchesCategory;
+    }).toList();
+
+    // Featured Article: latest published article from backend (order created_at DESC)
+    final EducationArticle? featured = allArticles.isNotEmpty ? allArticles.first : null;
+
+    // Progressive Skeleton Loading
+    if (educationListAsync.isLoading && !educationListAsync.hasValue) {
+      return Scaffold(
+        backgroundColor: AppColors.surface,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          title: Text(
+            'Edukasi Kesehatan',
+            style: AppTextStyles.headlineLg.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurface,
+            ),
+          ),
+        ),
+        body: const EducationScreenSkeleton(),
+      );
+    }
+
+    // Show error state
+    if (educationListAsync.hasError && !educationListAsync.hasValue) {
+      return Scaffold(
+        backgroundColor: AppColors.surface,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.outline),
+                const SizedBox(height: 16),
+                Text(
+                  'Gagal memuat artikel',
+                  style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurface),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Periksa koneksi internet Anda lalu coba lagi.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(educationListProvider),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Coba Lagi'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(educationListProvider);
+          ref.invalidate(savedArticlesProvider);
+          ref.invalidate(educationCategoriesProvider);
+        },
+        child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,6 +336,7 @@ class _EducationScreenState extends State<EducationScreen> {
               // Category Filter Chips (Horizontal Scrollable)
               EducationCategoryFilter(
                 selectedCategory: _selectedCategory,
+                categories: categories,
                 onCategorySelected: (category) {
                   setState(() {
                     _selectedCategory = category;
@@ -255,8 +345,8 @@ class _EducationScreenState extends State<EducationScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Featured Article Banner (Show when no search filter active)
-              if (_searchQuery.isEmpty && _selectedCategory == 'Semua') ...[
+              // Featured Article Banner (Show latest published article when no search filter active)
+              if (_searchQuery.isEmpty && _selectedCategory == 'Semua' && featured != null) ...[
                 FeaturedArticleCard(
                   article: featured,
                   onTap: () => _navigateToDetail(featured),
@@ -444,7 +534,8 @@ class _EducationScreenState extends State<EducationScreen> {
             const SizedBox(height: 100),
           ],
         ),
-      ),
+        ), // SingleChildScrollView
+      ), // RefreshIndicator
     );
   }
 }
