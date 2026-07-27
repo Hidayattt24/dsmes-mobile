@@ -13,6 +13,7 @@ import '../../features/home/views/home_view.dart';
 import '../../features/record/views/record_view.dart';
 import '../../features/home/history/widgets/calendar_history_bottom_sheet.dart';
 import '../../features/notifications/viewmodels/notifications_notifier.dart';
+import '../../features/home/viewmodels/home_dashboard_notifier.dart';
 import '../../features/ai_chat/widgets/floating_ai_chat_button.dart';
 import 'app_bottom_navigation.dart';
 import 'app_header.dart';
@@ -60,14 +61,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
   }
 
-  String _getSubtitleForIndex(int index) {
+  String? _getSubtitleForIndex(int index) {
     return switch (index) {
-      0 => 'Bagaimana perasaan Anda hari ini?',
+      0 => null,
       1 => 'Catat gula darah & aktivitas harian Anda',
       2 => 'Pelajari tips & informasi kesehatan diabetes',
       3 => 'Evaluasi kesehatan berkala DSMES',
       4 => 'Informasi profil & pengaturan akun',
-      _ => 'Selamat datang di DSMES Aceh',
+      _ => null,
     };
   }
 
@@ -76,6 +77,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     final unreadNotificationCount = ref.watch(
       notificationsProvider.select((list) => list.where((n) => n.isUnread).length),
     );
+    final patientName = ref.watch(homeDashboardProvider).value?.dashboardData?.displayName ?? 'Pasien';
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -93,9 +95,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                     0,
                   ),
                   child: AppHeader(
-                    userName: 'Budi',
-                    showGreeting: _selectedIndex == 0,
-                    subtitle: _selectedIndex == 0 ? _getSubtitleForIndex(_selectedIndex) : null,
+                    userName: patientName,
+                    showGreeting: false,
+                    subtitle: _getSubtitleForIndex(_selectedIndex),
                     notificationCount: unreadNotificationCount,
                     onCalendarTap: _openCalendarHistoryBottomSheet,
                     onNotificationTap: () => context.push(RouteNames.notifications),
