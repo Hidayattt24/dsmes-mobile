@@ -1,34 +1,6 @@
-import '../models/body_metrics.dart';
-import '../models/user_profile.dart';
-
-/// Mock data and static content for all Settings feature screens.
+/// Static content for Settings feature screens (FAQs, activity options).
 abstract final class SettingsMockData {
   SettingsMockData._();
-
-  static const String userName = 'Budi Santoso';
-  static const String userRole = 'Pasien Diabetes Tipe 2';
-  static const String bloodSugarAvg = '124';
-  static const String bloodSugarUnit = 'mg/dL';
-  static const String bloodSugarStatus = 'Normal';
-  static const String profileAvatarUrl =
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBktC0DtJxqbEtNlEPYV1FVAVbANqqOBrBP4UKQsgl2AlACvOPfp2gA6pqoDmKE7cFGQ115Pb60OUS0JMdyb6kbmp6ZPz2ApHtoOK6Cbra5JXSI2FYJkYLVFhEin75-HuAeCkwLYdQP3KU_qDRu3AjscTeEpO5rDfc0UKV-MjDc0ZP-On-CobtdXCXQ5H-U8pcIW1xEWFI7J7HxqJhc1v1wuQrDXyiFaSEQjS8w7kx7q5CzMEqaWpgYZLex-c_q79WzMrr1NIJJ0rB1';
-
-  static UserProfile initialProfile = UserProfile(
-    fullName: 'Budi Santoso',
-    email: 'budi.santoso@gmail.com',
-    phone: '+62 812-3456-7890',
-    gender: 'Laki-laki',
-    birthDate: DateTime(1981, 5, 14),
-    bloodType: 'O+',
-  );
-
-  static const BodyMetrics initialMetrics = BodyMetrics(
-    heightCm: 168.0,
-    weightKg: 68.0,
-    activityLevel: 'Aktivitas Sedang',
-    gender: 'Laki-laki',
-    age: 45,
-  );
 
   static const List<(String, String)> activityOptions = [
     ('Sangat Jarang', 'Minim aktivitas fisik, banyak duduk'),

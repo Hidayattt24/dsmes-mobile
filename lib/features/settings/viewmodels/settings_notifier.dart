@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/settings_mock_data.dart';
 import '../models/body_metrics.dart';
 
 /// Riverpod StateNotifier for managing body metrics and recalculated results.
 class SettingsNotifier extends StateNotifier<BodyMetrics> {
-  SettingsNotifier() : super(SettingsMockData.initialMetrics);
+  SettingsNotifier()
+      : super(const BodyMetrics(
+          heightCm: 170,
+          weightKg: 65,
+          activityLevel: 'Aktivitas Ringan',
+        ));
 
   /// Update user height, weight, and activity level, recalculating metrics.
   void updateBodyMetrics({
@@ -27,9 +31,13 @@ class SettingsNotifier extends StateNotifier<BodyMetrics> {
     );
   }
 
-  /// Reset to initial mock data.
+  /// Reset to default values.
   void reset() {
-    state = SettingsMockData.initialMetrics;
+    state = const BodyMetrics(
+      heightCm: 170,
+      weightKg: 65,
+      activityLevel: 'Aktivitas Ringan',
+    );
   }
 }
 

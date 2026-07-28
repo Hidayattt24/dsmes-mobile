@@ -7,8 +7,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_avatar.dart';
-import '../../../core/widgets/app_snackbar.dart';
-import '../data/settings_mock_data.dart';
 import '../viewmodels/settings_notifier.dart';
 import '../widgets/bmi_summary_card.dart';
 import '../widgets/body_metric_card.dart';
@@ -16,7 +14,6 @@ import '../../../data/repositories/auth_repository.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 
-/// Primary Settings / Profile Screen matching HTML reference design.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -25,6 +22,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _userName = '';
+  String _avatarUrl = '';
+  double? _averageBloodSugar;
+
   @override
   void initState() {
     super.initState();
@@ -44,23 +45,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final bmiCategory = profile['bmi_category'] as String?;
       final recommendations = profile['recommendations'] as Map<String, dynamic>?;
 
-      if (mounted && (h != null || w != null)) {
-        ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
-              heightCm: h ?? 170,
-              weightKg: w ?? 65,
-              activityLevel: act ?? 'Ringan',
-              calculatedTdee: target,
-              bmiVal: bmi,
-              bmiCatVal: bmiCategory,
-              recommendations: recommendations,
-            );
+      if (mounted) {
+        _userName = (profile['full_name'] as String?) ?? '';
+        _avatarUrl = (profile['profile_photo_url'] as String?) ?? '';
+        _averageBloodSugar = (profile['average_blood_sugar'] as num?)?.toDouble();
+
+        if (h != null || w != null) {
+          ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
+                heightCm: h ?? 170,
+                weightKg: w ?? 65,
+                activityLevel: act ?? 'Ringan',
+                calculatedTdee: target,
+                bmiVal: bmi,
+                bmiCatVal: bmiCategory,
+                recommendations: recommendations,
+              );
+        }
+        setState(() {});
       }
     } catch (_) {}
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerLowest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text('Keluar Akun'),
+        content: const Text('Apakah Anda yakin ingin keluar? Sesi saat ini akan berakhir.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Keluar',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.logout();
+      ref.read(bodyMetricsProvider.notifier).reset();
+      if (mounted) context.go(RouteNames.login);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final metrics = ref.watch(bodyMetricsProvider);
+    final initials = _userName.isNotEmpty
+        ? _userName.split(' ').where((e) => e.isNotEmpty).map((e) => e[0]).take(2).join().toUpperCase()
+        : 'U';
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -72,7 +117,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         child: Column(
           children: [
-            // ── Profile Header Section ───────────────────────────────────────
             Center(
               child: Column(
                 children: [
@@ -104,10 +148,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ],
                           ),
-                          child: const AppAvatar(
-                            imageUrl: SettingsMockData.profileAvatarUrl,
+                          child: AppAvatar(
+                            imageUrl: _avatarUrl,
                             radius: 52,
-                            initials: 'BS',
+                            initials: initials,
                             hasBorder: false,
                           ),
                         ),
@@ -138,17 +182,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    SettingsMockData.userName,
+                    _userName,
                     style: AppTextStyles.headlineLg.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    SettingsMockData.userRole,
-                    style: AppTextStyles.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -157,8 +194,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: AppSpacing.xl),
 
-            // ── Stats Bento Grid (Avg Blood Sugar & Calorie Target) ─────────
-            BmiSummaryCard(metrics: metrics),
+            BmiSummaryCard(metrics: metrics, averageBloodSugar: _averageBloodSugar),
 
             const SizedBox(height: AppSpacing.lg),
 
@@ -177,19 +213,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.person_rounded,
                   title: 'Informasi Pribadi',
                   subtitle: 'Data diri dan medis',
-                  onTap: () => context.push(RouteNames.personalInformation),
+                  onTap: () async {
+                    await context.push(RouteNames.personalInformation);
+                    _fetchLatestProfile();
+                  },
                 ),
                 SettingsTile(
                   icon: Icons.monitor_weight_outlined,
                   title: 'Update Body Metrics',
                   subtitle: 'Tinggi, berat badan & aktivitas',
-                  onTap: () => context.push(RouteNames.editBodyMetrics),
-                ),
-                SettingsTile(
-                  icon: Icons.notifications_active_outlined,
-                  title: 'Pengaturan Pengingat',
-                  subtitle: 'Obat, cek gula & aktivitas',
-                  onTap: () => context.push(RouteNames.reminderSettings),
+                  onTap: () async {
+                    await context.push(RouteNames.editBodyMetrics);
+                    _fetchLatestProfile();
+                  },
                 ),
                 SettingsTile(
                   icon: Icons.lock_outline_rounded,
@@ -214,9 +250,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: 'Keluar Akun',
                   subtitle: 'Sesi saat ini akan berakhir',
                   isDestructive: true,
-                  onTap: () {
-                    context.go(RouteNames.login);
-                  },
+                  onTap: _logout,
                 ),
               ],
             ),

@@ -30,6 +30,14 @@ abstract class IAuthRepository {
     required double heightCm,
     required double weightKg,
     required String activityLevel,
+    String gender = '',
+    String dateOfBirth = '',
+    String bloodType = '',
+  });
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
   });
 
   Future<void> forgotPassword({required String email});
@@ -193,20 +201,43 @@ class AuthRepository implements IAuthRepository {
     required double heightCm,
     required double weightKg,
     required String activityLevel,
+    String gender = '',
+    String dateOfBirth = '',
+    String bloodType = '',
   }) async {
     try {
-      final response = await _dio.put(
-        '/patient/me',
+      final data = <String, dynamic>{
+        'full_name': fullName,
+        'nickname': nickname,
+        'whatsapp_number': whatsappNumber,
+        'height_cm': heightCm,
+        'weight_kg': weightKg,
+        'physical_activity_level': activityLevel,
+      };
+      if (gender.isNotEmpty) data['gender'] = gender;
+      if (dateOfBirth.isNotEmpty) data['date_of_birth'] = dateOfBirth;
+      if (bloodType.isNotEmpty) data['blood_type'] = bloodType;
+
+      final response = await _dio.put('/patient/me', data: data);
+      return response.data['data'] as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.put(
+        '/patient/me/password',
         data: {
-          'full_name': fullName,
-          'nickname': nickname,
-          'whatsapp_number': whatsappNumber,
-          'height_cm': heightCm,
-          'weight_kg': weightKg,
-          'physical_activity_level': activityLevel,
+          'current_password': currentPassword,
+          'new_password': newPassword,
         },
       );
-      return response.data['data'] as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

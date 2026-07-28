@@ -14,6 +14,7 @@ abstract final class AppConstants {
   static const String keyRefreshToken = 'refresh_token';
   static const String keyOnboardingComplete = 'onboarding_complete';
   static const String keyUserId = 'user_id';
+  static const String keyBiometricEnabled = 'biometric_enabled';
 
   static const int totalOnboardingSteps = 14;
 

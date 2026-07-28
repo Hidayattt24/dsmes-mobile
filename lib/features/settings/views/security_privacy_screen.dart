@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_auth/local_auth.dart';
 
-import '../../../core/router/route_names.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/network/auth_interceptor.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
@@ -9,19 +12,114 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_snackbar.dart';
+import '../../../data/repositories/auth_repository.dart';
 
-/// Security & Privacy Settings Screen prototype.
-class SecurityPrivacyScreen extends StatefulWidget {
+class SecurityPrivacyScreen extends ConsumerStatefulWidget {
   const SecurityPrivacyScreen({super.key});
 
   @override
-  State<SecurityPrivacyScreen> createState() => _SecurityPrivacyScreenState();
+  ConsumerState<SecurityPrivacyScreen> createState() =>
+      _SecurityPrivacyScreenState();
 }
 
-class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
-  bool _biometricEnabled = true;
+class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
+  final LocalAuthentication _localAuth = LocalAuthentication();
+
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
   bool _healthSyncEnabled = true;
   bool _analyticsEnabled = false;
+  bool _isChangingPassword = false;
+  bool _isTogglingBiometric = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initBiometricState();
+  }
+
+  Future<void> _initBiometricState() async {
+    try {
+      final storage = ref.read(secureStorageProvider);
+      final stored =
+          await storage.read(key: AppConstants.keyBiometricEnabled);
+      final available = await _localAuth.canCheckBiometrics;
+      final enrolled = await _localAuth.isDeviceSupported();
+
+      if (mounted) {
+        setState(() {
+          _biometricAvailable = available && enrolled;
+          _biometricEnabled = stored == 'true' && _biometricAvailable;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _biometricAvailable = false;
+          _biometricEnabled = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleBiometric(bool enable) async {
+    if (_isTogglingBiometric) return;
+
+    if (enable) {
+      if (!_biometricAvailable) {
+        if (mounted) {
+          AppSnackbar.showError(
+            context,
+            'Perangkat tidak mendukung biometrik atau belum terdaftar. '
+            'Daftarkan sidik jari / Face ID di pengaturan perangkat terlebih dahulu.',
+          );
+        }
+        return;
+      }
+
+      setState(() => _isTogglingBiometric = true);
+      try {
+        final authenticated = await _localAuth.authenticate(
+          localizedReason:
+              'Verifikasi identitas Anda untuk mengaktifkan login biometrik.',
+          options: const AuthenticationOptions(
+            stickyAuth: true,
+            biometricOnly: true,
+          ),
+        );
+
+        if (authenticated && mounted) {
+          final storage = ref.read(secureStorageProvider);
+          await storage.write(
+              key: AppConstants.keyBiometricEnabled, value: 'true');
+          setState(() => _biometricEnabled = true);
+          AppSnackbar.showSuccess(context, 'Login biometrik diaktifkan.');
+        } else if (mounted) {
+          AppSnackbar.showError(
+              context, 'Verifikasi biometrik gagal. Silakan coba lagi.');
+        }
+      } catch (e) {
+        if (mounted) {
+          AppSnackbar.showError(context, e.toString());
+        }
+      } finally {
+        if (mounted) setState(() => _isTogglingBiometric = false);
+      }
+    } else {
+      try {
+        final storage = ref.read(secureStorageProvider);
+        await storage.delete(key: AppConstants.keyBiometricEnabled);
+        if (mounted) {
+          setState(() => _biometricEnabled = false);
+          AppSnackbar.showInfo(context, 'Login biometrik dinonaktifkan.');
+        }
+      } catch (e) {
+        if (mounted) {
+          AppSnackbar.showError(context, e.toString());
+        }
+      }
+    }
+  }
 
   void _showChangePasswordDialog() {
     final oldPassController = TextEditingController();
@@ -31,7 +129,7 @@ class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (ctx) {
         return AlertDialog(
           backgroundColor: AppColors.surfaceContainerLowest,
           shape: RoundedRectangleBorder(
@@ -89,20 +187,39 @@ class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(ctx),
               child: const Text('Batal'),
             ),
             AppButton(
-              label: 'Simpan',
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.pop(context);
-                  AppSnackbar.showSuccess(
-                    context,
-                    'Kata sandi berhasil diperbarui.',
-                  );
-                }
-              },
+              label: _isChangingPassword ? 'Menyimpan...' : 'Simpan',
+              onPressed: _isChangingPassword
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setState(() => _isChangingPassword = true);
+                      try {
+                        final authRepo = ref.read(authRepositoryProvider);
+                        await authRepo.changePassword(
+                          currentPassword: oldPassController.text,
+                          newPassword: newPassController.text,
+                        );
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        if (mounted) {
+                          AppSnackbar.showSuccess(
+                            context,
+                            'Kata sandi berhasil diperbarui.',
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          AppSnackbar.showError(context, e.toString());
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isChangingPassword = false);
+                        }
+                      }
+                    },
             ),
           ],
         );
@@ -139,7 +256,6 @@ class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Security Section
               _SectionHeader(title: 'Keamanan Akun'),
               const SizedBox(height: 8),
               Container(
@@ -163,20 +279,23 @@ class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
-                      secondary: const Icon(Icons.fingerprint_rounded,
-                          color: AppColors.primary),
-                      title: const Text('Login Biometrik (Face ID / Fingerprint)'),
-                      subtitle: const Text('Masuk cepat dengan sensor biometrik'),
+                      secondary: _isTogglingBiometric
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.fingerprint_rounded,
+                              color: AppColors.primary),
+                      title: const Text(
+                          'Login Biometrik (Face ID / Fingerprint)'),
+                      subtitle: Text(
+                        _biometricAvailable
+                            ? 'Masuk cepat dengan sensor biometrik'
+                            : 'Biometrik tidak tersedia di perangkat ini',
+                      ),
                       value: _biometricEnabled,
-                      onChanged: (val) {
-                        setState(() => _biometricEnabled = val);
-                        AppSnackbar.showInfo(
-                          context,
-                          val
-                              ? 'Biometrik diaktifkan.'
-                              : 'Biometrik dinonaktifkan.',
-                        );
-                      },
+                      onChanged: _biometricAvailable ? _toggleBiometric : null,
                       activeColor: AppColors.primary,
                     ),
                   ],
@@ -185,7 +304,6 @@ class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
 
               const SizedBox(height: AppSpacing.xl),
 
-              // Privacy Section
               _SectionHeader(title: 'Privasi & Data'),
               const SizedBox(height: 8),
               Container(
@@ -227,7 +345,6 @@ class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
 
               const SizedBox(height: AppSpacing.xl),
 
-              // Legal & Legal documents section
               _SectionHeader(title: 'Dokumen Hukum'),
               const SizedBox(height: 8),
               Container(
@@ -272,7 +389,6 @@ class _SecurityPrivacyScreenState extends State<SecurityPrivacyScreen> {
 
               const SizedBox(height: AppSpacing.xl),
 
-              // Danger Zone
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppSpacing.md),

@@ -4,17 +4,25 @@ import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../data/settings_mock_data.dart';
 import '../models/body_metrics.dart';
+
+String _computeBloodSugarStatus(double? value) {
+  if (value == null) return '--';
+  if (value < 100) return 'Normal';
+  if (value < 126) return 'Perhatian';
+  return 'Tinggi';
+}
 
 /// Stats Bento Grid Cards matching the HTML reference layout.
 class BmiSummaryCard extends StatelessWidget {
   const BmiSummaryCard({
     super.key,
     required this.metrics,
+    this.averageBloodSugar,
   });
 
   final BodyMetrics metrics;
+  final double? averageBloodSugar;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +70,7 @@ class BmiSummaryCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text(
-                        SettingsMockData.bloodSugarStatus,
+                        _computeBloodSugarStatus(averageBloodSugar),
                         style: AppTextStyles.labelMd.copyWith(
                           color: AppColors.secondary,
                           fontSize: 12,
@@ -77,14 +85,14 @@ class BmiSummaryCard extends StatelessWidget {
                   children: [
                     RichText(
                       text: TextSpan(
-                        text: SettingsMockData.bloodSugarAvg,
+                        text: averageBloodSugar?.toStringAsFixed(0) ?? '--',
                         style: AppTextStyles.headlineLg.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.onSurface,
                         ),
                         children: [
                           TextSpan(
-                            text: ' ${SettingsMockData.bloodSugarUnit}',
+                            text: ' mg/dL',
                             style: AppTextStyles.bodyMd.copyWith(
                               color: AppColors.onSurfaceVariant,
                               fontWeight: FontWeight.normal,

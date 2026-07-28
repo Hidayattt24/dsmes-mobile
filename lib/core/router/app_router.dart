@@ -22,7 +22,6 @@ import '../../features/settings/views/edit_body_metrics_screen.dart';
 import '../../features/settings/views/help_center_screen.dart';
 import '../../features/settings/views/personal_information_screen.dart';
 import '../../features/settings/views/recalculate_result_screen.dart';
-import '../../features/settings/views/reminder_settings_screen.dart';
 import '../../features/settings/views/security_privacy_screen.dart';
 import '../../features/settings/views/settings_screen.dart';
 import '../../features/welcome/views/welcome_screen.dart';
@@ -243,14 +242,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       pageBuilder: (context, state) => _buildSlideTransition(
         state: state,
         child: const PersonalInformationScreen(),
-      ),
-    ),
-    GoRoute(
-      path: RouteNames.reminderSettings,
-      name: RouteNames.nameReminderSettings,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const ReminderSettingsScreen(),
       ),
     ),
     GoRoute(

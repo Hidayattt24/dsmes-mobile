@@ -53,8 +53,6 @@ abstract final class RouteNames {
   static const String nameRecalculateResult = 'recalculate-result';
   static const String personalInformation = '/personal-information';
   static const String namePersonalInformation = 'personal-information';
-  static const String reminderSettings = '/reminder-settings';
-  static const String nameReminderSettings = 'reminder-settings';
   static const String securityPrivacy = '/security-privacy';
   static const String nameSecurityPrivacy = 'security-privacy';
   static const String helpCenter = '/help-center';
