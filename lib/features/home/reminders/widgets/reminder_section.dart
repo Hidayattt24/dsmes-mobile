@@ -122,7 +122,7 @@ class ReminderSection extends StatelessWidget {
             : ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: reminders.length,
+                itemCount: reminders.length > 3 ? 3 : reminders.length,
                 separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
                 itemBuilder: (context, index) {
                   final reminder = reminders[index];
@@ -198,14 +198,18 @@ class _ReminderItemWidget extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              data.title,
-                              style: AppTextStyles.poppinsHeadline.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.onSurface,
+                            Expanded(
+                              child: Text(
+                                data.title,
+                                style: AppTextStyles.poppinsHeadline.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.onSurface,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(
                               data.time,
                               style: AppTextStyles.labelMd.copyWith(
