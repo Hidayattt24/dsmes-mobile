@@ -167,6 +167,10 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
     final picked = await showTimePicker(
       context: context,
       initialTime: current,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
     );
     if (picked != null) {
       ref
@@ -360,6 +364,10 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
                                 final picked = await showTimePicker(
                                   context: context,
                                   initialTime: time,
+                                  builder: (context, child) => MediaQuery(
+                                    data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                    child: child!,
+                                  ),
                                 );
                                 if (picked != null) {
                                   setSheetState(() => time = picked);

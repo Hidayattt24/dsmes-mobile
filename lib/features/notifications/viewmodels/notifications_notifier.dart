@@ -62,6 +62,23 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
         if (notification.isUnread) notification.copyWith(isUnread: false) else notification,
     ];
   }
+
+  void addNotification({
+    required String title,
+    required String description,
+    NotificationType type = NotificationType.medication,
+  }) {
+    final newItem = NotificationItem(
+      id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      description: description,
+      timestamp: 'Baru saja',
+      type: type,
+      isUnread: true,
+      group: 'Hari Ini',
+    );
+    state = [newItem, ...state];
+  }
 }
 
 final notificationsProvider = NotifierProvider<NotificationsNotifier, List<NotificationItem>>(

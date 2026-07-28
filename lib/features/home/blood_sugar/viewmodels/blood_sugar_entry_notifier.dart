@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../data/repositories/blood_sugar_repository.dart';
 import '../../viewmodels/home_dashboard_notifier.dart';
+import '../../history/viewmodels/history_provider.dart';
 import '../models/blood_sugar_entry_state.dart';
 import '../models/blood_sugar_log_model.dart';
 
@@ -73,8 +74,9 @@ class BloodSugarEntryNotifier extends Notifier<BloodSugarEntryState> {
         measuredAt: measuredDateTime,
       );
       state = state.copyWith(isSubmitting: false);
-      // Automatically refresh Home Dashboard data
+      // Automatically refresh Home Dashboard and History data
       ref.read(homeDashboardProvider.notifier).refresh();
+      ref.read(historyProvider.notifier).refresh();
       return result;
     } catch (e) {
       state = state.copyWith(

@@ -4,6 +4,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../onboarding/constants/routine_icons.dart';
+import '../models/reminder_model.dart';
 
 class ReminderItemData {
   const ReminderItemData({
@@ -25,6 +27,20 @@ class ReminderItemData {
   final bool isCompleted;
   final Color iconBgColor;
   final Color iconColor;
+
+  factory ReminderItemData.fromReminderModel(ReminderModel model) {
+    final iconData = resolveRoutineIcon(model.iconName);
+    return ReminderItemData(
+      id: model.id,
+      title: model.activityName,
+      subtitle: model.categoryLabel,
+      time: model.formattedTime,
+      icon: iconData,
+      isCompleted: !model.isActive,
+      iconBgColor: AppColors.secondaryContainer.withValues(alpha: 0.15),
+      iconColor: AppColors.secondary,
+    );
+  }
 }
 
 class ReminderSection extends StatelessWidget {

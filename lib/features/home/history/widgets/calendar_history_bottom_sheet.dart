@@ -34,6 +34,12 @@ class _CalendarHistoryBottomSheetState extends ConsumerState<CalendarHistoryBott
     _selectedDate = widget.initialDate;
     _currentYear = widget.initialDate.year;
     _currentMonth = widget.initialDate.month;
+
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(historyProvider.notifier).refresh();
+      }
+    });
   }
 
   void _handlePreviousMonth() {

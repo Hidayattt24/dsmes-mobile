@@ -14,6 +14,8 @@ import '../history/models/history_item_model.dart';
 import '../history/viewmodels/history_provider.dart';
 import '../history/widgets/calendar_history_bottom_sheet.dart';
 import '../history/widgets/history_empty_state.dart';
+import '../reminders/models/reminder_model.dart';
+import '../reminders/viewmodels/reminder_provider.dart';
 import '../reminders/widgets/reminder_section.dart';
 
 import '../viewmodels/home_dashboard_notifier.dart';
@@ -83,12 +85,14 @@ class _HomeViewState extends ConsumerState<HomeView> {
     final now = widget.nowOverride ?? DateTime.now();
     final dashboardAsync = ref.watch(homeDashboardProvider);
     final historyAsync = ref.watch(historyProvider);
+    final remindersAsync = ref.watch(reminderListProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
         await Future.wait([
           ref.read(homeDashboardProvider.notifier).refresh(),
           ref.read(historyProvider.notifier).refresh(),
+          ref.read(reminderListProvider.notifier).refresh(),
         ]);
       },
       color: AppColors.primary,
@@ -98,7 +102,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
         child: dashboardAsync.when(
           loading: () => const HomeSkeleton(),
           error: (err, stack) => _buildErrorState(err.toString()),
-          data: (state) => _buildHomeContent(context, now, state, historyAsync),
+          data: (state) => _buildHomeContent(context, now, state, historyAsync, remindersAsync),
         ),
       ),
     );
@@ -139,7 +143,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Widget _buildHomeContent(BuildContext context, DateTime now, HomeDashboardState state,
-      AsyncValue<HistoryState> historyAsync) {
+      AsyncValue<HistoryState> historyAsync,
+      AsyncValue<List<ReminderModel>> remindersAsync) {
     final dash = state.dashboardData;
     final latestBs = state.latestBloodSugar;
     final isSelectedToday = _selectedDate.day == now.day &&
@@ -209,11 +214,22 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        ReminderSection(
-          reminders: const [],
-          emptyMessage: 'Belum ada pengingat hari ini.',
-          onViewAllPressed: () => context.push(RouteNames.reminders),
-          onReminderTapped: (id) {},
+        remindersAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (reminders) {
+            final todayReminders = reminders
+                .where((r) =>
+                    r.isActive && r.activeDays.contains(now.weekday))
+                .map(ReminderItemData.fromReminderModel)
+                .toList();
+            return ReminderSection(
+              reminders: todayReminders,
+              emptyMessage: 'Belum ada pengingat hari ini.',
+              onViewAllPressed: () => context.push(RouteNames.reminders),
+              onReminderTapped: (id) {},
+            );
+          },
         ),
         const SizedBox(height: AppSpacing.lg),
 

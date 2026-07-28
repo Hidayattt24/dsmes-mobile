@@ -42,15 +42,18 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
       context: context,
       initialTime: initial,
       builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: AppColors.onPrimary,
-              onSurface: AppColors.onSurface,
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: AppColors.onPrimary,
+                onSurface: AppColors.onSurface,
+              ),
             ),
+            child: child!,
           ),
-          child: child!,
         );
       },
     );
