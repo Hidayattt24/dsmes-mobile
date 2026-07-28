@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
-import '../models/history_mock_data.dart';
+import '../models/history_item_model.dart';
 import '../widgets/calendar_day_cell.dart';
 import '../widgets/calendar_month_header.dart';
 import '../widgets/calendar_weekday_header.dart';
@@ -15,6 +15,7 @@ class MonthlyCalendarView extends StatelessWidget {
     required this.onDateSelected,
     required this.onPreviousMonth,
     required this.onNextMonth,
+    required this.dailyAggregates,
   });
 
   final int year;
@@ -23,6 +24,7 @@ class MonthlyCalendarView extends StatelessWidget {
   final ValueChanged<DateTime> onDateSelected;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
+  final Map<String, DailyHistoryAggregate> dailyAggregates;
 
   int get _daysInMonth {
     final firstDayThisMonth = DateTime(year, month, 1);
@@ -31,8 +33,6 @@ class MonthlyCalendarView extends StatelessWidget {
   }
 
   int get _startWeekdayOffset {
-    // DateTime.weekday returns: 1 = Monday, 7 = Sunday
-    // In Sunday-start: Sunday is 0, Monday is 1, Saturday is 6
     return DateTime(year, month, 1).weekday % 7;
   }
 
@@ -45,7 +45,6 @@ class MonthlyCalendarView extends StatelessWidget {
 
     return Column(
       children: [
-        // Month Navigation Header (← Month Year →)
         CalendarMonthHeader(
           year: year,
           month: month,
@@ -53,12 +52,9 @@ class MonthlyCalendarView extends StatelessWidget {
           onNextMonth: onNextMonth,
         ),
         const SizedBox(height: AppSpacing.md),
-
-        // Sunday-Start Weekday Labels Row
         const CalendarWeekdayHeader(),
         const SizedBox(height: AppSpacing.sm),
 
-        // Grid of Date Cells
         LayoutBuilder(
           builder: (context, constraints) {
             final cellWidth = constraints.maxWidth / 7;
@@ -77,28 +73,25 @@ class MonthlyCalendarView extends StatelessWidget {
               itemCount: totalSlots,
               itemBuilder: (context, index) {
                 if (index < offset) {
-                  return const SizedBox.shrink(); // Empty slot for Sunday-start padding
+                  return const SizedBox.shrink();
                 }
 
                 final dayNumber = index - offset + 1;
                 final date = DateTime(year, month, dayNumber);
 
                 final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
-
                 final isSelected = date.day == selectedDate.day &&
                     date.month == selectedDate.month &&
                     date.year == selectedDate.year;
 
-                // Retrieve activity state from mock records database
-                final record = MockHistoryData.getRecord(date);
-                final status = record?.status ?? HealthActivityStatus.noActivity;
+                final key = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                final aggregate = dailyAggregates[key];
 
                 return CalendarDayCell(
                   date: date,
                   isToday: isToday,
                   isSelected: isSelected,
-                  status: status,
-                  progressRatio: record?.progressRatio,
+                  aggregate: aggregate,
                   onTap: () => onDateSelected(date),
                 );
               },

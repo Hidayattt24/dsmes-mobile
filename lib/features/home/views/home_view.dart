@@ -10,6 +10,8 @@ import '../blood_sugar/widgets/blood_sugar_card.dart';
 import '../dashboard/widgets/daily_calories_card.dart';
 import '../dashboard/widgets/weekly_calendar_card.dart';
 import '../dashboard/widgets/weekly_summary_section.dart';
+import '../history/models/history_item_model.dart';
+import '../history/viewmodels/history_provider.dart';
 import '../history/widgets/calendar_history_bottom_sheet.dart';
 import '../history/widgets/history_empty_state.dart';
 import '../reminders/widgets/reminder_section.dart';
@@ -40,12 +42,10 @@ class _HomeViewState extends ConsumerState<HomeView> {
     final todayStart = DateTime(now.year, now.month, now.day);
     final dateStart = DateTime(date.year, date.month, date.day);
 
-    // Future days must have NO RECORD
     if (dateStart.isAfter(todayStart)) {
       return WeeklyDayState.noRecord;
     }
 
-    // Check if real records exist in database
     final hasRecordOnDate = state.bloodSugarLogs.any((log) {
       final dt = DateTime.tryParse(log.measuredAt);
       return dt != null && dt.year == date.year && dt.month == date.month && dt.day == date.day;
@@ -82,10 +82,14 @@ class _HomeViewState extends ConsumerState<HomeView> {
   Widget build(BuildContext context) {
     final now = widget.nowOverride ?? DateTime.now();
     final dashboardAsync = ref.watch(homeDashboardProvider);
+    final historyAsync = ref.watch(historyProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(homeDashboardProvider.notifier).refresh();
+        await Future.wait([
+          ref.read(homeDashboardProvider.notifier).refresh(),
+          ref.read(historyProvider.notifier).refresh(),
+        ]);
       },
       color: AppColors.primary,
       child: SingleChildScrollView(
@@ -94,7 +98,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
         child: dashboardAsync.when(
           loading: () => const HomeSkeleton(),
           error: (err, stack) => _buildErrorState(err.toString()),
-          data: (state) => _buildHomeContent(context, now, state),
+          data: (state) => _buildHomeContent(context, now, state, historyAsync),
         ),
       ),
     );
@@ -134,7 +138,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
     );
   }
 
-  Widget _buildHomeContent(BuildContext context, DateTime now, HomeDashboardState state) {
+  Widget _buildHomeContent(BuildContext context, DateTime now, HomeDashboardState state,
+      AsyncValue<HistoryState> historyAsync) {
     final dash = state.dashboardData;
     final latestBs = state.latestBloodSugar;
     final isSelectedToday = _selectedDate.day == now.day &&
@@ -146,7 +151,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Greeting Header Section ─────────────────────────────────────────────
         if (dash != null) ...[
           Text(
             '${dash.greetingText} ${dash.displayName}!',
@@ -167,7 +171,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
           const SizedBox(height: AppSpacing.lg),
         ],
 
-        // ── Weekly Calendar Timeline Selector ─────────────────────────────────
         WeeklyCalendarCard(
           selectedDate: _selectedDate,
           getDayState: (date) => _resolveDayState(date, now, state),
@@ -180,7 +183,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // ── Blood Sugar Card ──────────────────────────────────────────────────
         if (latestBs != null)
           BloodSugarCard(
             value: latestBs.glucoseValue.toString(),
@@ -198,7 +200,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
           ),
         const SizedBox(height: AppSpacing.lg),
 
-        // ── Daily Calories Card (Preserved) ───────────────────────────────────
         DailyCaloriesCard(
           consumed: 0,
           remaining: targetCalorie,
@@ -208,7 +209,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // ── Reminder Section (Preserved) ──────────────────────────────────────
         ReminderSection(
           reminders: const [],
           emptyMessage: 'Belum ada pengingat hari ini.',
@@ -217,7 +217,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // ── Recent Activity / History Timeline ───────────────────────────────
         Text(
           'Aktivitas Terakhir',
           style: AppTextStyles.labelLg.copyWith(
@@ -228,81 +227,108 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
         const SizedBox(height: AppSpacing.sm),
 
-        if (state.recentActivities.isEmpty)
-          const HistoryEmptyState()
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: state.recentActivities.length > 5 ? 5 : state.recentActivities.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
-            itemBuilder: (context, index) {
-              final act = state.recentActivities[index];
-              return Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.outlineVariant.withOpacity(0.5)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: act.iconBgColor,
-                        shape: BoxShape.circle,
+        historyAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          error: (err, _) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Gagal memuat aktivitas',
+              style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+            ),
+          ),
+          data: (historyState) {
+            if (historyState.allItems.isEmpty) {
+              return const HistoryEmptyState();
+            }
+
+            final activities = historyState.recentItemsLimited;
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: activities.length,
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
+              itemBuilder: (context, index) {
+                final act = activities[index];
+                final iconColor = _parseColor(act.color);
+                final iconBgColor = iconColor.withValues(alpha: 0.1);
+                final statusColor = act.status == 'normal'
+                    ? AppColors.secondary
+                    : (act.status == 'hyperglycemia' || act.status == 'severe_hyperglycemia'
+                        ? AppColors.error
+                        : AppColors.tertiary);
+
+                return Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: iconBgColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _mapIcon(act.icon),
+                          color: iconColor,
+                          size: 20,
+                        ),
                       ),
-                      child: Icon(act.icon, color: act.iconColor, size: 20),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            act.title,
-                            style: AppTextStyles.labelMd.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              act.title,
+                              style: AppTextStyles.labelMd.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            act.description,
-                            style: AppTextStyles.bodyMd.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                              fontSize: 12,
+                            const SizedBox(height: 2),
+                            Text(
+                              '${act.activityTypeLabel} • ${act.value} ${act.unit}',
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    if (act.statusLabel != null)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: (act.statusColor ?? AppColors.primary).withOpacity(0.12),
+                          color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          act.statusLabel!,
+                          _statusLabel(act),
                           style: AppTextStyles.labelMd.copyWith(
-                            color: act.statusColor ?? AppColors.primary,
+                            color: statusColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                           ),
                         ),
                       ),
-                  ],
-                ),
-              );
-            },
-          ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
         const SizedBox(height: AppSpacing.lg),
 
-        // ── Summary Counters Section ──────────────────────────────────────────
         WeeklySummarySection(
           summaries: [
             SummaryItemData(
@@ -319,5 +345,47 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
       ],
     );
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      final cleanHex = hex.replaceAll('#', '');
+      if (cleanHex.length == 6) {
+        return Color(int.parse('FF$cleanHex', radix: 16));
+      }
+    } catch (_) {}
+    return AppColors.primary;
+  }
+
+  IconData _mapIcon(String iconName) {
+    switch (iconName) {
+      case 'water_drop':
+        return Icons.water_drop_outlined;
+      case 'restaurant':
+        return Icons.restaurant_rounded;
+      case 'directions_run':
+        return Icons.directions_run_rounded;
+      case 'medication':
+        return Icons.medication_outlined;
+      case 'monitor_heart':
+        return Icons.monitor_heart_outlined;
+      default:
+        return Icons.history_rounded;
+    }
+  }
+
+  String _statusLabel(HistoryItemModel item) {
+    switch (item.activityType) {
+      case 'blood_sugar':
+        return '${item.value} mg/dL';
+      case 'meal':
+        return '${item.value} kcal';
+      case 'activity':
+        return item.status == 'Completed' ? 'Selesai' : 'Pending';
+      case 'medication':
+        return item.status == 'selesai' ? 'Minum' : 'Pending';
+      default:
+        return item.status;
+    }
   }
 }

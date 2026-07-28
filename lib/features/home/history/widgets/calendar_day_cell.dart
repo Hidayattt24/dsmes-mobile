@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../models/history_mock_data.dart';
+import '../models/history_item_model.dart';
+
+enum HealthActivityStatus { completed, inProgress, noActivity }
 
 class CalendarDayCell extends StatelessWidget {
   const CalendarDayCell({
@@ -10,27 +12,39 @@ class CalendarDayCell extends StatelessWidget {
     required this.date,
     required this.isToday,
     required this.isSelected,
-    required this.status,
-    this.progressRatio,
+    this.aggregate,
     this.onTap,
   });
 
   final DateTime date;
   final bool isToday;
   final bool isSelected;
-  final HealthActivityStatus status;
-  final double? progressRatio;
+  final DailyHistoryAggregate? aggregate;
   final VoidCallback? onTap;
+
+  HealthActivityStatus get _status {
+    if (aggregate == null || !aggregate!.hasAnyActivity) {
+      return HealthActivityStatus.noActivity;
+    }
+    if (aggregate!.isFullyCompleted) {
+      return HealthActivityStatus.completed;
+    }
+    return HealthActivityStatus.inProgress;
+  }
+
+  double get _progressRatio => aggregate?.progressRatio ?? 0.0;
 
   @override
   Widget build(BuildContext context) {
-    // Determine the indicator inside (compact 24x24 px base)
+    final status = _status;
+    final progressRatio = _progressRatio;
+
     Widget indicator = switch (status) {
       HealthActivityStatus.completed => Container(
           width: 24,
           height: 24,
           decoration: const BoxDecoration(
-            color: AppColors.secondary, // Green
+            color: AppColors.secondary,
             shape: BoxShape.circle,
           ),
           child: const Icon(
@@ -51,9 +65,9 @@ class CalendarDayCell extends StatelessWidget {
                 color: AppColors.outlineVariant.withValues(alpha: 0.3),
               ),
               CircularProgressIndicator(
-                value: progressRatio ?? 0.5,
+                value: progressRatio,
                 strokeWidth: 2.2,
-                color: AppColors.tertiary, // Orange / Amber
+                color: AppColors.tertiary,
                 strokeCap: StrokeCap.round,
               ),
               Container(
@@ -91,7 +105,6 @@ class CalendarDayCell extends StatelessWidget {
         ),
     };
 
-    // If today, wrap it in a primary teal highlight border (outer size becomes 30x30)
     if (isToday) {
       indicator = Container(
         padding: const EdgeInsets.all(1.5),
@@ -127,7 +140,6 @@ class CalendarDayCell extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Constrain indicator height to prevent layout shifts
               SizedBox(
                 height: 30,
                 child: Center(child: indicator),
