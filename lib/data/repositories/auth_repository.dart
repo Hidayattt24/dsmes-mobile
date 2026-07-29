@@ -42,6 +42,17 @@ abstract class IAuthRepository {
 
   Future<void> forgotPassword({required String email});
 
+  Future<void> verifyOTP({
+    required String email,
+    required String otpCode,
+  });
+
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  });
 
   Future<void> logout();
 
@@ -245,11 +256,52 @@ class AuthRepository implements IAuthRepository {
 
   @override
   Future<void> forgotPassword({required String email}) async {
-
     try {
       await _dio.post(
         '/auth/forgot-password',
-        data: {'email': email.trim()},
+        data: {'email': email.trim(), 'owner_type': 'patient'},
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<void> verifyOTP({
+    required String email,
+    required String otpCode,
+  }) async {
+    try {
+      await _dio.post(
+        '/auth/verify-otp',
+        data: {
+          'email': email.trim(),
+          'otp_code': otpCode,
+          'owner_type': 'patient',
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String otpCode,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      await _dio.post(
+        '/auth/reset-password',
+        data: {
+          'email': email.trim(),
+          'otp_code': otpCode,
+          'new_password': newPassword,
+          'confirm_password': confirmPassword,
+          'owner_type': 'patient',
+        },
       );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);

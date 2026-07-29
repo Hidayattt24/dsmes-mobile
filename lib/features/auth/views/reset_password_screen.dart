@@ -13,31 +13,51 @@ import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../data/repositories/auth_repository.dart';
 
-class ForgotPasswordScreen extends ConsumerStatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends ConsumerStatefulWidget {
+  final String email;
+  final String otpCode;
+
+  const ResetPasswordScreen({
+    super.key,
+    required this.email,
+    required this.otpCode,
+  });
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() =>
+      _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
   bool _isLoading = false;
+
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
+  String? _validatePassword(String? value) {
     if (value == null || value.trim().isEmpty) {
       return AppStrings.validationRequired;
     }
-    final emailRegex = RegExp(r'^[\w.-]+@[\w.-]+\.\w{2,}$');
-    if (!emailRegex.hasMatch(value.trim())) {
-      return AppStrings.validationEmail;
+    if (value.trim().length < 8) {
+      return AppStrings.validationPasswordMin;
+    }
+    return null;
+  }
+
+  String? _validateConfirm(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return AppStrings.validationRequired;
+    }
+    if (value.trim() != _passwordController.text.trim()) {
+      return AppStrings.validationPasswordNotMatch;
     }
     return null;
   }
@@ -46,13 +66,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).forgotPassword(
-            email: _emailController.text.trim(),
+      await ref.read(authRepositoryProvider).resetPassword(
+            email: widget.email,
+            otpCode: widget.otpCode,
+            newPassword: _passwordController.text.trim(),
+            confirmPassword: _confirmController.text.trim(),
           );
       if (mounted) {
         setState(() => _isLoading = false);
-        context.push(RouteNames.otpVerification,
-            extra: _emailController.text.trim());
+        AppSnackbar.showSuccess(
+          context,
+          AppStrings.resetPasswordSuccess,
+        );
+        context.go(RouteNames.login);
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -66,7 +92,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -89,37 +114,41 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ForgotPasswordHeader(),
+                _ResetPasswordHeader(),
                 const SizedBox(height: AppSpacing.xl),
                 Form(
                   key: _formKey,
-                  child: AppTextField(
-                    label: AppStrings.forgotPasswordEmail,
-                    hint: AppStrings.forgotPasswordEmailHint,
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.email_outlined,
-                    semanticLabel: 'Kolom email',
-                    validator: _validateEmail,
+                  child: Column(
+                    children: [
+                      AppTextField(
+                        label: AppStrings.resetPasswordNewLabel,
+                        hint: AppStrings.resetPasswordNewHint,
+                        controller: _passwordController,
+                        isPassword: true,
+                        textInputAction: TextInputAction.next,
+                        prefixIcon: Icons.lock_outline,
+                        semanticLabel: 'Kata sandi baru',
+                        validator: _validatePassword,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppTextField(
+                        label: AppStrings.resetPasswordConfirmLabel,
+                        hint: AppStrings.resetPasswordConfirmHint,
+                        controller: _confirmController,
+                        isPassword: true,
+                        textInputAction: TextInputAction.done,
+                        prefixIcon: Icons.lock_outline,
+                        semanticLabel: 'Konfirmasi kata sandi',
+                        validator: _validateConfirm,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 AppButton(
-                  label: AppStrings.forgotPasswordButton,
+                  label: AppStrings.resetPasswordButton,
                   isLoading: _isLoading,
                   onPressed: _submit,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Center(
-                  child: TextButton(
-                    onPressed: () => context.go(RouteNames.login),
-                    child: Text(
-                      AppStrings.forgotPasswordBackToLogin,
-                      style: AppTextStyles.labelMd
-                          .copyWith(color: AppColors.primary),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -130,7 +159,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 }
 
-class _ForgotPasswordHeader extends StatelessWidget {
+class _ResetPasswordHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -150,12 +179,12 @@ class _ForgotPasswordHeader extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
-          AppStrings.forgotPasswordTitle,
+          AppStrings.resetPasswordTitle,
           style: AppTextStyles.poppinsHeadline,
         ),
         const SizedBox(height: AppSpacing.xxs),
         Text(
-          AppStrings.forgotPasswordSubtitle,
+          AppStrings.resetPasswordSubtitle,
           style: AppTextStyles.bodyMd
               .copyWith(color: AppColors.onSurfaceVariant),
         ),

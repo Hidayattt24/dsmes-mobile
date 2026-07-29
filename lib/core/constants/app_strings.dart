@@ -30,13 +30,34 @@ abstract final class AppStrings {
   // ── Auth — Forgot Password ─────────────────────────────────────────────────
   static const String forgotPasswordTitle = 'Lupa Kata Sandi';
   static const String forgotPasswordSubtitle =
-      'Masukkan email Anda dan kami akan mengirimkan tautan untuk mereset kata sandi Anda.';
+      'Masukkan email Anda untuk menerima kode OTP 6 digit.';
   static const String forgotPasswordEmail = 'Email';
   static const String forgotPasswordEmailHint = 'Masukkan email Anda';
-  static const String forgotPasswordButton = 'Kirim Tautan Reset';
+  static const String forgotPasswordButton = 'Kirim Kode OTP';
   static const String forgotPasswordBackToLogin = 'Kembali ke masuk';
   static const String forgotPasswordSuccessMessage =
-      'Tautan reset kata sandi telah dikirim ke email Anda.';
+      'Kode OTP telah dikirim ke email Anda.';
+
+  // ── Auth — OTP Verification ────────────────────────────────────────────────
+  static const String otpTitle = 'Verifikasi Kode OTP';
+  static const String otpSubtitle = 'Masukkan kode OTP 6 digit yang dikirim ke';
+  static const String otpFieldLabel = 'Kode OTP';
+  static const String otpButton = 'Verifikasi';
+  static const String otpResend = 'Kirim Ulang';
+  static const String otpErrorInvalid = 'Kode OTP tidak valid. Coba lagi.';
+  static const String otpErrorExpired = 'Kode OTP telah kedaluwarsa.';
+
+  // ── Auth — Reset Password ──────────────────────────────────────────────────
+  static const String resetPasswordTitle = 'Buat Kata Sandi Baru';
+  static const String resetPasswordSubtitle =
+      'Kata sandi baru minimal 8 karakter.';
+  static const String resetPasswordNewLabel = 'Kata Sandi Baru';
+  static const String resetPasswordNewHint = 'Masukkan kata sandi baru';
+  static const String resetPasswordConfirmLabel = 'Konfirmasi Kata Sandi';
+  static const String resetPasswordConfirmHint = 'Masukkan ulang kata sandi';
+  static const String resetPasswordButton = 'Reset Kata Sandi';
+  static const String resetPasswordSuccess =
+      'Kata sandi berhasil direset. Silakan masuk dengan kata sandi baru Anda.';
 
   // ── Validation ─────────────────────────────────────────────────────────────
   static const String validationRequired = 'Kolom ini wajib diisi';

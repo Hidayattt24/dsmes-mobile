@@ -6,6 +6,8 @@ import '../../app/shell/app_shell.dart';
 import '../../features/ai_chat/views/ai_chatbot_screen.dart';
 import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
+import '../../features/auth/views/otp_verification_screen.dart';
+import '../../features/auth/views/reset_password_screen.dart';
 import '../../features/education/views/education_detail_screen.dart';
 import '../../features/home/blood_sugar/views/blood_sugar_entry_screen.dart';
 import '../../features/home/meal/views/meal_entry_screen.dart';
@@ -95,6 +97,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         state: state,
         child: const ForgotPasswordScreen(),
       ),
+    ),
+    GoRoute(
+      path: RouteNames.otpVerification,
+      name: RouteNames.nameOtpVerification,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: OtpVerificationScreen(
+          email: state.extra as String,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.resetPassword,
+      name: RouteNames.nameResetPassword,
+      pageBuilder: (context, state) {
+        final args = state.extra as Map<String, String>;
+        return _buildSlideTransition(
+          state: state,
+          child: ResetPasswordScreen(
+            email: args['email']!,
+            otpCode: args['otp_code']!,
+          ),
+        );
+      },
     ),
 
     // ── Onboarding ────────────────────────────────────────────────────────
