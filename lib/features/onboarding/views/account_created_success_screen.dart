@@ -18,10 +18,12 @@ class AccountCreatedSuccessScreen extends StatefulWidget {
   const AccountCreatedSuccessScreen({super.key});
 
   @override
-  State<AccountCreatedSuccessScreen> createState() => _AccountCreatedSuccessScreenState();
+  State<AccountCreatedSuccessScreen> createState() =>
+      _AccountCreatedSuccessScreenState();
 }
 
-class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScreen>
+class _AccountCreatedSuccessScreenState
+    extends State<AccountCreatedSuccessScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
@@ -120,7 +122,9 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
                               ),
                               const SizedBox(height: AppSpacing.md),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                ),
                                 child: Text(
                                   AppStrings.successSubtitle,
                                   style: AppTextStyles.bodyLg.copyWith(
@@ -139,11 +143,15 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
                                   children: [
                                     _buildInfoItem(
                                       icon: Icons.calendar_today_outlined,
-                                      title: AppStrings.successFeatureRoutineTitle,
-                                      description: AppStrings.successFeatureRoutineDesc,
+                                      title:
+                                          AppStrings.successFeatureRoutineTitle,
+                                      description:
+                                          AppStrings.successFeatureRoutineDesc,
                                     ),
                                     const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: AppSpacing.md,
+                                      ),
                                       child: Divider(
                                         color: AppColors.surfaceContainerHigh,
                                         height: 1,
@@ -151,11 +159,15 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
                                     ),
                                     _buildInfoItem(
                                       icon: Icons.person_outline_rounded,
-                                      title: AppStrings.successFeatureProfileTitle,
-                                      description: AppStrings.successFeatureProfileDesc,
+                                      title:
+                                          AppStrings.successFeatureProfileTitle,
+                                      description:
+                                          AppStrings.successFeatureProfileDesc,
                                     ),
                                     const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: AppSpacing.md,
+                                      ),
                                       child: Divider(
                                         color: AppColors.surfaceContainerHigh,
                                         height: 1,
@@ -163,11 +175,17 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
                                     ),
                                     _buildInfoItem(
                                       icon: Icons.water_drop_outlined,
-                                      title: AppStrings.successFeatureBloodSugarTitle,
-                                      description: AppStrings.successFeatureBloodSugarDesc,
+                                      title:
+                                          AppStrings
+                                              .successFeatureBloodSugarTitle,
+                                      description:
+                                          AppStrings
+                                              .successFeatureBloodSugarDesc,
                                     ),
                                     const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: AppSpacing.md,
+                                      ),
                                       child: Divider(
                                         color: AppColors.surfaceContainerHigh,
                                         height: 1,
@@ -175,8 +193,12 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
                                     ),
                                     _buildInfoItem(
                                       icon: Icons.auto_stories_outlined,
-                                      title: AppStrings.successFeatureEducationTitle,
-                                      description: AppStrings.successFeatureEducationDesc,
+                                      title:
+                                          AppStrings
+                                              .successFeatureEducationTitle,
+                                      description:
+                                          AppStrings
+                                              .successFeatureEducationDesc,
                                     ),
                                   ],
                                 ),
@@ -261,7 +283,9 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.onSecondaryContainer.withValues(alpha: 0.3),
+                    color: AppColors.onSecondaryContainer.withValues(
+                      alpha: 0.3,
+                    ),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -293,11 +317,7 @@ class _AccountCreatedSuccessScreenState extends State<AccountCreatedSuccessScree
             color: AppColors.primaryContainer.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.primary,
-            size: 24,
-          ),
+          child: Icon(icon, color: AppColors.primary, size: 24),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(

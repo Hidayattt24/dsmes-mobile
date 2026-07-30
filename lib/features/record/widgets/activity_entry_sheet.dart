@@ -364,10 +364,10 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                       child: ChoiceChip(
                         label: Center(child: Text(intensity)),
                         selected: isSelected,
-                        selectedColor: AppColors.secondaryContainer,
+                        selectedColor: AppColors.primary,
                         labelStyle: AppTextStyles.labelMd.copyWith(
                           color: isSelected
-                              ? AppColors.onSecondaryContainer
+                              ? AppColors.onPrimary
                               : AppColors.onSurface,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),

@@ -90,7 +90,7 @@ class RecordActionCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.labelMd.copyWith(
-                        fontSize: 9,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w600,
                         color: badgeTextColor ?? AppColors.onSecondaryContainer,
                       ),
@@ -106,7 +106,7 @@ class RecordActionCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.labelMd.copyWith(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.onSurface,
             ),
@@ -126,7 +126,7 @@ class RecordActionCard extends StatelessWidget {
                   style: AppTextStyles.headlineMd.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
-                    fontSize: 17,
+                    fontSize: 18,
                   ),
                 ),
                 if (unitText != null) ...[
@@ -135,7 +135,7 @@ class RecordActionCard extends StatelessWidget {
                     unitText!,
                     style: AppTextStyles.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
-                      fontSize: 11,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -150,14 +150,14 @@ class RecordActionCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bodyMd.copyWith(
               color: AppColors.onSurfaceVariant,
-              fontSize: 11,
+              fontSize: 12,
             ),
           ),
           const SizedBox(height: 4),
           // Action Button
           SizedBox(
             width: double.infinity,
-            height: 34,
+            height: 36,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: isPrimaryButton
@@ -181,7 +181,7 @@ class RecordActionCard extends StatelessWidget {
               child: Text(
                 buttonText,
                 style: AppTextStyles.labelMd.copyWith(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: isPrimaryButton
                       ? AppColors.onPrimaryContainer

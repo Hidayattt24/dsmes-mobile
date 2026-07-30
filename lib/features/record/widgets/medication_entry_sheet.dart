@@ -278,12 +278,46 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
               const SizedBox(height: AppSpacing.lg),
 
               // Waktu Jadwal
-              Text(
-                'Waktu Jadwal',
-                style: AppTextStyles.labelLg.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Waktu Jadwal',
+                    style: AppTextStyles.labelLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.access_time, size: 18, color: AppColors.primary),
+                    label: Text(
+                      _selectedTime,
+                      style: AppTextStyles.labelLg.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () async {
+                      final parts = _selectedTime.split(':');
+                      final initHour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
+                      final initMin = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay(hour: initHour, minute: initMin),
+                      );
+                      if (picked != null) {
+                        final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                        setState(() {
+                          _selectedTime = formatted;
+                        });
+                      }
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.xs),
               Row(
