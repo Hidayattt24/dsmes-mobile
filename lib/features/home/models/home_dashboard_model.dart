@@ -19,6 +19,7 @@ class HomeDashboardModel {
   final String? latestBloodSugarRecommendation;
   final String? latestBloodSugarColor;
   final double? averageBloodSugar;
+  final String? profilePhotoUrl;
   final String? latestBloodPressure;
   final String? lastMeasuredDate;
 
@@ -29,6 +30,7 @@ class HomeDashboardModel {
     required this.gender,
     required this.heightCm,
     required this.weightKg,
+    this.profilePhotoUrl,
     this.bmi,
     this.bmiCategory,
     this.dailyCalorieTarget = 2000,
@@ -84,6 +86,7 @@ class HomeDashboardModel {
       gender: json['gender'] as String? ?? 'Laki-laki',
       heightCm: (json['height_cm'] as num?)?.toDouble() ?? 160.0,
       weightKg: (json['weight_kg'] as num?)?.toDouble() ?? (json['latest_weight'] as num?)?.toDouble() ?? 60.0,
+      profilePhotoUrl: json['profile_photo_url'] as String?,
       bmi: (json['bmi'] as num?)?.toDouble(),
       bmiCategory: json['bmi_category'] as String?,
       dailyCalorieTarget: (json['daily_calorie_target'] as num?)?.toInt() ?? 2000,

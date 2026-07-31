@@ -123,13 +123,15 @@ class RecordActionCard extends StatelessWidget {
               children: [
                 Text(
                   valueText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.headlineMd.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: valueText.length > 14 ? 14 : 18,
                   ),
                 ),
-                if (unitText != null) ...[
+                if (unitText != null && unitText!.isNotEmpty) ...[
                   const SizedBox(width: 3),
                   Text(
                     unitText!,

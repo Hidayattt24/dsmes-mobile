@@ -171,6 +171,86 @@ class DailyHistorySummary extends StatelessWidget {
             ),
           ),
         ],
+
+        // Detailed Timeline of individual records for the day
+        if (aggregate.items.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            'Detail Catatan Harian',
+            style: AppTextStyles.labelLg.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ...aggregate.items.map((item) {
+            final formattedTime = item.parsedMeasuredAt != null
+                ? '${item.parsedMeasuredAt!.hour.toString().padLeft(2, '0')}:${item.parsedMeasuredAt!.minute.toString().padLeft(2, '0')} WIB'
+                : '-';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.history_rounded, size: 20, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            style: AppTextStyles.labelLg.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                          Text(
+                            '${item.subtitle} • $formattedTime',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontSize: 11,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (item.status.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          item.status,
+                          style: AppTextStyles.labelMd.copyWith(
+                            fontSize: 10,
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ],
     );
   }

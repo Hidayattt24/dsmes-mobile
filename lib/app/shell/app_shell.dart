@@ -53,7 +53,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => CalendarHistoryBottomSheet(
-        initialDate: widget.nowOverride ?? DateTime(2026, 7, 23),
+        initialDate: widget.nowOverride ?? DateTime.now(),
         onDateSelected: (date) {
           // Calendar date selected callback
         },
@@ -77,7 +77,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     final unreadNotificationCount = ref.watch(
       notificationsProvider.select((list) => list.where((n) => n.isUnread).length),
     );
-    final patientName = ref.watch(homeDashboardProvider).value?.dashboardData?.displayName ?? 'Pasien';
+    final dashboardData = ref.watch(homeDashboardProvider).value?.dashboardData;
+    final patientName = dashboardData?.displayName ?? 'Pasien';
+    final avatarUrl = dashboardData?.profilePhotoUrl;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -96,6 +98,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                   ),
                   child: AppHeader(
                     userName: patientName,
+                    avatarUrl: avatarUrl,
                     showGreeting: false,
                     subtitle: _getSubtitleForIndex(_selectedIndex),
                     notificationCount: unreadNotificationCount,

@@ -39,8 +39,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     _selectedDate = widget.nowOverride ?? DateTime.now();
   }
 
-  WeeklyDayState _resolveDayState(DateTime date, DateTime now, HomeDashboardState state) {
-    final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
+  WeeklyDayState _resolveDayState(DateTime date, DateTime now, HistoryState? historyState) {
     final todayStart = DateTime(now.year, now.month, now.day);
     final dateStart = DateTime(date.year, date.month, date.day);
 
@@ -48,20 +47,21 @@ class _HomeViewState extends ConsumerState<HomeView> {
       return WeeklyDayState.noRecord;
     }
 
-    final hasRecordOnDate = state.bloodSugarLogs.any((log) {
-      final dt = DateTime.tryParse(log.measuredAt);
-      return dt != null && dt.year == date.year && dt.month == date.month && dt.day == date.day;
-    });
+    final aggregate = historyState?.getAggregateForDate(date);
+    if (aggregate == null || !aggregate.hasAnyActivity) {
+      return WeeklyDayState.noRecord;
+    }
 
-    if (hasRecordOnDate) {
+    if (aggregate.isFullyCompleted) {
       return WeeklyDayState.completed;
     }
 
-    if (isToday) {
-      return WeeklyDayState.today;
-    }
+    return WeeklyDayState.inProgress;
+  }
 
-    return WeeklyDayState.noRecord;
+  double _resolveDayProgress(DateTime date, HistoryState? historyState) {
+    final aggregate = historyState?.getAggregateForDate(date);
+    return aggregate?.progressRatio ?? 0.0;
   }
 
   void _openHistoryBottomSheet() {
@@ -151,6 +151,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
         _selectedDate.month == now.month &&
         _selectedDate.year == now.year;
 
+    final historyState = historyAsync.valueOrNull;
     final targetCalorie = dash?.dailyCalorieTarget ?? 2000;
 
     return Column(
@@ -178,7 +179,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
         WeeklyCalendarCard(
           selectedDate: _selectedDate,
-          getDayState: (date) => _resolveDayState(date, now, state),
+          getDayState: (date) => _resolveDayState(date, now, historyState),
+          getDayProgress: (date) => _resolveDayProgress(date, historyState),
           onDateSelected: (date) {
             setState(() {
               _selectedDate = date;

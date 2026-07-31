@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
+import '../../../../core/services/local_notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../home/history/widgets/calendar_history_bottom_sheet.dart';
+import '../../home/reminders/viewmodels/reminder_provider.dart';
+import '../../notifications/models/notification_item.dart';
+import '../../notifications/viewmodels/notifications_notifier.dart';
 import '../models/record_entry.dart';
 import '../models/record_provider.dart';
 import '../widgets/activity_entry_sheet.dart';
@@ -55,14 +59,102 @@ class _RecordViewState extends ConsumerState<RecordView> {
       duration: duration,
       intensity: intensity,
     );
+    ref.read(notificationsProvider.notifier).addNotification(
+      title: 'Aktivitas Fisik: $activityName',
+      description: '$activityName selama $duration menit ($intensity) telah dicatat.',
+      type: NotificationType.targetAchieved,
+    );
   }
 
-  void _onMedicationSaved(String medicationName, String dosage, String schedule, bool isTaken) {
-    ref.read(recordProvider.notifier).submitMedication(
+  void _onMedicationSaved(String medicationName, String dosage, String schedule, bool isTaken) async {
+    // 1. Submit medication log to record provider
+    await ref.read(recordProvider.notifier).submitMedication(
       medicationName: medicationName,
       dosage: dosage,
       schedule: schedule,
       isTaken: isTaken,
+    );
+
+    // Add to real notifications inbox list
+    if (isTaken) {
+      ref.read(notificationsProvider.notifier).addNotification(
+        title: 'Catatan Obat: $medicationName',
+        description: 'Konsumsi $medicationName ($dosage) jam $schedule WIB telah dicatat.',
+        type: NotificationType.medication,
+      );
+    } else {
+      final formattedSched = schedule.contains(':')
+          ? (schedule.split(':').length == 2 ? '$schedule:00' : schedule)
+          : '$schedule:00';
+      ref.read(notificationsProvider.notifier).scheduleReminderNotification(
+        title: 'Waktunya Minum Obat: $medicationName',
+        description: 'Jadwal minum obat $medicationName ($dosage) Anda jam $schedule WIB.',
+        scheduledTimeStr: formattedSched,
+        type: NotificationType.medication,
+      );
+    }
+
+    // 2. Create/Sync reminder in reminderListProvider (lib/features/home/reminders)
+    try {
+      final formattedSched = schedule.contains(':')
+          ? (schedule.split(':').length == 2 ? '$schedule:00' : schedule)
+          : '$schedule:00';
+      await ref.read(reminderListProvider.notifier).create(
+        activityName: 'Minum Obat $medicationName ($dosage)',
+        category: 'medis_obat',
+        scheduledTime: formattedSched,
+        notes: isTaken ? 'Sudah diminum' : 'Belum diminum',
+        activeDays: const [1, 2, 3, 4, 5, 6, 7],
+      );
+
+      // Trigger system local notification & alarm
+      final parts = schedule.split(':');
+      final hour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
+      final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+      final notifId = medicationName.hashCode.abs();
+
+      await LocalNotificationService.instance.showNotification(
+        id: notifId,
+        title: isTaken ? 'Catatan Obat Tersimpan 💊' : 'Pengingat Minum Obat Diaktifkan ⏰',
+        body: isTaken
+            ? 'Konsumsi $medicationName ($dosage) jam $schedule WIB berhasil dicatat.'
+            : 'Pengingat untuk $medicationName ($dosage) jam $schedule WIB telah aktif!',
+      );
+
+      if (!isTaken) {
+        await LocalNotificationService.instance.scheduleDailyNotification(
+          id: notifId + 1,
+          title: 'Waktunya Minum Obat! 💊',
+          body: 'Jangan lupa diminum: $medicationName ($dosage)',
+          hour: hour,
+          minute: minute,
+        );
+      }
+    } catch (_) {
+      // Ignore if error or duplicate
+    }
+
+    // 3. Show Pop Up Pengingat Obat Dialog
+    if (mounted) {
+      _showMedicationReminderPopup(context, medicationName, dosage, schedule, isTaken);
+    }
+  }
+
+  void _showMedicationReminderPopup(
+    BuildContext context,
+    String medicationName,
+    String dosage,
+    String schedule,
+    bool isTaken,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => _MedicationReminderDialog(
+        medicationName: medicationName,
+        dosage: dosage,
+        schedule: schedule,
+        isTaken: isTaken,
+      ),
     );
   }
 
@@ -392,7 +484,9 @@ class _RecordViewState extends ConsumerState<RecordView> {
                       valueText: pageState.medicationName,
                       unitText: pageState.medicationDosage,
                       subtitle: 'Jadwal ${pageState.medicationSchedule}',
-                      buttonText: 'Perbarui',
+                      buttonText: (pageState.medicationName != '-' && pageState.medicationName.trim().isNotEmpty)
+                          ? 'Perbarui'
+                          : 'Catat Obat',
                       icon: Icons.medication,
                       iconBgColor: AppColors.surfaceContainerHighest,
                       iconColor: AppColors.onSurface,
@@ -405,7 +499,7 @@ class _RecordViewState extends ConsumerState<RecordView> {
                           : AppColors.onSurfaceVariant,
                       onTap: () => showMedicationEntrySheet(
                         context,
-                        initialMedicationName: pageState.medicationName,
+                        initialMedicationName: pageState.medicationName == '-' ? 'Metformin' : pageState.medicationName,
                         initialDosage: pageState.medicationDosage,
                         initialSchedule: pageState.medicationSchedule,
                         initialIsTaken: pageState.isMedicationTaken,
@@ -454,6 +548,368 @@ class _RecordViewState extends ConsumerState<RecordView> {
             Icons.add,
             size: 24,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MedicationReminderDialog extends ConsumerStatefulWidget {
+  const _MedicationReminderDialog({
+    required this.medicationName,
+    required this.dosage,
+    required this.schedule,
+    required this.isTaken,
+  });
+
+  final String medicationName;
+  final String dosage;
+  final String schedule;
+  final bool isTaken;
+
+  @override
+  ConsumerState<_MedicationReminderDialog> createState() => _MedicationReminderDialogState();
+}
+
+class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDialog> {
+  late bool _enableReminder;
+
+  @override
+  void initState() {
+    super.initState();
+    _enableReminder = !widget.isTaken;
+  }
+
+  void _onToggleReminder(bool val) async {
+    setState(() => _enableReminder = val);
+    final formattedSched = widget.schedule.contains(':')
+        ? (widget.schedule.split(':').length == 2 ? '${widget.schedule}:00' : widget.schedule)
+        : '${widget.schedule}:00';
+
+    final parts = widget.schedule.split(':');
+    final hour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    final notifId = widget.medicationName.hashCode.abs();
+
+    if (val) {
+      try {
+        await ref.read(reminderListProvider.notifier).create(
+          activityName: 'Minum Obat ${widget.medicationName} (${widget.dosage})',
+          category: 'medis_obat',
+          scheduledTime: formattedSched,
+          notes: 'Belum diminum',
+          activeDays: const [1, 2, 3, 4, 5, 6, 7],
+        );
+
+        // System Notification Pop-up & Alarm Schedule
+        await LocalNotificationService.instance.showNotification(
+          id: notifId,
+          title: 'Pengingat Minum Obat Diaktifkan ⏰',
+          body: 'Pengingat untuk ${widget.medicationName} (${widget.dosage}) jam ${widget.schedule} WIB telah aktif!',
+        );
+
+        await LocalNotificationService.instance.scheduleDailyNotification(
+          id: notifId + 1,
+          title: 'Waktunya Minum Obat! 💊',
+          body: 'Jangan lupa diminum: ${widget.medicationName} (${widget.dosage})',
+          hour: hour,
+          minute: minute,
+        );
+      } catch (_) {}
+    } else {
+      await LocalNotificationService.instance.cancelNotification(notifId);
+      await LocalNotificationService.instance.cancelNotification(notifId + 1);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      backgroundColor: AppColors.surfaceContainerLowest,
+      elevation: 10,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Top Badge / Icon Banner
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryContainer],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.alarm_on_rounded,
+                color: Colors.white,
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Dialog Title
+            Text(
+              widget.isTaken ? 'Obat Berhasil Dicatat!' : 'Catatan & Pengingat Obat',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.headlineLg.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              widget.isTaken
+                  ? 'Terima kasih telah mencatat konsumsi "${widget.medicationName} (${widget.dosage})".'
+                  : 'Atur pengingat alarm agar Anda tidak melewatkan jadwal minum "${widget.medicationName}".',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // Medication Detail Info Box
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.outlineVariant.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: widget.isTaken
+                              ? AppColors.secondaryContainer
+                              : AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.medication_rounded,
+                          color: widget.isTaken ? AppColors.secondary : AppColors.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${widget.medicationName} (${widget.dosage})',
+                              style: AppTextStyles.labelLg.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Jadwal: ${widget.schedule} WIB',
+                              style: AppTextStyles.bodyMd.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: widget.isTaken
+                          ? AppColors.secondaryContainer.withValues(alpha: 0.5)
+                          : AppColors.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          widget.isTaken ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                          size: 16,
+                          color: widget.isTaken ? AppColors.secondary : AppColors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.isTaken ? 'Status: Sudah Diminum' : 'Status: Belum Diminum',
+                          style: AppTextStyles.labelMd.copyWith(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: widget.isTaken
+                                ? AppColors.onSecondaryContainer
+                                : AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Toggle Switch Section for "Belum Konsumsi" (!isTaken)
+            if (!widget.isTaken) ...[
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _enableReminder
+                      ? AppColors.primaryContainer.withValues(alpha: 0.3)
+                      : AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _enableReminder
+                        ? AppColors.primary.withValues(alpha: 0.4)
+                        : AppColors.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _enableReminder ? Icons.notifications_active_rounded : Icons.notifications_off_rounded,
+                      color: _enableReminder ? AppColors.primary : AppColors.outline,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ingatkan Saya Minum Obat',
+                            style: AppTextStyles.labelLg.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                          Text(
+                            _enableReminder
+                                ? 'Notifikasi alarm diatur jam ${widget.schedule} WIB'
+                                : 'Pengingat otomatis dinonaktifkan',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontSize: 11,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: _enableReminder,
+                      activeColor: AppColors.primary,
+                      onChanged: _onToggleReminder,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: AppSpacing.xl),
+
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        side: BorderSide(
+                          color: AppColors.outlineVariant.withValues(alpha: 0.6),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Center(
+                        child: Text(
+                          'Tutup',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.labelLg.copyWith(
+                            fontSize: 13,
+                            color: AppColors.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        elevation: 2,
+                        shadowColor: AppColors.primary.withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        context.push(RouteNames.reminders);
+                      },
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Text(
+                              'Lihat Pengingat',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelLg.copyWith(
+                                fontSize: 12.5,
+                                color: AppColors.onPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

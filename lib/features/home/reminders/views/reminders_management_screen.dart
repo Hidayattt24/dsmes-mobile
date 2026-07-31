@@ -358,12 +358,15 @@ class RemindersManagementScreen extends ConsumerWidget {
                   ref.read(reminderListProvider.notifier).toggle(reminder.id);
 
                   if (willBeActive) {
-                    // 1. Add notification item to in-app Notification Center
-                    ref.read(notificationsProvider.notifier).addNotification(
-                          title: 'Pengingat Aktif: ${reminder.activityName}',
+                    // 1. Schedule notification item in NotificationsNotifier for exact target time
+                    ref.read(notificationsProvider.notifier).scheduleReminderNotification(
+                          title: 'Waktunya: ${reminder.activityName}',
                           description:
-                              'Pengingat untuk ${reminder.activityName} akan berdering setiap pukul ${reminder.formattedTime} (${reminder.activeDaysLabel}).',
-                          type: NotificationType.medication,
+                              'Pengingat untuk ${reminder.activityName} (${reminder.notes.isNotEmpty ? reminder.notes : 'Jadwal pengingat harian DSMES'}).',
+                          scheduledTimeStr: reminder.scheduledTime,
+                          type: reminder.category == 'medis_obat'
+                              ? NotificationType.medication
+                              : NotificationType.warning,
                         );
 
                     // 2. Trigger System Pop-Up Notification on Android status bar / lockscreen
@@ -691,6 +694,12 @@ class RemindersManagementScreen extends ConsumerWidget {
                               iconName: iconKey.value,
                               activeDays: selectedDays,
                             );
+                        ref.read(notificationsProvider.notifier).scheduleReminderNotification(
+                          title: 'Pengingat DSMES: ${nameController.text.trim()}',
+                          description: 'Jadwal pengingat ${nameController.text.trim()} (${notesController.text.trim().isNotEmpty ? notesController.text.trim() : 'Waktunya melakukan ${nameController.text.trim()}'}).',
+                          scheduledTimeStr: timeStr,
+                          type: category == 'medis_obat' ? NotificationType.medication : NotificationType.warning,
+                        );
                         Navigator.pop(sheetContext);
                       },
                       style: ElevatedButton.styleFrom(

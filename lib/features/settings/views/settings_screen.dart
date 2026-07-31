@@ -11,6 +11,8 @@ import '../viewmodels/settings_notifier.dart';
 import '../widgets/bmi_summary_card.dart';
 import '../widgets/body_metric_card.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../home/viewmodels/home_dashboard_notifier.dart';
+import '../../ai_chat/viewmodels/ai_chat_notifier.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 
@@ -61,6 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 recommendations: recommendations,
               );
         }
+        ref.invalidate(homeDashboardProvider);
         setState(() {});
       }
     } catch (_) {}
@@ -96,6 +99,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final authRepo = ref.read(authRepositoryProvider);
       await authRepo.logout();
       ref.read(bodyMetricsProvider.notifier).reset();
+      ref.read(aiChatProvider.notifier).reset();
       if (mounted) context.go(RouteNames.login);
     }
   }

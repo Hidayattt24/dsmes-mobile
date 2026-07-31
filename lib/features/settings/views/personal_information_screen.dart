@@ -15,6 +15,7 @@ import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../home/viewmodels/home_dashboard_notifier.dart';
 
 class PersonalInformationScreen extends ConsumerStatefulWidget {
   const PersonalInformationScreen({super.key});
@@ -183,6 +184,7 @@ class _PersonalInformationScreenState
       }
 
       await _fetchProfile();
+      ref.invalidate(homeDashboardProvider);
 
       if (mounted) {
         AppSnackbar.showSuccess(

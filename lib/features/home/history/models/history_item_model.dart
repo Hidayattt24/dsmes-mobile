@@ -93,7 +93,8 @@ class DailyHistoryAggregate {
   bool get hasMeal => items.any((i) => i.activityType == 'meal');
   bool get hasActivity => items.any((i) => i.activityType == 'activity');
   bool get hasMedication => items.any((i) => i.activityType == 'medication');
-  bool get hasMeasurement => items.any((i) => i.activityType == 'measurement');
+  bool get hasReminder => items.any((i) => i.activityType == 'measurement' || i.activityType == 'reminder' || i.category == 'reminder');
+  bool get hasMeasurement => hasReminder;
 
   int get recordedCategoriesCount {
     int count = 0;
@@ -101,12 +102,28 @@ class DailyHistoryAggregate {
     if (hasMeal) count++;
     if (hasActivity) count++;
     if (hasMedication) count++;
+    if (hasReminder) count++;
     return count;
   }
 
-  double get progressRatio => (recordedCategoriesCount / 4.0).clamp(0.0, 1.0);
+  /// Weighted compliance calculation:
+  /// - Physical Activity: 30% (0.30)
+  /// - Medication: 30% (0.30)
+  /// - Blood Sugar Input: 15% (0.15)
+  /// - Meal / Calorie Input: 15% (0.15)
+  /// - Reminder / Measurement: 10% (0.10)
+  double get progressRatio {
+    double ratio = 0.0;
+    if (hasActivity) ratio += 0.30;
+    if (hasMedication) ratio += 0.30;
+    if (hasBloodSugar) ratio += 0.15;
+    if (hasMeal) ratio += 0.15;
+    if (hasReminder) ratio += 0.10;
+    return ratio.clamp(0.0, 1.0);
+  }
 
-  bool get isFullyCompleted => recordedCategoriesCount >= 4;
+  /// Day turns Green (completed) ONLY when all 5 components are logged
+  bool get isFullyCompleted => hasBloodSugar && hasMeal && hasActivity && hasMedication && hasReminder;
   bool get hasAnyActivity => items.isNotEmpty;
 
   String? get latestBloodSugarValue {

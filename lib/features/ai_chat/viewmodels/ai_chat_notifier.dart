@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../data/repositories/ai_chat_repository.dart';
 import '../models/chat_message.dart';
 import '../models/chat_session.dart';
 
@@ -6,12 +7,14 @@ class AiChatState {
   final List<ChatSession> sessions;
   final String? activeSessionId;
   final bool isLoading;
+  final String? errorMessage;
   final List<String> quickSuggestions;
 
   const AiChatState({
     this.sessions = const [],
     this.activeSessionId,
     this.isLoading = false,
+    this.errorMessage,
     this.quickSuggestions = const [
       'Apa itu Diabetes?',
       'Rekomendasi Makanan',
@@ -26,7 +29,7 @@ class AiChatState {
     try {
       return sessions.firstWhere((s) => s.id == activeSessionId);
     } catch (_) {
-      return sessions.first;
+      return null;
     }
   }
 
@@ -35,116 +38,90 @@ class AiChatState {
   AiChatState copyWith({
     List<ChatSession>? sessions,
     String? activeSessionId,
+    bool clearActiveSessionId = false,
     bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
     List<String>? quickSuggestions,
   }) {
     return AiChatState(
       sessions: sessions ?? this.sessions,
-      activeSessionId: activeSessionId ?? this.activeSessionId,
+      activeSessionId: clearActiveSessionId ? null : (activeSessionId ?? this.activeSessionId),
       isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       quickSuggestions: quickSuggestions ?? this.quickSuggestions,
     );
   }
 }
 
 class AiChatNotifier extends StateNotifier<AiChatState> {
-  AiChatNotifier() : super(_initialState());
+  final IAIChatRepository _repository;
 
-  static AiChatState _initialState() {
-    final now = DateTime.now();
-    final mockSessions = [
-      ChatSession(
-        id: 'sess_1',
-        title: 'Edukasi Kadar Gula Darah Puasa',
-        createdAt: now.subtract(const Duration(hours: 2)),
-        updatedAt: now.subtract(const Duration(hours: 2)),
-        messages: [
-          ChatMessage(
-            id: 'm1_1',
-            text: 'Berapa kadar gula darah puasa yang normal?',
-            sender: ChatSender.user,
-            timestamp: now.subtract(const Duration(hours: 2)),
-          ),
-          ChatMessage(
-            id: 'm1_2',
-            text: 'Kadar gula darah puasa yang normal berkisar antara 70-99 mg/dL. Kadar 100-125 mg/dL menandakan pradiabetes, sedangkan 126 mg/dL ke atas dapat mengindikasikan diabetes.',
-            sender: ChatSender.assistant,
-            timestamp: now.subtract(const Duration(hours: 2, minutes: -1)),
-          ),
-        ],
-      ),
-      ChatSession(
-        id: 'sess_2',
-        title: 'Rekomendasi Karbohidrat Kompleks',
-        createdAt: now.subtract(const Duration(days: 1)),
-        updatedAt: now.subtract(const Duration(days: 1)),
-        messages: [
-          ChatMessage(
-            id: 'm2_1',
-            text: 'Rekomendasi makanan sehat untuk penderita diabetes',
-            sender: ChatSender.user,
-            timestamp: now.subtract(const Duration(days: 1)),
-          ),
-          ChatMessage(
-            id: 'm2_2',
-            text: 'Pilihlah makanan berbahan karbohidrat kompleks seperti beras merah, oat, ubi jalar, dan sayuran hijau. Hindari makanan manis dan berlemak tinggi.',
-            sender: ChatSender.assistant,
-            timestamp: now.subtract(const Duration(days: 1, minutes: -1)),
-          ),
-        ],
-      ),
-      ChatSession(
-        id: 'sess_3',
-        title: 'Jadwal Olahraga & Aktivitas Fisik',
-        createdAt: now.subtract(const Duration(days: 3)),
-        updatedAt: now.subtract(const Duration(days: 3)),
-        messages: [
-          ChatMessage(
-            id: 'm3_1',
-            text: 'Berapa lama sebaiknya penderita diabetes berolahraga?',
-            sender: ChatSender.user,
-            timestamp: now.subtract(const Duration(days: 3)),
-          ),
-          ChatMessage(
-            id: 'm3_2',
-            text: 'Disarankan melakukan aktivitas fisik intensitas sedang seperti jalan cepat atau jalan santai selama minimal 30 menit sehari atau 150 menit seminggu.',
-            sender: ChatSender.assistant,
-            timestamp: now.subtract(const Duration(days: 3, minutes: -1)),
-          ),
-        ],
-      ),
-    ];
-
-    return AiChatState(
-      sessions: mockSessions,
-      activeSessionId: mockSessions.first.id,
-    );
+  AiChatNotifier(this._repository) : super(const AiChatState()) {
+    fetchConversations();
   }
 
-  void startNewSession() {
-    final newId = 'sess_${DateTime.now().millisecondsSinceEpoch}';
-    final newSession = ChatSession(
-      id: newId,
-      title: 'Sesi Percakapan Baru',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      messages: const [],
-    );
-
-    state = state.copyWith(
-      sessions: [newSession, ...state.sessions],
-      activeSessionId: newId,
-      isLoading: false,
-    );
+  /// Resets the notifier state, e.g. on user logout / re-login
+  void reset() {
+    state = const AiChatState();
+    fetchConversations();
   }
 
-  void selectSession(String sessionId) {
-    if (state.sessions.any((s) => s.id == sessionId)) {
-      state = state.copyWith(activeSessionId: sessionId);
+  Future<void> fetchConversations() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final conversations = await _repository.getConversations();
+      // Keep sessions in history, but always default activeSessionId to null
+      // so opening chatbot or re-logging in directly goes to a fresh NEW session.
+      state = state.copyWith(
+        sessions: conversations,
+        clearActiveSessionId: true,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+      );
     }
   }
 
-  void deleteSession(String sessionId) {
+  Future<void> selectSession(String sessionId) async {
+    state = state.copyWith(activeSessionId: sessionId, clearError: true);
+    try {
+      final messages = await _repository.getMessages(sessionId);
+      final updatedSessions = state.sessions.map((s) {
+        if (s.id == sessionId) {
+          return s.copyWith(messages: messages);
+        }
+        return s;
+      }).toList();
+
+      state = state.copyWith(sessions: updatedSessions);
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> startNewSession([String title = 'Sesi Percakapan Baru']) async {
+    state = state.copyWith(clearActiveSessionId: true, clearError: true);
+  }
+
+  Future<void> clearAllHistory() async {
+    for (final s in state.sessions) {
+      try {
+        await _repository.deleteConversation(s.id);
+      } catch (_) {}
+    }
+    state = state.copyWith(sessions: [], clearActiveSessionId: true);
+    await startNewSession();
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    try {
+      await _repository.deleteConversation(sessionId);
+    } catch (_) {}
+
     final updatedSessions = state.sessions.where((s) => s.id != sessionId).toList();
     String? nextActiveId = state.activeSessionId;
 
@@ -157,105 +134,116 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
       activeSessionId: nextActiveId,
     );
 
-    // If no sessions remain, auto start a fresh session
     if (updatedSessions.isEmpty) {
-      startNewSession();
+      await startNewSession();
+    } else if (nextActiveId != null) {
+      await selectSession(nextActiveId);
     }
   }
 
-  void clearAllHistory() {
-    state = state.copyWith(sessions: [], activeSessionId: null);
-    startNewSession();
-  }
+  Future<void> sendMessage(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
 
-  void sendMessage(String text) {
-    if (text.trim().isEmpty) return;
-
-    // Ensure there is an active session
     var currentSession = state.activeSession;
-    if (currentSession == null) {
-      startNewSession();
-      currentSession = state.activeSession!;
-    }
+    final currentSessionId = currentSession?.id;
+    final isNewSession = (currentSessionId == null || currentSessionId.isEmpty || currentSessionId.startsWith('temp_sess_'));
 
-    final userMsg = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      text: text.trim(),
+    // Generate temporary session ID if in a fresh new session state
+    final activeId = isNewSession
+        ? (currentSessionId != null && currentSessionId.startsWith('temp_sess_')
+            ? currentSessionId
+            : 'temp_sess_${DateTime.now().millisecondsSinceEpoch}')
+        : currentSessionId;
+
+    // Local optimistic user message append
+    final tempUserMsg = ChatMessage(
+      id: 'temp_user_${DateTime.now().millisecondsSinceEpoch}',
+      text: trimmed,
       sender: ChatSender.user,
       timestamp: DateTime.now(),
     );
 
-    // Derive smart session title if this is the first user message in current session
-    final isFirstMessage = currentSession.messages.isEmpty;
+    final isFirstMessage = (currentSession?.messages.isEmpty ?? true);
     final updatedTitle = isFirstMessage
-        ? (text.trim().length > 30 ? '${text.trim().substring(0, 30)}...' : text.trim())
-        : currentSession.title;
+        ? (trimmed.length > 30 ? '${trimmed.substring(0, 30)}...' : trimmed)
+        : (currentSession?.title ?? 'Percakapan Baru');
 
-    final updatedMessages = [...currentSession.messages, userMsg];
-    final updatedSession = currentSession.copyWith(
+    final existingMessages = currentSession?.messages ?? const [];
+    final updatedMessages = [...existingMessages, tempUserMsg];
+
+    final updatedSession = (currentSession ??
+            ChatSession(
+              id: activeId,
+              title: updatedTitle,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              messages: const [],
+            ))
+        .copyWith(
+      id: activeId,
       title: updatedTitle,
       updatedAt: DateTime.now(),
       messages: updatedMessages,
     );
 
-    final updatedSessions = state.sessions.map((s) {
-      return s.id == updatedSession.id ? updatedSession : s;
-    }).toList();
+    // If new session, prepend to existing sessions list; otherwise update existing in place
+    final containsSession = state.sessions.any((s) => s.id == activeId);
+    final updatedSessions = containsSession
+        ? state.sessions.map((s) => s.id == activeId ? updatedSession : s).toList()
+        : [updatedSession, ...state.sessions];
 
     state = state.copyWith(
       sessions: updatedSessions,
+      activeSessionId: activeId,
       isLoading: true,
+      clearError: true,
     );
 
-    // Simulate AI Assistant response
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      final aiResponseText = _getPlaceholderResponse(text);
+    try {
+      final res = await _repository.sendMessage(
+        trimmed,
+        conversationId: !isNewSession ? currentSessionId : null,
+      );
+
+      final assistantMessageText = res['assistant_message'] as String? ?? 'Terima kasih atas pertanyaan Anda.';
+      final returnedConvId = res['conversation_id'] as String? ?? activeId;
+      final msgId = res['message_id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
+
       final aiMsg = ChatMessage(
-        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
-        text: aiResponseText,
+        id: msgId,
+        text: assistantMessageText,
         sender: ChatSender.assistant,
         timestamp: DateTime.now(),
       );
 
-      final activeSess = state.activeSession;
-      if (activeSess != null && activeSess.id == updatedSession.id) {
-        final finalMessages = [...activeSess.messages, aiMsg];
-        final finalSession = activeSess.copyWith(
-          updatedAt: DateTime.now(),
-          messages: finalMessages,
-        );
+      final finalMessages = [...updatedMessages, aiMsg];
+      final finalSession = updatedSession.copyWith(
+        id: returnedConvId,
+        title: updatedTitle,
+        updatedAt: DateTime.now(),
+        messages: finalMessages,
+      );
 
-        final finalSessions = state.sessions.map((s) {
-          return s.id == finalSession.id ? finalSession : s;
-        }).toList();
+      final finalSessions = state.sessions.map((s) {
+        return (s.id == activeId || s.id == returnedConvId) ? finalSession : s;
+      }).toList();
 
-        state = state.copyWith(
-          sessions: finalSessions,
-          isLoading: false,
-        );
-      } else {
-        state = state.copyWith(isLoading: false);
-      }
-    });
-  }
-
-  String _getPlaceholderResponse(String userText) {
-    final query = userText.toLowerCase();
-    if (query.contains('apa itu diabetes') || query.contains('diabetes')) {
-      return 'Diabetes Mellitus adalah kondisi kronis di mana kadar gula darah (glukosa) berada di atas nilai normal. Pengelolaan yang tepat meliputi pola makan gizi seimbang, aktivitas fisik rutin, dan pemantauan gula darah berkala melalui aplikasi DSMES.';
-    } else if (query.contains('makanan') || query.contains('nutrisi')) {
-      return 'Untuk penderita diabetes, pilihlah makanan berbahan karbohidrat kompleks (beras merah, gandum, sayuran) dan hindari makanan manis atau bersantan pekat. Anda dapat mencatat konsumsi harian di fitur Jadwal Makan DSMES.';
-    } else if (query.contains('aktivitas') || query.contains('olahraga')) {
-      return 'Disarankan melakukan aktivitas fisik teratur minimal 30 menit per hari, seperti berjalan santai, bersepeda, atau senam diabetes. Jangan lupa periksa gula darah sebelum dan sesudah berolahraga.';
-    } else if (query.contains('menurunkan') || query.contains('gula darah')) {
-      return 'Langkah efektif menurunkan kadar gula darah:\n1. Patuhi konsumsi obat/insulin tepat waktu\n2. Jaga hidrasi dengan minum air putih secukupnya\n3. Kurangi asupan gula dan karbohidrat sederhana\n4. Lakukan pemantauan gula darah secara berkala.';
-    } else if (query.contains('obat') || query.contains('minum')) {
-      return 'Penggunaan obat diabetes harus sesuai petunjuk dokter. Atur pengingat di fitur Pengingat DSMES agar tidak terlewat minum obat harian Anda.';
+      state = state.copyWith(
+        sessions: finalSessions,
+        activeSessionId: returnedConvId,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal mendapatkan respon AI: $e',
+      );
     }
-    return 'Terima kasih atas pertanyaan Anda! Sebagai Asisten Kesehatan DSMES, saya siap membantu memberikan informasi seputar edukasi diabetes, pola makan, dan pemantauan harian Anda.';
   }
 }
 
 final aiChatProvider = StateNotifierProvider<AiChatNotifier, AiChatState>((ref) {
-  return AiChatNotifier();
+  final repo = ref.watch(aiChatRepositoryProvider);
+  return AiChatNotifier(repo);
 });

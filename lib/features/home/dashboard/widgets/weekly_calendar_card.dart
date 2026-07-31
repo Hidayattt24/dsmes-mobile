@@ -16,12 +16,14 @@ class WeeklyCalendarCard extends StatelessWidget {
     super.key,
     required this.selectedDate,
     required this.getDayState,
+    this.getDayProgress,
     this.onDateSelected,
     this.onHistoryPressed,
   });
 
   final DateTime selectedDate;
   final WeeklyDayState Function(DateTime date) getDayState;
+  final double Function(DateTime date)? getDayProgress;
   final ValueChanged<DateTime>? onDateSelected;
   final VoidCallback? onHistoryPressed;
 
@@ -86,6 +88,7 @@ class WeeklyCalendarCard extends StatelessWidget {
             final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
             final isSelected = date.day == selectedDate.day && date.month == selectedDate.month && date.year == selectedDate.year;
             final state = getDayState(date);
+            final progress = getDayProgress?.call(date) ?? 0.5;
 
             return WeeklyCalendarDay(
               label: label,
@@ -93,6 +96,7 @@ class WeeklyCalendarCard extends StatelessWidget {
               isToday: isToday,
               isSelected: isSelected,
               state: state,
+              progress: progress,
               onTap: () => onDateSelected?.call(date),
             );
           }),
@@ -110,6 +114,7 @@ class WeeklyCalendarDay extends StatelessWidget {
     required this.isToday,
     required this.isSelected,
     required this.state,
+    this.progress = 0.5,
     this.onTap,
   });
 
@@ -118,6 +123,7 @@ class WeeklyCalendarDay extends StatelessWidget {
   final bool isToday;
   final bool isSelected;
   final WeeklyDayState state;
+  final double progress;
   final VoidCallback? onTap;
 
   @override
@@ -125,7 +131,7 @@ class WeeklyCalendarDay extends StatelessWidget {
     // Select the correct indicator widget based on the day state
     final Widget indicator = switch (state) {
       WeeklyDayState.completed => const CompletedDayIndicator(),
-      WeeklyDayState.inProgress => const InProgressDayIndicator(value: 0.5),
+      WeeklyDayState.inProgress => InProgressDayIndicator(value: progress),
       WeeklyDayState.noRecord || WeeklyDayState.today => const EmptyDayIndicator(),
     };
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -421,61 +422,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
   }
 
   Widget _buildLoadingBubble() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [AppColors.primary, Color(0xFF0D9488)],
-              ),
-            ),
-            child: const Icon(
-              Icons.medical_services_rounded,
-              color: Colors.white,
-              size: 16,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: AppColors.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Asisten sedang mengetik...',
-                  style: AppTextStyles.bodyMd.copyWith(
-                    fontSize: 12,
-                    color: AppColors.onSurfaceVariant,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const _AnimatedThinkingBubble();
   }
 
   Widget _buildInputBar() {
@@ -548,6 +495,247 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AnimatedThinkingBubble extends StatefulWidget {
+  const _AnimatedThinkingBubble();
+
+  @override
+  State<_AnimatedThinkingBubble> createState() => _AnimatedThinkingBubbleState();
+}
+
+class _AnimatedThinkingBubbleState extends State<_AnimatedThinkingBubble>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+  Timer? _textTimer;
+
+  int _textIndex = 0;
+  final List<String> _thinkingTexts = [
+    'Sedang menganalisis data kesehatan Anda...',
+    'Mempersiapkan edukasi diabetes terbaik...',
+    'Menyusun rekomendasi personal untuk Anda...',
+    'Menghubungkan ke konsultan AI DSMES...',
+    'Hampir selesai, merapikan jawaban...',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _glowAnimation = Tween<double>(begin: 0.2, end: 0.6).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _textTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted) {
+        setState(() {
+          _textIndex = (_textIndex + 1) % _thinkingTexts.length;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _textTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Glowing Pulsing Avatar
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF0D9488)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary
+                            .withValues(alpha: _glowAnimation.value),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.psychology_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 10),
+
+          // Animated Thinking Card Bubble
+          Flexible(
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(4),
+                ),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      const _BouncingDotsIndicator(),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Berpikir',
+                        style: AppTextStyles.labelMd.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.0, 0.2),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      _thinkingTexts[_textIndex],
+                      key: ValueKey<int>(_textIndex),
+                      style: AppTextStyles.bodyMd.copyWith(
+                        fontSize: 12,
+                        color: AppColors.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BouncingDotsIndicator extends StatefulWidget {
+  const _BouncingDotsIndicator();
+
+  @override
+  State<_BouncingDotsIndicator> createState() => _BouncingDotsIndicatorState();
+}
+
+class _BouncingDotsIndicatorState extends State<_BouncingDotsIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            final double delay = index * 0.2;
+            final double value = (_controller.value - delay) % 1.0;
+            final double translateY =
+                (value < 0.5) ? -3.0 * (value * 2) : -3.0 * (1.0 - (value - 0.5) * 2);
+
+            return Transform.translate(
+              offset: Offset(0, translateY),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

@@ -53,12 +53,6 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
     '2 Tablet',
   ];
 
-  final List<String> _times = [
-    '08:00',
-    '13:00',
-    '19:00',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -277,75 +271,80 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Waktu Jadwal
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Waktu Jadwal',
-                    style: AppTextStyles.labelLg.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    icon: const Icon(Icons.access_time, size: 18, color: AppColors.primary),
-                    label: Text(
-                      _selectedTime,
-                      style: AppTextStyles.labelLg.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    onPressed: () async {
-                      final parts = _selectedTime.split(':');
-                      final initHour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
-                      final initMin = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-                      final picked = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay(hour: initHour, minute: initMin),
-                      );
-                      if (picked != null) {
-                        final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                        setState(() {
-                          _selectedTime = formatted;
-                        });
-                      }
-                    },
-                  ),
-                ],
+              // Waktu Jadwal (Custom 24-Jam Input User)
+              Text(
+                'Waktu Jadwal Minum Obat',
+                style: AppTextStyles.labelLg.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurface,
+                ),
               ),
               const SizedBox(height: AppSpacing.xs),
-              Row(
-                children: _times.map((t) {
-                  final isSelected = _selectedTime == t;
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ChoiceChip(
-                        label: Center(child: Text(t)),
-                        selected: isSelected,
-                        selectedColor: AppColors.primaryContainer,
-                        labelStyle: AppTextStyles.labelMd.copyWith(
-                          color: isSelected
-                              ? AppColors.onPrimaryContainer
-                              : AppColors.onSurface,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        backgroundColor: AppColors.surfaceContainerLow,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() => _selectedTime = t);
-                          }
-                        },
-                      ),
-                    ),
+              InkWell(
+                onTap: () async {
+                  final parts = _selectedTime.split(':');
+                  final initHour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
+                  final initMin = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay(hour: initHour, minute: initMin),
+                    builder: (context, child) {
+                      return MediaQuery(
+                        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                        child: child!,
+                      );
+                    },
                   );
-                }).toList(),
+                  if (picked != null) {
+                    final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                    setState(() {
+                      _selectedTime = formatted;
+                    });
+                  }
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 22),
+                          const SizedBox(width: 12),
+                          Text(
+                            '$_selectedTime WIB',
+                            style: AppTextStyles.bodyLg.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Pilih Jam',
+                          style: AppTextStyles.labelMd.copyWith(
+                            color: AppColors.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: AppSpacing.lg),
 
