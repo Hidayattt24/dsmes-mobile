@@ -132,28 +132,34 @@ class _ReviewContent extends ConsumerWidget {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              detail.quizTitle,
-                              style: AppTextStyles.headlineMd.copyWith(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.onSurface,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                detail.quizTitle,
+                                style: AppTextStyles.headlineMd.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.onSurface,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Durasi Pengerjaan: ${detail.duration}',
-                              style: AppTextStyles.bodyMd.copyWith(
-                                fontSize: 13,
-                                color: AppColors.outline,
+                              const SizedBox(height: 4),
+                              Text(
+                                'Durasi Pengerjaan: ${detail.duration}',
+                                style: AppTextStyles.bodyMd.copyWith(
+                                  fontSize: 13,
+                                  color: AppColors.outline,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
