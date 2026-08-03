@@ -16,6 +16,7 @@ abstract class IEducationRepository {
     String id, {
     required int readingDuration,
     required int lastScroll,
+    bool isCompleted = false,
   });
   Future<void> markVideoWatched(
     String id, {
@@ -23,6 +24,12 @@ abstract class IEducationRepository {
     required int lastTimestamp,
   });
   Future<Map<String, dynamic>> getPatientProgress(String id);
+  Future<void> submitReview(
+    String id, {
+    required int rating,
+    String? note,
+  });
+  Future<Map<String, dynamic>> getArticleRating(String id);
 }
 
 class EducationRepository implements IEducationRepository {
@@ -101,6 +108,7 @@ class EducationRepository implements IEducationRepository {
     String id, {
     required int readingDuration,
     required int lastScroll,
+    bool isCompleted = false,
   }) async {
     try {
       await _dio.post(
@@ -108,6 +116,7 @@ class EducationRepository implements IEducationRepository {
         data: {
           'reading_duration': readingDuration,
           'last_scroll_position': lastScroll,
+          'is_completed': isCompleted,
         },
       );
     } on DioException catch (e) {
@@ -143,7 +152,37 @@ class EducationRepository implements IEducationRepository {
       throw ApiException.fromDioException(e);
     }
   }
+
+  @override
+  Future<void> submitReview(
+    String id, {
+    required int rating,
+    String? note,
+  }) async {
+    try {
+      await _dio.post(
+        '/patient/education/$id/review',
+        data: {
+          'rating': rating,
+          'note': note ?? '',
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getArticleRating(String id) async {
+    try {
+      final response = await _dio.get('/education/$id/rating');
+      return response.data['data'] as Map<String, dynamic>? ?? {};
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 }
+
 
 final educationRepositoryProvider = Provider<IEducationRepository>((ref) {
   final dio = ref.watch(dioClientProvider);

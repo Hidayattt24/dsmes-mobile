@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_smart_image.dart';
 import '../models/education_article.dart';
 import '../viewmodels/education_notifier.dart';
 import '../widgets/article_information.dart';
+import '../widgets/education_review_dialog.dart';
 import '../widgets/education_skeleton.dart';
 import '../widgets/youtube_preview_card.dart';
 
@@ -26,8 +27,14 @@ class EducationDetailScreen extends ConsumerStatefulWidget {
       _EducationDetailScreenState();
 }
 
-class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
+class _EducationDetailScreenState
+    extends ConsumerState<EducationDetailScreen> {
   final ScrollController _scrollController = ScrollController();
+
+  // ──────────────────────────────────────────────────────────────
+  // Cached Notifier Reference (Safe for lifecycle/deactivate)
+  // ──────────────────────────────────────────────────────────────
+  EducationDetailNotifier? _cachedNotifier;
 
   // ──────────────────────────────────────────────────────────────
   // Read-progress tracking state
@@ -50,10 +57,23 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Cache the notifier instance safely while mounted
+    _cachedNotifier = ref.read(educationDetailProvider(widget.articleId).notifier);
+  }
+
+  @override
+  void deactivate() {
+    // deactivate() runs BEFORE dispose() while the element is still active
+    _flushReadProgress();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _flushReadProgress(); // report on close
     super.dispose();
   }
 
@@ -61,6 +81,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   // Scroll tracking
   // ──────────────────────────────────────────────────────────────
   void _onScroll() {
+    if (!mounted) return;
     final pos = _scrollController.position;
     if (pos.maxScrollExtent <= 0) return;
 
@@ -76,14 +97,22 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
     }
   }
 
-  void _flushReadProgress({int? scrollPct, bool forceComplete = false}) {
+  void _flushReadProgress({int? scrollPct}) {
     if (_readStartTime == null) return;
     final duration = DateTime.now().difference(_readStartTime!).inSeconds;
     final pct = scrollPct ?? _lastReportedScrollPct;
 
-    ref
-        .read(educationDetailProvider(widget.articleId).notifier)
-        .reportReadProgress(duration: duration, scrollPercentage: pct);
+    // Use cached notifier instance if ref is unmounted/disposed
+    if (mounted) {
+      ref
+          .read(educationDetailProvider(widget.articleId).notifier)
+          .reportReadProgress(duration: duration, scrollPercentage: pct);
+    } else {
+      _cachedNotifier?.reportReadProgress(
+        duration: duration,
+        scrollPercentage: pct,
+      );
+    }
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -95,6 +124,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   }
 
   void _onVideoEnded() {
+    if (!mounted) return;
     ref
         .read(educationDetailProvider(widget.articleId).notifier)
         .markVideoWatched();
@@ -105,7 +135,44 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
       await ref
           .read(educationDetailProvider(widget.articleId).notifier)
           .markArticleRead();
+
       if (mounted) {
+        setState(() {
+          _hasMarkedComplete = true;
+        });
+      }
+
+      if (!mounted) return;
+
+      final article =
+          ref.read(educationDetailProvider(widget.articleId)).value;
+      final articleTitle = article?.title ?? 'Artikel Edukasi';
+
+      final result = await EducationReviewDialog.show(
+        context,
+        articleTitle: articleTitle,
+      );
+
+      if (result != null && mounted) {
+        final rating = result['rating'] as int? ?? 5;
+        final note = result['note'] as String? ?? '';
+
+        await ref
+            .read(educationDetailProvider(widget.articleId).notifier)
+            .submitReview(rating: rating, note: note);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Ulasan berhasil dikirim! Terima kasih atas masukan Anda. 🎉',
+              ),
+              backgroundColor: AppColors.primaryContainer,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Artikel edukasi berhasil ditandai selesai! 🎉'),
@@ -134,6 +201,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
       await ref
           .read(educationDetailProvider(widget.articleId).notifier)
           .toggleBookmark();
+      if (!mounted) return;
       final isNowBookmarked =
           ref
               .read(educationDetailProvider(widget.articleId))
@@ -236,12 +304,14 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Tautan artikel berhasil disalin'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tautan artikel berhasil disalin'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         },
                         child: const Text('Salin'),
                       ),
@@ -371,7 +441,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
           ),
         ),
         actions: [
-          // Read-progress indicator badge
           if (isCompleted)
             Padding(
               padding: const EdgeInsets.only(right: 4),
@@ -415,7 +484,9 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
               color:
-                  isBookmarked ? AppColors.primary : AppColors.onSurfaceVariant,
+                  isBookmarked
+                      ? AppColors.primary
+                      : AppColors.onSurfaceVariant,
             ),
             onPressed: _toggleBookmark,
           ),
@@ -438,7 +509,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Hero Image Section
                 SizedBox(
                   width: double.infinity,
                   height: 200,
@@ -452,8 +522,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                     fallbackIcon: Icons.menu_book_rounded,
                   ),
                 ),
-
-                // Badges & Metadata Section
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.page,
@@ -463,14 +531,11 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                   ),
                   child: ArticleInformation(article: article),
                 ),
-
-                // Content Section
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.page),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Main Headline Title
                       Text(
                         article.title,
                         style: AppTextStyles.poppinsHeadline.copyWith(
@@ -481,8 +546,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // Main Content Body (HTML Rendered sequentially in exact DOM order without duplicate headers)
                       for (final contentHtml in article.bodyParagraphs) ...[
                         HtmlWidget(
                           contentHtml,
@@ -502,7 +565,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                             color: const Color(0xFF334155),
                           ),
                           customWidgetBuilder: (element) {
-                            // 1. YouTube video block (data-youtube-id attribute or YouTube link wrapper)
                             final youtubeId =
                                 element.attributes['data-youtube-id'] ??
                                 (element.localName == 'a' &&
@@ -533,7 +595,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                               );
                             }
 
-                            // 2. Embedded Content Images (<img src="...">)
                             if (element.localName == 'img' &&
                                 element.attributes['src'] != null) {
                               final src = element.attributes['src']!;
@@ -552,7 +613,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                               );
                             }
 
-                            // 3. Info Penting Block (bg-teal-50 / blockquote / border-l-4)
                             if (element.classes.contains('bg-teal-50') ||
                                 element.localName == 'blockquote') {
                               return Container(
@@ -560,14 +620,14 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                                 margin: const EdgeInsets.symmetric(vertical: 8),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF0F9F8), // Teal 50
+                                  color: const Color(0xFFF0F9F8),
                                   borderRadius: const BorderRadius.only(
                                     topRight: Radius.circular(10),
                                     bottomRight: Radius.circular(10),
                                   ),
                                   border: const Border(
                                     left: BorderSide(
-                                      color: AppColors.primary, // #00695C
+                                      color: AppColors.primary,
                                       width: 4,
                                     ),
                                   ),
@@ -652,8 +712,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
               ],
             ),
           ),
-
-          // Sticky Bottom Footer Bar
           Positioned(
             left: 0,
             right: 0,

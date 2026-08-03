@@ -165,16 +165,8 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
         arg,
         readingDuration: duration,
         lastScroll: scrollPercentage,
+        isCompleted: false, // Scroll telemetry only - completion is ONLY triggered via explicit button press
       );
-      if (scrollPercentage >= 90) {
-        // If completed, update state
-        if (state.hasValue) {
-          state = AsyncValue.data(
-            state.value!.copyWith(isCompleted: true, readStatus: 'Selesai', readProgress: 1.0),
-          );
-        }
-        ref.invalidate(educationListProvider);
-      }
     } catch (_) {
       // Keep silent to prevent disrupting user experience on network hiccups
     }
@@ -187,6 +179,7 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
         arg,
         readingDuration: 60,
         lastScroll: 100,
+        isCompleted: true, // Button press explicitly marks completion
       );
       if (state.hasValue) {
         state = AsyncValue.data(
@@ -254,7 +247,19 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
       // Keep silent
     }
   }
+
+  Future<void> submitReview({required int rating, String? note}) async {
+    try {
+      final repo = ref.read(educationRepositoryProvider);
+      await repo.submitReview(arg, rating: rating, note: note);
+      ref.invalidate(educationDetailProvider(arg));
+      ref.invalidate(educationListProvider);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
+
 
 final educationDetailProvider =
     AutoDisposeAsyncNotifierProviderFamily<EducationDetailNotifier, EducationArticle, String>(() {
