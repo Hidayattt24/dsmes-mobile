@@ -28,6 +28,7 @@ class QuestionModel {
   const QuestionModel({
     required this.id,
     required this.questionText,
+    this.questionImageUrl,
     required this.explanation,
     required this.displayOrder,
     required this.choices,
@@ -35,17 +36,20 @@ class QuestionModel {
 
   final String id;
   final String questionText;
+  final String? questionImageUrl;
   final String explanation;
   final int displayOrder;
   final List<ChoiceModel> choices;
 
   factory QuestionModel.fromJson(Map<String, dynamic> json) {
     final rawChoices = json['choices'] as List<dynamic>? ?? [];
+    final img = json['question_image_url'] ?? json['questionImageUrl'];
     return QuestionModel(
       id: json['id'] as String? ?? '',
-      questionText: json['question_text'] as String? ?? '',
+      questionText: json['question_text'] as String? ?? json['questionText'] as String? ?? '',
+      questionImageUrl: img is String && img.trim().isNotEmpty ? img.trim() : null,
       explanation: json['explanation'] as String? ?? '',
-      displayOrder: json['display_order'] as int? ?? 0,
+      displayOrder: json['display_order'] as int? ?? json['displayOrder'] as int? ?? 0,
       choices: rawChoices
           .map((e) => ChoiceModel.fromJson(e as Map<String, dynamic>))
           .toList(),

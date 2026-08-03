@@ -81,8 +81,8 @@ class OnboardingFormState {
     return bmr * _activityFactor;
   }
 
-  bool get canProceedCurrentStep {
-    return switch (currentStep) {
+  bool canProceedForStep(int step) {
+    return switch (step) {
       1 => fullName.trim().isNotEmpty,
       2 => nickname.trim().isNotEmpty,
       3 => email.trim().isEmpty || _isValidEmail(email),
@@ -100,6 +100,8 @@ class OnboardingFormState {
       _ => false,
     };
   }
+
+  bool get canProceedCurrentStep => canProceedForStep(currentStep);
 
   static bool _isValidEmail(String email) {
     final regex = RegExp(r'^[\w.-]+@[\w.-]+\.\w{2,}$');

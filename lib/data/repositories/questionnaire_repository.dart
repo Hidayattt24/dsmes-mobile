@@ -18,11 +18,13 @@ abstract class IQuestionnaireRepository {
 
   /// Submits answers for a questionnaire. Backend calculates score.
   ///
-  /// [answers] is a map of questionID → optionID.
+  /// [answers] is a map of questionID → optionID (or Likert value for PRE_TEST).
+  /// [isPreTest] when true, sends `selected_value` (int 1-5) instead of `option_id`.
   Future<QuizSubmitResultModel> submitQuestionnaire({
     required String questionnaireId,
     required Map<String, String> answers,
     required int durationSeconds,
+    bool isPreTest = false,
   });
 
   /// Returns the patient's most recent attempt for a specific questionnaire.
@@ -92,11 +94,29 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
     required String questionnaireId,
     required Map<String, String> answers,
     required int durationSeconds,
+    bool isPreTest = false,
   }) async {
     try {
-      final answerList = answers.entries
-          .map((e) => {'question_id': e.key, 'option_id': e.value})
-          .toList();
+      List<Map<String, dynamic>> answerList;
+
+      if (isPreTest) {
+        // PRE_TEST: backend expects `selected_value` (integer 1-5)
+        answerList = answers.entries.map((e) {
+          final val = int.tryParse(e.value) ?? 1;
+          return <String, dynamic>{
+            'question_id': e.key,
+            'selected_value': val,
+          };
+        }).toList();
+      } else {
+        // POST_TEST: backend expects `option_id` (UUID)
+        answerList = answers.entries
+            .map((e) => <String, dynamic>{
+                  'question_id': e.key,
+                  'option_id': e.value,
+                })
+            .toList();
+      }
 
       final response = await _dio.post(
         '/patient/questionnaires/$questionnaireId/submit',

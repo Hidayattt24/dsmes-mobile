@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,6 +112,7 @@ class _QuestionnaireQuestionsScreenState
           questionnaireId: widget.questionnaire.id,
           answers: _answers,
           durationSeconds: durationSeconds,
+          isPreTest: widget.isPreTest,
         );
 
     if (!mounted) return;
@@ -217,11 +219,20 @@ class _QuestionnaireQuestionsScreenState
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
+                  // ── Question Illustration Image (If present) ─────────────
+                  if (currentQuestion.questionImageUrl != null &&
+                      currentQuestion.questionImageUrl!.isNotEmpty) ...[
+                    _QuestionImageWidget(
+                      imageUrl: currentQuestion.questionImageUrl!,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+
                   // ── Question text ──────────────────────────────────────
                   Text(
                     currentQuestion.questionText,
                     style: AppTextStyles.headlineLg.copyWith(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       height: 1.35,
                       color: AppColors.onSurface,
@@ -230,13 +241,35 @@ class _QuestionnaireQuestionsScreenState
                   const SizedBox(height: AppSpacing.xl),
 
                   // ── Answer options ─────────────────────────────────────
-                  for (final choice in currentQuestion.choices) ...[
-                    _OptionCard(
-                      optionText: choice.optionText,
-                      isSelected: selectedOptionId == choice.id,
-                      onTap: () => _selectOption(choice.id),
+                  if (widget.isPreTest) ...[
+                    // Pre-Test DMSES 1-5 Likert scale confidence cards
+                    Text(
+                      'Tingkat Keyakinan Anda:',
+                      style: AppTextStyles.labelLg.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
+                    for (final choice in currentQuestion.choices) ...[
+                      _LikertOptionCard(
+                        choice: choice,
+                        isSelected: selectedOptionId == choice.id,
+                        onTap: () => _selectOption(choice.id),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ] else ...[
+                    // Standard Multiple Choice cards for Post-Test
+                    for (final choice in currentQuestion.choices) ...[
+                      _OptionCard(
+                        optionText: choice.optionText,
+                        isSelected: selectedOptionId == choice.id,
+                        onTap: () => _selectOption(choice.id),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                   ],
                 ],
               ),
@@ -489,5 +522,169 @@ class _OptionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _LikertOptionCard extends StatelessWidget {
+  const _LikertOptionCard({
+    required this.choice,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ChoiceModel choice;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  String _getEmoji(String id, int order) {
+    if (id == '1' || order == 1) return '😟';
+    if (id == '2' || order == 2) return '🙁';
+    if (id == '3' || order == 3) return '😐';
+    if (id == '4' || order == 4) return '🙂';
+    if (id == '5' || order == 5) return '😊';
+    return '⭐';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = _getEmoji(choice.id, choice.displayOrder);
+
+    final int displayNum = choice.displayOrder > 0
+        ? choice.displayOrder
+        : (int.tryParse(choice.id) ?? 1);
+
+    final String optionTextDisplay = choice.optionText.contains(RegExp(r'^\d+\.'))
+        ? choice.optionText
+        : '$displayNum. ${choice.optionText}';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+              width: isSelected ? 2 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary.withValues(alpha: 0.15)
+                      : AppColors.surfaceContainerHighest.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    emoji,
+                    style: const TextStyle(fontSize: 22),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  optionTextDisplay,
+                  style: AppTextStyles.bodyLg.copyWith(
+                    fontSize: 15,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.w600,
+                    color:
+                        isSelected ? AppColors.primary : AppColors.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.outline,
+                    width: 2,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuestionImageWidget extends StatelessWidget {
+  const _QuestionImageWidget({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        final commaIndex = imageUrl.indexOf(',');
+        if (commaIndex != -1) {
+          final base64Str = imageUrl.substring(commaIndex + 1);
+          final bytes = base64Decode(base64Str.replaceAll(RegExp(r'\s+'), ''));
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.memory(
+              bytes,
+              width: double.infinity,
+              height: 200,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+            ),
+          );
+        }
+      } catch (_) {
+        return const SizedBox.shrink();
+      }
+    }
+
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.network(
+          imageUrl,
+          width: double.infinity,
+          height: 200,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }

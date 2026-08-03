@@ -56,17 +56,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: RouteNames.welcome,
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      final preTestAsync = ref.read(hasCompletedPreTestProvider);
-
       final location = state.uri.toString();
 
       final isOnboarding = location.startsWith('/onboarding/');
       if (_publicRoutes.contains(location) || isOnboarding) return null;
 
+      final preTestAsync = ref.read(hasCompletedPreTestProvider);
       final completed = preTestAsync.valueOrNull;
-      if (completed == null) return null;
 
-      if (!completed) return RouteNames.preTestIntro;
+      // Enforce Pre-Test completion before accessing any protected routes (e.g. /home)
+      if (completed != true) {
+        return RouteNames.preTestIntro;
+      }
 
       return null;
     },

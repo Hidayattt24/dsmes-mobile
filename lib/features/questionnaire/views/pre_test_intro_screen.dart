@@ -75,9 +75,9 @@ class _PreTestIntroContent extends StatelessWidget {
 
                   // ── Title ──────────────────────────────────────────────
                   Text(
-                    'Selamat Datang di DSMES',
+                    'Diabetes Management Self-Efficacy Scale (DMSES)',
                     style: AppTextStyles.headlineLg.copyWith(
-                      fontSize: 26,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppColors.onSurface,
                       height: 1.3,
@@ -87,17 +87,16 @@ class _PreTestIntroContent extends StatelessWidget {
 
                   // ── Subtitle ───────────────────────────────────────────
                   Text(
-                    'Sebelum mulai menggunakan aplikasi DSMES, '
-                    'silakan mengerjakan Pre-Test terlebih dahulu.',
+                    'Kuesioner ini bertujuan mengetahui tingkat keyakinan Anda dalam mengelola diabetes sebelum menggunakan aplikasi DSMES.',
                     style: AppTextStyles.bodyLg.copyWith(
-                      fontSize: 16,
+                      fontSize: 15,
                       color: AppColors.onSurfaceVariant,
                       height: 1.6,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
-                  // ── Info card ──────────────────────────────────────────
+                  // ── Instructions Card ──────────────────────────────────
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
@@ -126,7 +125,7 @@ class _PreTestIntroContent extends StatelessWidget {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'Tentang Pre-Test Ini',
+                              'Petunjuk Pengisian',
                               style: AppTextStyles.labelLg.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
@@ -136,14 +135,43 @@ class _PreTestIntroContent extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        Text(
-                          preTest.description.isNotEmpty
-                              ? preTest.description
-                              : 'Pre-Test ini hanya dilakukan satu kali dan bertujuan untuk mengetahui tingkat pengetahuan awal Anda mengenai pengelolaan Diabetes sebelum menggunakan aplikasi DSMES.',
-                          style: AppTextStyles.bodyMd.copyWith(
-                            fontSize: 14,
-                            color: AppColors.onSurfaceVariant,
-                            height: 1.6,
+                        const _InstructionBulletItem(
+                          text: 'Tidak ada jawaban benar ataupun salah.',
+                        ),
+                        const SizedBox(height: 8),
+                        const _InstructionBulletItem(
+                          text: 'Mohon jawab sesuai kondisi dan keyakinan Anda saat ini.',
+                        ),
+                        const SizedBox(height: 8),
+                        const _InstructionBulletItem(
+                          text: 'Semua jawaban bersifat rahasia dan hanya digunakan untuk evaluasi.',
+                        ),
+                        const SizedBox(height: 12),
+                        const _InstructionBulletItem(
+                          text: 'Pilihan respon skala keyakinan (1 s/d 5):',
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                            ),
+                          ),
+                          child: Column(
+                            children: const [
+                              _ScaleLegendRow(emoji: '😟', number: '1.', text: 'Tidak Yakin Sama Sekali'),
+                              SizedBox(height: 6),
+                              _ScaleLegendRow(emoji: '🙁', number: '2.', text: 'Kurang Yakin'),
+                              SizedBox(height: 6),
+                              _ScaleLegendRow(emoji: '😐', number: '3.', text: 'Cukup Yakin'),
+                              SizedBox(height: 6),
+                              _ScaleLegendRow(emoji: '🙂', number: '4.', text: 'Yakin'),
+                              SizedBox(height: 6),
+                              _ScaleLegendRow(emoji: '😊', number: '5.', text: 'Sangat Yakin'),
+                            ],
                           ),
                         ),
                       ],
@@ -163,64 +191,13 @@ class _PreTestIntroContent extends StatelessWidget {
                       const SizedBox(width: 12),
                       const Expanded(
                         child: _StatChip(
-                          icon: Icons.lock_clock_rounded,
-                          label: 'Hanya 1 Kali',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Row(
-                    children: [
-                      Expanded(
-                        child: _StatChip(
-                          icon: Icons.check_circle_outline_rounded,
-                          label: 'Wajib Diisi',
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: _StatChip(
-                          icon: Icons.bar_chart_rounded,
-                          label: 'Nilai dari Backend',
+                          icon: Icons.psychology_rounded,
+                          label: 'Skala Keyakinan',
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
-
-                  // ── Warning banner ─────────────────────────────────────
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF815300).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: const Color(0xFF613E00).withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          size: 22,
-                          color: Color(0xFF613E00),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Pre-Test harus diselesaikan dalam satu sesi. '
-                            'Tidak dapat dilewati atau ditunda.',
-                            style: AppTextStyles.bodyMd.copyWith(
-                              fontSize: 13,
-                              color: AppColors.onSurfaceVariant,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -271,7 +248,7 @@ class _PreTestIntroContent extends StatelessWidget {
                         size: 24, color: Colors.white),
                     const SizedBox(width: 8),
                     Text(
-                      'Mulai Pre-Test',
+                      'Mulai Kuesioner',
                       style: AppTextStyles.poppinsButton.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -448,6 +425,80 @@ class _PreTestErrorView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InstructionBulletItem extends StatelessWidget {
+  const _InstructionBulletItem({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '• ',
+          style: TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.bodyMd.copyWith(
+              fontSize: 14,
+              color: AppColors.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScaleLegendRow extends StatelessWidget {
+  const _ScaleLegendRow({
+    required this.emoji,
+    required this.number,
+    required this.text,
+  });
+
+  final String emoji;
+  final String number;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 8),
+        Text(
+          number,
+          style: AppTextStyles.labelMd.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.bodyMd.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurface,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

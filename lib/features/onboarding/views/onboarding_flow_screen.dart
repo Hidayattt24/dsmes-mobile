@@ -91,7 +91,9 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
 
   void _handleBack() {
     final notifier = ref.read(onboardingProvider.notifier);
-    if (widget.step > 1) {
+    if (widget.step == 7) {
+      context.go(RouteNames.registrationWelcome);
+    } else if (widget.step > 1) {
       notifier.previousStep();
       context.go('/onboarding/${widget.step - 1}');
     } else {
@@ -103,38 +105,46 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Column(
-        children: [
-          AppProgressHeader(
-            currentStep: widget.step,
-            totalSteps: AppConstants.totalOnboardingSteps,
-            onBack: _handleBack,
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.lg,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _handleBack();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        body: Column(
+          children: [
+            AppProgressHeader(
+              currentStep: widget.step,
+              totalSteps: AppConstants.totalOnboardingSteps,
+              onBack: _handleBack,
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Center(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.lg,
+                    ),
+                    child: _buildStep(widget.step),
                   ),
-                  child: _buildStep(widget.step),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: OnboardingNavButtons(
-        currentStep: widget.step,
-        totalSteps: AppConstants.totalOnboardingSteps,
-        canProceed: state.canProceedCurrentStep,
-        onNext: _handleNext,
-        isLoading: state.isLoading,
-        isLastStep: widget.step == AppConstants.totalOnboardingSteps,
+          ],
+        ),
+        bottomNavigationBar: OnboardingNavButtons(
+          currentStep: widget.step,
+          totalSteps: AppConstants.totalOnboardingSteps,
+          canProceed: state.canProceedForStep(widget.step),
+          onNext: _handleNext,
+          isLoading: state.isLoading,
+          isLastStep: widget.step == AppConstants.totalOnboardingSteps,
+        ),
       ),
     );
   }

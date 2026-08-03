@@ -197,6 +197,7 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
     required String questionnaireId,
     required Map<String, String> answers,
     required int durationSeconds,
+    bool isPreTest = false,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -206,6 +207,7 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
             questionnaireId: questionnaireId,
             answers: answers,
             durationSeconds: durationSeconds,
+            isPreTest: isPreTest,
           );
       state = state.copyWith(isLoading: false, result: result);
 
