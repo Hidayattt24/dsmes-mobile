@@ -125,12 +125,12 @@ class _AppShellState extends ConsumerState<AppShell> {
               ],
             ),
 
-            // Global Floating AI Chat Assistant Widget (Consistent Bottom Right on all pages)
-            const Positioned(
-              right: AppSpacing.page,
-              bottom: AppSpacing.md,
-              child: FloatingAiChatButton(),
-            ),
+            // Global Floating AI Chat Assistant Widget (Disabled for now)
+            // const Positioned(
+            //   right: AppSpacing.page,
+            //   bottom: AppSpacing.md,
+            //   child: FloatingAiChatButton(),
+            // ),
           ],
         ),
       ),

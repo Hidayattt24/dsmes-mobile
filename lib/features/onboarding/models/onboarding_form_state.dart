@@ -85,8 +85,8 @@ class OnboardingFormState {
     return switch (currentStep) {
       1 => fullName.trim().isNotEmpty,
       2 => nickname.trim().isNotEmpty,
-      3 => _isValidEmail(email),
-      4 => phoneNumber.trim().length >= 10,
+      3 => email.trim().isEmpty || _isValidEmail(email),
+      4 => phoneNumber.trim().length >= 8,
       5 => password.length >= 8,
       6 => confirmPassword.isNotEmpty && confirmPassword == password,
       7 => true,
@@ -145,11 +145,8 @@ class OnboardingFormState {
     );
   }
 
-
-
   String get emailError {
-    if (email.isEmpty) return 'Email wajib diisi';
-    if (!_isValidEmail(email)) return 'Format email tidak valid';
+    if (email.trim().isNotEmpty && !_isValidEmail(email)) return 'Format email tidak valid';
     return '';
   }
 

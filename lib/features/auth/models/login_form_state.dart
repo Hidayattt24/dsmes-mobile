@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 @immutable
 class LoginFormState {
   const LoginFormState({
+    this.phoneNumber = '',
     this.email = '',
     this.password = '',
     this.isPasswordVisible = false,
@@ -12,6 +13,7 @@ class LoginFormState {
     this.errorMessage,
   });
 
+  final String phoneNumber;
   final String email;
   final String password;
   final bool isPasswordVisible;
@@ -19,9 +21,10 @@ class LoginFormState {
   final bool isLoading;
   final String? errorMessage;
 
-  bool get isValid => email.isNotEmpty && password.length >= 8;
+  bool get isValid => phoneNumber.trim().length >= 10 && password.length >= 6;
 
   LoginFormState copyWith({
+    String? phoneNumber,
     String? email,
     String? password,
     bool? isPasswordVisible,
@@ -31,6 +34,7 @@ class LoginFormState {
     bool clearError = false,
   }) {
     return LoginFormState(
+      phoneNumber: phoneNumber ?? this.phoneNumber,
       email: email ?? this.email,
       password: password ?? this.password,
       isPasswordVisible: isPasswordVisible ?? this.isPasswordVisible,

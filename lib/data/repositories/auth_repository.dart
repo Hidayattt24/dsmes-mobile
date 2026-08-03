@@ -11,7 +11,7 @@ import '../../features/onboarding/models/onboarding_form_state.dart';
 
 abstract class IAuthRepository {
   Future<Map<String, dynamic>> login({
-    required String email,
+    required String phoneNumber,
     required String password,
   });
 
@@ -67,14 +67,14 @@ class AuthRepository implements IAuthRepository {
 
   @override
   Future<Map<String, dynamic>> login({
-    required String email,
+    required String phoneNumber,
     required String password,
   }) async {
     try {
       final response = await _dio.post(
         '/auth/login',
         data: {
-          'email': email.trim(),
+          'phone_number': phoneNumber.trim(),
           'password': password,
         },
       );

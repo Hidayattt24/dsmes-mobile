@@ -18,6 +18,8 @@ abstract final class AppStrings {
   // ── Auth — Login ───────────────────────────────────────────────────────────
   static const String loginTitle = 'Selamat Datang';
   static const String loginSubtitle = 'Masuk ke akun DSMES Aceh Anda';
+  static const String loginPhone = 'Nomor Handphone';
+  static const String loginPhoneHint = 'Contoh: 081234567890';
   static const String loginEmail = 'Email';
   static const String loginEmailHint = 'Masukkan email Anda';
   static const String loginPassword = 'Kata Sandi';
@@ -91,10 +93,10 @@ abstract final class AppStrings {
 
 
   // ── Step 2: Email ──────────────────────────────────────────────────────────
-  static const String step2Title = 'Apa alamat email Anda?';
+  static const String step2Title = 'Apa alamat email Anda? (Opsional)';
   static const String step2Subtitle =
-      'Email akan digunakan untuk masuk dan menerima notifikasi penting.';
-  static const String step2FieldLabel = 'Alamat Email';
+      'Email bersifat opsional untuk notifikasi tambahan.';
+  static const String step2FieldLabel = 'Alamat Email (Opsional)';
   static const String step2FieldHint = 'Contoh: email@domain.com';
 
   // ── Step 3: Nomor Handphone ────────────────────────────────────────────────

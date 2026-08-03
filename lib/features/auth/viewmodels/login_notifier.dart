@@ -16,16 +16,19 @@ import '../models/login_form_state.dart';
 /// Business logic is here — NEVER in the Widget.
 class LoginNotifier extends Notifier<LoginFormState> {
   final formKey = GlobalKey<FormState>();
+  late final TextEditingController phoneController;
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
 
   @override
   LoginFormState build() {
+    phoneController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
 
     // Dispose controllers when provider is destroyed
     ref.onDispose(() {
+      phoneController.dispose();
       emailController.dispose();
       passwordController.dispose();
     });
@@ -36,6 +39,10 @@ class LoginNotifier extends Notifier<LoginFormState> {
   LoginFormState get formState => state;
 
   // ── Field Updates ─────────────────────────────────────────────────────────
+
+  void onPhoneChanged(String value) {
+    state = state.copyWith(phoneNumber: value, clearError: true);
+  }
 
   void onEmailChanged(String value) {
     state = state.copyWith(email: value, clearError: true);
@@ -54,6 +61,17 @@ class LoginNotifier extends Notifier<LoginFormState> {
   }
 
   // ── Validation ────────────────────────────────────────────────────────────
+
+  String? validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return AppStrings.validationRequired;
+    }
+    final clean = value.replaceAll(RegExp(r'[\s\-+]'), '');
+    if (clean.length < 8 || clean.length > 15) {
+      return AppStrings.validationPhoneNumber;
+    }
+    return null;
+  }
 
   String? validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -84,7 +102,7 @@ class LoginNotifier extends Notifier<LoginFormState> {
 
     try {
       await ref.read(authRepositoryProvider).login(
-            email: emailController.text.trim(),
+            phoneNumber: phoneController.text.trim(),
             password: passwordController.text,
           );
 
