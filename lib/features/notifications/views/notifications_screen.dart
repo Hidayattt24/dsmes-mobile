@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -77,38 +79,44 @@ class NotificationsScreen extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16.0,
-            vertical: 24.0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (todayNotifications.isNotEmpty) ...[
-                _buildSection(
-                  title: 'Hari Ini',
-                  notifications: todayNotifications,
-                  ref: ref,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-              if (yesterdayNotifications.isNotEmpty) ...[
-                _buildSection(
-                  title: 'Kemarin',
-                  notifications: yesterdayNotifications,
-                  ref: ref,
-                ),
-              ],
-              if (notifications.isEmpty)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48.0),
-                    child: Text('Tidak ada notifikasi.'),
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => ref.read(notificationsProvider.notifier).loadFromBackend(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 24.0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (todayNotifications.isNotEmpty) ...[
+                  _buildSection(
+                    title: 'Hari Ini',
+                    notifications: todayNotifications,
+                    ref: ref,
                   ),
-                ),
-            ],
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+                if (yesterdayNotifications.isNotEmpty) ...[
+                  _buildSection(
+                    title: 'Kemarin',
+                    notifications: yesterdayNotifications,
+                    ref: ref,
+                  ),
+                ],
+                if (notifications.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48.0),
+                      child: Text('Tidak ada notifikasi.'),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -162,7 +170,15 @@ class NotificationsScreen extends ConsumerWidget {
               },
               child: _NotificationCard(
                 notification: item,
-                onTap: () => ref.read(notificationsProvider.notifier).markAsRead(item.id),
+                onTap: () {
+                  ref.read(notificationsProvider.notifier).markAsRead(item.id);
+                  if (item.type == NotificationType.education &&
+                      item.articleId != null) {
+                    context.push(
+                      '${RouteNames.educationDetail}/${item.articleId}',
+                    );
+                  }
+                },
                 onDelete: () => ref.read(notificationsProvider.notifier).deleteNotification(item.id),
               ),
             );

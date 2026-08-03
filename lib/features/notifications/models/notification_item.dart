@@ -13,6 +13,7 @@ class NotificationItem {
   final NotificationType type;
   final bool isUnread;
   final String group;
+  final String? articleId;
 
   const NotificationItem({
     required this.id,
@@ -22,6 +23,7 @@ class NotificationItem {
     required this.type,
     required this.isUnread,
     required this.group,
+    this.articleId,
   });
 
   NotificationItem copyWith({
@@ -32,6 +34,7 @@ class NotificationItem {
     NotificationType? type,
     bool? isUnread,
     String? group,
+    String? articleId,
   }) {
     return NotificationItem(
       id: id ?? this.id,
@@ -41,6 +44,7 @@ class NotificationItem {
       type: type ?? this.type,
       isUnread: isUnread ?? this.isUnread,
       group: group ?? this.group,
+      articleId: articleId ?? this.articleId,
     );
   }
 }
