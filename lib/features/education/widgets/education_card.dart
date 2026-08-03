@@ -73,35 +73,41 @@ class EducationCard extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
 
-                    // Read Status & Duration Row
+                    // Author & Read Status Row
                     Row(
                       children: [
                         const Icon(
-                          Icons.schedule_rounded,
-                          size: 16,
-                          color: AppColors.onSurfaceVariant,
+                          Icons.person_outline_rounded,
+                          size: 14,
+                          color: AppColors.primary,
                         ),
                         const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            article.author,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.labelMd.copyWith(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.schedule_rounded,
+                          size: 14,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
                         Text(
                           article.readTime,
                           style: AppTextStyles.labelMd.copyWith(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
-                        if (article.readStatus != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 4,
-                            height: 4,
-                            decoration: const BoxDecoration(
-                              color: AppColors.outlineVariant,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildStatusWidget(article)),
-                        ],
                       ],
                     ),
                   ],
