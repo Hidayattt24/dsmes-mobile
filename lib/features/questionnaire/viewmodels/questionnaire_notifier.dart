@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/questionnaire_repository.dart';
@@ -144,19 +146,70 @@ class AllHistoryNotifier extends AutoDisposeAsyncNotifier<List<MyHistoryItemMode
   }
 }
 
-// ── Available Questionnaires (Post-Tests) ──────────────────────────────────────
+// ── Unified Questionnaire List (Available / Completed / Locked) ──────────────
 
-/// Returns all active questionnaires available to the patient with completion status.
-/// Filter by [type] = 'PRE_TEST' | 'POST_TEST' to narrow results.
-final patientQuestionnaireListProvider = FutureProvider.autoDispose.family<PaginatedQuestionnaireResult, String?>((ref, type) async {
-  return ref.read(questionnaireRepositoryProvider).getPatientQuestionnaireList(type: type);
-});
+/// Loads every questionnaire visible to the patient (Pre-Test & Post-Test) in a
+/// single request. Each item carries its backend status, completion state, and
+/// lock state, so the UI renders one unified list without any hardcoded status.
+///
+/// While the screen watches this provider it silently re-fetches every
+/// [QuestionnaireListNotifier.pollInterval] so admin status changes
+/// (publish / unpublish / edit availability) appear automatically without a
+/// manual refresh.
+final questionnaireListProvider = AutoDisposeAsyncNotifierProvider<
+    QuestionnaireListNotifier,
+    PaginatedQuestionnaireResult>(QuestionnaireListNotifier.new);
 
-/// Convenience provider: only active POST_TEST questionnaires that are NOT yet completed.
-final availablePostTestsProvider = FutureProvider.autoDispose<List<PatientQuestionnaireItemModel>>((ref) async {
-  final result = await ref.watch(patientQuestionnaireListProvider('POST_TEST').future);
-  return result.items.where((q) => !q.isCompleted).toList();
-});
+class QuestionnaireListNotifier
+    extends AutoDisposeAsyncNotifier<PaginatedQuestionnaireResult> {
+  /// How often the list silently re-fetches while visible.
+  static const Duration pollInterval = Duration(seconds: 30);
+
+  Timer? _timer;
+  bool _fetching = false;
+
+  @override
+  Future<PaginatedQuestionnaireResult> build() async {
+    _timer?.cancel();
+    _timer = Timer.periodic(pollInterval, (_) => silentRefresh());
+    ref.onDispose(() => _timer?.cancel());
+    return _fetch();
+  }
+
+  Future<PaginatedQuestionnaireResult> _fetch() {
+    _fetching = true;
+    return ref
+        .read(questionnaireRepositoryProvider)
+        .getPatientQuestionnaireList(perPage: 100)
+        .whenComplete(() => _fetching = false);
+  }
+
+  /// Explicit refresh (pull-to-refresh / retry).
+  ///
+  /// When there is already data, the current value is kept on screen while
+  /// fetching (no flicker) and only replaced on success. When there is no data
+  /// yet (first load / after an error) a loading state is shown.
+  Future<void> refresh() async {
+    if (_fetching) return;
+    final hadData = state.hasValue;
+    if (!hadData) state = const AsyncLoading();
+    final next = await AsyncValue.guard(_fetch);
+    if (!hadData || next.hasValue) {
+      state = next;
+    }
+  }
+
+  /// Background refresh — keeps the current data while fetching to avoid
+  /// flicker. Errors during background refresh are ignored so stale data is
+  /// never replaced with an error.
+  Future<void> silentRefresh() async {
+    if (_fetching) return;
+    final next = await AsyncValue.guard(_fetch);
+    if (next.hasValue) {
+      state = next;
+    }
+  }
+}
 
 // ── Questionnaire Submission ──────────────────────────────────────────────────
 
@@ -214,6 +267,7 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
       // Refresh history after successful submission
       ref.invalidate(preTestHistoryProvider);
       ref.invalidate(allQuestionnaireHistoryProvider);
+      ref.invalidate(questionnaireListProvider);
 
       return result;
     } catch (e) {

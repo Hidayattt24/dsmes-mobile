@@ -171,6 +171,7 @@ class PatientQuestionnaireItemModel {
     required this.questionCount,
     this.passingScore,
     this.difficulty,
+    this.status = 'aktif',
     required this.isCompleted,
     this.score,
   });
@@ -184,11 +185,16 @@ class PatientQuestionnaireItemModel {
   final int questionCount;
   final int? passingScore;
   final String? difficulty;
+
+  /// Raw backend status: 'draft' | 'aktif' | 'nonaktif'.
+  final String status;
   final bool isCompleted;
   final int? score;
 
   bool get isPreTest => type == 'PRE_TEST';
   bool get isPostTest => type == 'POST_TEST';
+
+  bool get isAvailable => !isCompleted;
 
   factory PatientQuestionnaireItemModel.fromJson(Map<String, dynamic> json) {
     return PatientQuestionnaireItemModel(
@@ -201,6 +207,7 @@ class PatientQuestionnaireItemModel {
       questionCount: json['question_count'] as int? ?? 0,
       passingScore: json['passing_score'] as int?,
       difficulty: json['difficulty'] as String?,
+      status: json['status'] as String? ?? 'aktif',
       isCompleted: json['is_completed'] as bool? ?? false,
       score: json['score'] as int?,
     );
