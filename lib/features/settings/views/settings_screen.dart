@@ -13,6 +13,7 @@ import '../widgets/body_metric_card.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../home/viewmodels/home_dashboard_notifier.dart';
 import '../../ai_chat/viewmodels/ai_chat_notifier.dart';
+import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 
@@ -100,6 +101,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await authRepo.logout();
       ref.read(bodyMetricsProvider.notifier).reset();
       ref.read(aiChatProvider.notifier).reset();
+      ref.invalidate(preTestHistoryProvider);
       if (mounted) context.go(RouteNames.login);
     }
   }
