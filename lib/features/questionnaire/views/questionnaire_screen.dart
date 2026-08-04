@@ -10,13 +10,10 @@ import '../widgets/questionnaire_history_section.dart';
 import '../widgets/questionnaire_list_card.dart';
 import '../widgets/questionnaire_section_header.dart';
 import '../widgets/questionnaire_skeleton.dart';
+import 'survey_card.dart';
+import '../viewmodels/survey_notifier.dart';
 
 /// Questionnaire tab.
-///
-/// Renders a single dynamic questionnaire list (Available / Completed / Locked)
-/// driven entirely by backend data, followed by the attempt history. The list
-/// refreshes automatically while visible so admin status changes (publish /
-/// unpublish / edit) appear without a manual refresh.
 class QuestionnaireScreen extends ConsumerWidget {
   const QuestionnaireScreen({super.key});
 
@@ -28,6 +25,8 @@ class QuestionnaireScreen extends ConsumerWidget {
     Future<void> handleRefresh() async {
       ref.invalidate(allQuestionnaireHistoryProvider);
       ref.invalidate(preTestHistoryProvider);
+      ref.invalidate(activeSurveyProvider);
+      ref.invalidate(activeSurveysProvider);
       await ref.read(questionnaireListProvider.notifier).refresh();
     }
 
@@ -89,6 +88,15 @@ class QuestionnaireScreen extends ConsumerWidget {
                     );
                   },
                 ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── Survey Penelitian Section ────────────────────────────
+                const QuestionnaireSectionHeader(
+                  title: 'Survey Penelitian',
+                  subtitle: 'Evaluasi akhir periode penggunaan aplikasi',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const SurveyCardSection(),
                 const SizedBox(height: AppSpacing.xl),
 
                 // ── Riwayat Kuesioner ────────────────────────────────────

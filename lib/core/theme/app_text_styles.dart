@@ -67,6 +67,38 @@ abstract final class AppTextStyles {
         color: AppColors.onSurface,
       );
 
+  /// 12px / 400 — body small
+  static TextStyle get bodySm => GoogleFonts.plusJakartaSans(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        height: 1.4,
+        color: AppColors.onSurface,
+      );
+
+  /// 11px / 500 — label small
+  static TextStyle get labelSm => GoogleFonts.plusJakartaSans(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+        color: AppColors.onSurface,
+      );
+
+  /// 18px / 600 — title large
+  static TextStyle get titleLg => GoogleFonts.plusJakartaSans(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        height: 1.44,
+        color: AppColors.onSurface,
+      );
+
+  /// 16px / 600 — title medium
+  static TextStyle get titleMd => GoogleFonts.plusJakartaSans(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        height: 1.45,
+        color: AppColors.onSurface,
+      );
+
   // ── Poppins ────────────────────────────────────────────────────────────────
 
   /// 32px / 700 — display heading (used in keypad screens)
