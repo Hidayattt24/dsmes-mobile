@@ -74,7 +74,7 @@ class BloodSugarEntryScreen extends ConsumerWidget {
                   children: [
                     // ── 1. Measurement Condition Section ─────────────────────
                     Text(
-                      'Waktu Pengukuran',
+                      'Jenis / Waktu Pengukuran',
                       style: AppTextStyles.labelMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                         fontSize: 16,
@@ -82,18 +82,22 @@ class BloodSugarEntryScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        for (final cond in ['Sebelum Makan', 'Sesudah Makan', 'Sewaktu']) ...[
-                          Expanded(
-                            child: _ConditionChip(
-                              label: cond,
-                              isSelected: state.condition == cond,
-                              onTap: () => notifier.setCondition(cond),
-                            ),
+                        for (final type in const [
+                          ('fasting', 'Puasa'),
+                          ('before_meal', 'Sebelum Makan'),
+                          ('after_meal', '2 Jam Sesudah Makan'),
+                          ('before_bed', 'Sebelum Tidur'),
+                          ('random', 'Sewaktu'),
+                        ])
+                          _ConditionChip(
+                            label: type.$2,
+                            isSelected: state.measurementType == type.$1,
+                            onTap: () => notifier.setMeasurementType(type.$1),
                           ),
-                          if (cond != 'Sewaktu') const SizedBox(width: 8),
-                        ],
                       ],
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -219,6 +223,10 @@ class BloodSugarEntryScreen extends ConsumerWidget {
                               final pickedTime = await showTimePicker(
                                 context: context,
                                 initialTime: state.selectedTime,
+                                builder: (context, child) => MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                  child: child!,
+                                ),
                               );
                               if (pickedTime != null) {
                                 notifier.setTime(pickedTime);
@@ -293,23 +301,49 @@ class BloodSugarEntryScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Catatan gula darah berhasil disimpan!'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Simpan Catatan Gula Darah',
-                    style: AppTextStyles.labelLg.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  onPressed: state.isSubmitting
+                      ? null
+                      : () async {
+                          final result = await notifier.submitBloodSugar();
+                          if (context.mounted && result != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Gula Darah: ${result.glucoseValue} mg/dL (${result.classificationLabel})\n${result.recommendation}',
+                                ),
+                                backgroundColor: AppColors.primaryContainer,
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                            Navigator.of(context).pop(result);
+                          } else if (context.mounted && state.errorMessage != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(state.errorMessage!),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                  child: state.isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          'Simpan Catatan Gula Darah',
+                          style: AppTextStyles.labelLg.copyWith(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ),

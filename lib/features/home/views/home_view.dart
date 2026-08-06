@@ -1,50 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/app_shell.dart';
 import '../../../core/router/route_names.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../blood_sugar/widgets/blood_sugar_card.dart';
 import '../dashboard/widgets/daily_calories_card.dart';
 import '../dashboard/widgets/weekly_calendar_card.dart';
 import '../dashboard/widgets/weekly_summary_section.dart';
+import '../history/models/history_item_model.dart';
+import '../history/viewmodels/history_provider.dart';
 import '../history/widgets/calendar_history_bottom_sheet.dart';
+import '../history/widgets/history_empty_state.dart';
+import '../reminders/models/reminder_model.dart';
+import '../reminders/viewmodels/reminder_provider.dart';
 import '../reminders/widgets/reminder_section.dart';
 
-class HomeView extends StatefulWidget {
+import '../viewmodels/home_dashboard_notifier.dart';
+import '../widgets/home_skeleton.dart';
+
+class HomeView extends ConsumerStatefulWidget {
   const HomeView({super.key, this.nowOverride});
 
   final DateTime? nowOverride;
 
   @override
-  State<HomeView> createState() => _HomeViewState();
+  ConsumerState<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
+class _HomeViewState extends ConsumerState<HomeView> {
   late DateTime _selectedDate;
 
   @override
   void initState() {
     super.initState();
-    // Default to July 23, 2026 (Thursday) as our mock "Today" timeline base
-    _selectedDate = widget.nowOverride ?? DateTime(2026, 7, 23);
+    _selectedDate = widget.nowOverride ?? DateTime.now();
   }
 
-  WeeklyDayState _resolveDayState(DateTime date, DateTime now) {
-    final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
-    if (isToday) {
-      return WeeklyDayState.today;
+  WeeklyDayState _resolveDayState(DateTime date, DateTime now, HistoryState? historyState) {
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final dateStart = DateTime(date.year, date.month, date.day);
+
+    if (dateStart.isAfter(todayStart)) {
+      return WeeklyDayState.noRecord;
     }
-    // Return mock timeline states matching the developer requirement
-    return switch (date.weekday) {
-      1 => WeeklyDayState.completed,  // Monday
-      2 => WeeklyDayState.completed,  // Tuesday
-      3 => WeeklyDayState.inProgress, // Wednesday
-      4 => WeeklyDayState.today,      // Thursday (Today fallback)
-      5 => WeeklyDayState.noRecord,   // Friday
-      6 => WeeklyDayState.noRecord,   // Saturday
-      7 => WeeklyDayState.completed,  // Sunday
-      _ => WeeklyDayState.noRecord,
-    };
+
+    final aggregate = historyState?.getAggregateForDate(date);
+    if (aggregate == null || !aggregate.hasAnyActivity) {
+      return WeeklyDayState.noRecord;
+    }
+
+    if (aggregate.isFullyCompleted) {
+      return WeeklyDayState.completed;
+    }
+
+    return WeeklyDayState.inProgress;
+  }
+
+  double _resolveDayProgress(DateTime date, HistoryState? historyState) {
+    final aggregate = historyState?.getAggregateForDate(date);
+    return aggregate?.progressRatio ?? 0.0;
   }
 
   void _openHistoryBottomSheet() {
@@ -65,305 +83,363 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final now = widget.nowOverride ?? DateTime(2026, 7, 23);
+    final now = widget.nowOverride ?? DateTime.now();
+    final dashboardAsync = ref.watch(homeDashboardProvider);
+    final historyAsync = ref.watch(historyProvider);
+    final remindersAsync = ref.watch(reminderListProvider);
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(AppSpacing.page),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Weekly Calendar Timeline Selector
-          // Weekly Calendar Timeline Selector
-          WeeklyCalendarCard(
-            selectedDate: _selectedDate,
-            getDayState: (date) => _resolveDayState(date, now),
-            onDateSelected: (date) {
-              setState(() {
-                _selectedDate = date;
-              });
-            },
-            onHistoryPressed: _openHistoryBottomSheet,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          // Dynamic cross-fade content switcher
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            child: _buildDayContent(context, now),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          ref.read(homeDashboardProvider.notifier).refresh(),
+          ref.read(historyProvider.notifier).refresh(),
+          ref.read(reminderListProvider.notifier).refresh(),
+        ]);
+      },
+      color: AppColors.primary,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.all(AppSpacing.page),
+        child: dashboardAsync.when(
+          loading: () => const HomeSkeleton(),
+          error: (err, stack) => _buildErrorState(err.toString()),
+          data: (state) => _buildHomeContent(context, now, state, historyAsync, remindersAsync),
+        ),
       ),
     );
   }
 
-  Widget _buildDayContent(BuildContext context, DateTime now) {
-    final isSelectedToday = _selectedDate.day == now.day && 
-                            _selectedDate.month == now.month && 
-                            _selectedDate.year == now.year;
-                            
-    final state = _resolveDayState(_selectedDate, now);
-    final bool hasRecord = state == WeeklyDayState.completed || 
-                           state == WeeklyDayState.inProgress || 
-                           state == WeeklyDayState.today;
-
-    // Resolve day-specific mock metrics
-    final String bloodSugarValue = switch (_selectedDate.weekday) {
-      1 => '112',
-      2 => '128',
-      3 => '118',
-      4 => '120',
-      7 => '105',
-      _ => '',
-    };
-
-    final String bloodSugarTime = switch (_selectedDate.weekday) {
-      1 => '08:00 pagi · Sebelum Sarapan',
-      2 => '08:15 pagi · Sebelum Sarapan',
-      3 => '07:45 pagi · Sebelum Makan',
-      4 => '08:30 pagi · Sebelum Makan',
-      7 => '07:00 pagi · Sebelum Sarapan',
-      _ => '',
-    };
-
-    final double bloodSugarPercent = switch (_selectedDate.weekday) {
-      1 => 0.5,
-      2 => 0.65,
-      3 => 0.58,
-      4 => 0.6,
-      7 => 0.45,
-      _ => 0.0,
-    };
-
-    final int consumed = switch (_selectedDate.weekday) {
-      1 => 1850,
-      2 => 1700,
-      3 => 950,
-      4 => 1200,
-      7 => 2000,
-      _ => 0,
-    };
-
-    const int target = 2100;
-    final int remaining = target - consumed;
-
-    // Resolve Helper Text/Banner Message
-    final String? historyMessage = switch (_selectedDate.weekday) {
-      1 || 2 || 7 => 'Viewing completed history.',
-      3 => 'Viewing historical progress.',
-      5 || 6 => 'No health records were created on this day.',
-      _ => null,
-    };
-
-    // Resolve Reminders Lists based on states
-    List<ReminderItemData> reminders = [];
-    if (state == WeeklyDayState.completed) {
-      reminders = [
-        const ReminderItemData(
-          id: 'med_1',
-          title: 'Minum Metformin',
-          subtitle: 'Selesai',
-          time: '08:00',
-          icon: Icons.medication_outlined,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
+  Widget _buildErrorState(String errorMsg) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.red, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              'Gagal memuat data dashboard',
+              style: AppTextStyles.labelLg.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              errorMsg,
+              style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => ref.read(homeDashboardProvider.notifier).refresh(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
         ),
-        const ReminderItemData(
-          id: 'sugar_1',
-          title: 'Gula Darah Puasa',
-          subtitle: 'Selesai',
-          time: '07:00',
-          icon: Icons.bloodtype_outlined,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-        const ReminderItemData(
-          id: 'meal_b',
-          title: 'Sarapan Pagi',
-          subtitle: 'Selesai',
-          time: '07:30',
-          icon: Icons.restaurant_rounded,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-        const ReminderItemData(
-          id: 'meal_l',
-          title: 'Makan Siang',
-          subtitle: 'Selesai',
-          time: '12:30',
-          icon: Icons.restaurant_rounded,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-        const ReminderItemData(
-          id: 'meal_d',
-          title: 'Makan Malam',
-          subtitle: 'Selesai',
-          time: '19:00',
-          icon: Icons.restaurant_rounded,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-      ];
-    } else if (state == WeeklyDayState.inProgress) {
-      reminders = [
-        const ReminderItemData(
-          id: 'med_1',
-          title: 'Minum Metformin',
-          subtitle: '1 Tablet - Setelah Makan',
-          time: '08:00',
-          icon: Icons.medication_outlined,
-          isCompleted: false,
-          iconBgColor: Color(0x1F00695c),
-          iconColor: Color(0xFF00695c),
-        ),
-        const ReminderItemData(
-          id: 'sugar_1',
-          title: 'Gula Darah Puasa',
-          subtitle: 'Selesai',
-          time: '07:00',
-          icon: Icons.bloodtype_outlined,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-        const ReminderItemData(
-          id: 'meal_b',
-          title: 'Sarapan Pagi',
-          subtitle: 'Selesai',
-          time: '07:30',
-          icon: Icons.restaurant_rounded,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-        const ReminderItemData(
-          id: 'meal_l',
-          title: 'Makan Siang',
-          subtitle: 'Selesai',
-          time: '12:30',
-          icon: Icons.restaurant_rounded,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-        const ReminderItemData(
-          id: 'meal_d',
-          title: 'Makan Malam',
-          subtitle: 'Belum Selesai',
-          time: '19:00',
-          icon: Icons.restaurant_rounded,
-          isCompleted: false,
-          iconBgColor: Color(0x1F00695c),
-          iconColor: Color(0xFF00695c),
-        ),
-      ];
-    } else if (state == WeeklyDayState.today) {
-      reminders = [
-        const ReminderItemData(
-          id: 'med_1',
-          title: 'Minum Metformin',
-          subtitle: '1 Tablet - Setelah Makan',
-          time: '08:00',
-          icon: Icons.medication_outlined,
-          isCompleted: false,
-          iconBgColor: Color(0x1F00695c),
-          iconColor: Color(0xFF00695c),
-        ),
-        const ReminderItemData(
-          id: 'sugar_1',
-          title: 'Gula Darah Puasa',
-          subtitle: 'Selesai',
-          time: '07:00',
-          icon: Icons.bloodtype_outlined,
-          isCompleted: true,
-          iconBgColor: Color(0x1F286b33),
-          iconColor: Color(0xFF286b33),
-        ),
-      ];
-    }
-
-    // Weekly summary counters
-    final summaries = [
-      SummaryItemData(
-        title: 'Gula Darah',
-        value: state == WeeklyDayState.noRecord ? '-' : 'Stabil',
-        icon: Icons.bloodtype_outlined,
       ),
-      SummaryItemData(
-        title: 'Edukasi Dibaca',
-        value: switch (_selectedDate.weekday) {
-          1 || 7 => '7/7',
-          2 => '6/7',
-          3 || 4 => '5/7',
-          _ => '0/7',
-        },
-        icon: Icons.menu_book_outlined,
-      ),
-    ];
+    );
+  }
+
+  Widget _buildHomeContent(BuildContext context, DateTime now, HomeDashboardState state,
+      AsyncValue<HistoryState> historyAsync,
+      AsyncValue<List<ReminderModel>> remindersAsync) {
+    final dash = state.dashboardData;
+    final latestBs = state.latestBloodSugar;
+    final isSelectedToday = _selectedDate.day == now.day &&
+        _selectedDate.month == now.month &&
+        _selectedDate.year == now.year;
+
+    final historyState = historyAsync.valueOrNull;
 
     return Column(
-      key: ValueKey<int>(_selectedDate.millisecondsSinceEpoch),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Blood Sugar Card
-        hasRecord
-            ? BloodSugarCard(
-                value: bloodSugarValue,
-                unit: 'mg/dL',
-                statusLabel: 'Normal',
-                timeAndMealText: bloodSugarTime,
-                percentagePosition: bloodSugarPercent,
-                isToday: isSelectedToday,
-                historyMessage: historyMessage,
-                onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
-              )
-            : BloodSugarCard.empty(
-                isToday: isSelectedToday,
-                historyMessage: historyMessage,
-                onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
-              ),
-        const SizedBox(height: AppSpacing.lg),
-        // Daily Calories Card
-        hasRecord
-            ? DailyCaloriesCard(
-                consumed: consumed,
-                remaining: remaining,
-                target: target,
-                isToday: isSelectedToday,
-                historyMessage: historyMessage,
-                onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
-              )
-            : DailyCaloriesCard.empty(
-                isToday: isSelectedToday,
-                historyMessage: historyMessage,
-                onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
-              ),
-        const SizedBox(height: AppSpacing.lg),
-        // Reminder List
-        ReminderSection(
-          reminders: reminders,
-          emptyMessage: state == WeeklyDayState.noRecord ? 'No medication record.' : null,
-          onViewAllPressed: () => context.push(RouteNames.reminders),
-          onReminderTapped: (id) {},
+        if (dash != null) ...[
+          Text(
+            '${dash.greetingText} ${dash.displayName}!',
+            style: AppTextStyles.poppinsHeadline.copyWith(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            dash.motivationalMessage,
+            style: AppTextStyles.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+
+        WeeklyCalendarCard(
+          selectedDate: _selectedDate,
+          getDayState: (date) => _resolveDayState(date, now, historyState),
+          getDayProgress: (date) => _resolveDayProgress(date, historyState),
+          onDateSelected: (date) {
+            setState(() {
+              _selectedDate = date;
+            });
+          },
+          onHistoryPressed: _openHistoryBottomSheet,
         ),
         const SizedBox(height: AppSpacing.lg),
-        // Weekly Summary Section
+
+        if (latestBs != null)
+          BloodSugarCard(
+            value: latestBs.glucoseValue.toString(),
+            unit: 'mg/dL',
+            statusLabel: latestBs.classificationLabel,
+            statusColor: _parseHexColor(latestBs.colorIndicator),
+            timeAndMealText: latestBs.formattedTimeAndType,
+            percentagePosition: (latestBs.glucoseValue / 200.0).clamp(0.1, 0.9),
+            isToday: isSelectedToday,
+            onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
+          )
+        else
+          BloodSugarCard.empty(
+            isToday: isSelectedToday,
+            onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
+          ),
+        const SizedBox(height: AppSpacing.lg),
+
+        DailyCaloriesCard(
+          consumed: state.consumedCalories,
+          remaining: state.remainingCalories,
+          target: state.dailyCalorieTarget,
+          isToday: isSelectedToday,
+          onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
+          onViewHistoryPressed: () =>
+              ref.read(appShellTabIndexProvider.notifier).state = 1,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        remindersAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (reminders) {
+            final todayReminders = reminders
+                .where((r) =>
+                    r.isActive && r.activeDays.contains(now.weekday))
+                .map(ReminderItemData.fromReminderModel)
+                .toList();
+            return ReminderSection(
+              reminders: todayReminders,
+              emptyMessage: 'Belum ada pengingat hari ini.',
+              onViewAllPressed: () => context.push(RouteNames.reminders),
+              onReminderTapped: (id) {},
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        Text(
+          'Aktivitas Terakhir',
+          style: AppTextStyles.labelLg.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: AppColors.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        historyAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          error: (err, _) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Gagal memuat aktivitas',
+              style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+            ),
+          ),
+          data: (historyState) {
+            if (historyState.allItems.isEmpty) {
+              return const HistoryEmptyState();
+            }
+
+            final activities = historyState.recentItemsLimited;
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: activities.length,
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
+              itemBuilder: (context, index) {
+                final act = activities[index];
+                final iconColor = _parseColor(act.color);
+                final iconBgColor = iconColor.withValues(alpha: 0.1);
+                final statusColor = act.status == 'normal'
+                    ? AppColors.secondary
+                    : (act.status == 'hyperglycemia' || act.status == 'severe_hyperglycemia'
+                        ? AppColors.error
+                        : AppColors.tertiary);
+
+                return Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: iconBgColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _mapIcon(act.icon),
+                          color: iconColor,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              act.title,
+                              style: AppTextStyles.labelMd.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${act.activityTypeLabel} • ${act.value} ${act.unit}',
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _formatActivityDate(act.parsedMeasuredAt),
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _statusLabel(act),
+                          style: AppTextStyles.labelMd.copyWith(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
         WeeklySummarySection(
-          summaries: summaries,
+          summaries: [
+            SummaryItemData(
+              title: 'Gula Darah',
+              value: latestBs != null ? latestBs.classificationLabel : '-',
+              icon: Icons.water_drop_outlined,
+            ),
+            SummaryItemData(
+              title: 'Berat Badan',
+              value: dash != null ? '${dash.weightKg} kg' : '-',
+              icon: Icons.scale_outlined,
+            ),
+          ],
         ),
       ],
     );
+  }
+
+  Color _parseColor(String hex) {
+    try {
+      final cleanHex = hex.replaceAll('#', '');
+      if (cleanHex.length == 6) {
+        return Color(int.parse('FF$cleanHex', radix: 16));
+      }
+    } catch (_) {}
+    return AppColors.primary;
+  }
+
+  IconData _mapIcon(String iconName) {
+    switch (iconName) {
+      case 'water_drop':
+        return Icons.water_drop_outlined;
+      case 'restaurant':
+        return Icons.restaurant_rounded;
+      case 'directions_run':
+        return Icons.directions_run_rounded;
+      case 'medication':
+        return Icons.medication_outlined;
+      case 'monitor_heart':
+        return Icons.monitor_heart_outlined;
+      default:
+        return Icons.history_rounded;
+    }
+  }
+
+  String _statusLabel(HistoryItemModel item) {
+    switch (item.activityType) {
+      case 'blood_sugar':
+        return '${item.value} mg/dL';
+      case 'meal':
+        return '${item.value} kcal';
+      case 'activity':
+        return item.status == 'Completed' ? 'Selesai' : 'Pending';
+      case 'medication':
+        return item.status == 'selesai' ? 'Minum' : 'Pending';
+      default:
+        return item.status;
+    }
+  }
+
+  String _formatActivityDate(DateTime? date) {
+    if (date == null) return '';
+    final d = date.toLocal();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  /// Parses a hex color string (e.g. "#10B981") from the backend into a
+  /// Flutter Color so the badge colour matches the server's classification.
+  Color? _parseHexColor(String hex) {
+    if (hex.isEmpty) return null;
+    try {
+      final h = hex.replaceFirst('#', '');
+      if (h.length == 6) {
+        return Color(int.parse('FF$h', radix: 16));
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

@@ -27,18 +27,28 @@ class RecordTimelineSection extends StatelessWidget {
   final ValueChanged<TimelineRecordItem> onEditItem;
   final ValueChanged<TimelineRecordItem> onDeleteItem;
 
-  String _getDateLabel(DateTime date) {
-    final now = MockRecordHistoryData.today;
-    if (MockRecordHistoryData.isSameDate(date, now)) return 'Hari Ini';
-    if (MockRecordHistoryData.isSameDate(date, MockRecordHistoryData.yesterday)) return 'Kemarin';
-    if (MockRecordHistoryData.isSameDate(date, MockRecordHistoryData.lastTuesday)) return 'Selasa (21 Jul)';
-    if (MockRecordHistoryData.isSameDate(date, MockRecordHistoryData.threeDaysAgo)) return '20 Jul 2026';
-    return '${date.day} Jul ${date.year}';
+  static bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
+
+  String _getDateLabel(DateTime date) {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (_isSameDate(date, now)) return 'Hari Ini';
+    if (_isSameDate(date, yesterday)) return 'Kemarin';
+    return '${date.day} ${_months[date.month - 1]} ${date.year}';
+  }
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final isToday = MockRecordHistoryData.isSameDate(selectedDate, MockRecordHistoryData.today);
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    final isToday = _isSameDate(selectedDate, now);
 
     // Apply active RecordType filter
     final filteredItems = selectedFilter == RecordType.all
@@ -108,26 +118,26 @@ class RecordTimelineSection extends StatelessWidget {
             children: [
               _DateChoiceChip(
                 label: 'Hari Ini',
-                isSelected: MockRecordHistoryData.isSameDate(selectedDate, MockRecordHistoryData.today),
-                onTap: () => onDateSelected(MockRecordHistoryData.today),
+                isSelected: _isSameDate(selectedDate, now),
+                onTap: () => onDateSelected(now),
               ),
               const SizedBox(width: 6),
               _DateChoiceChip(
                 label: 'Kemarin',
-                isSelected: MockRecordHistoryData.isSameDate(selectedDate, MockRecordHistoryData.yesterday),
-                onTap: () => onDateSelected(MockRecordHistoryData.yesterday),
+                isSelected: _isSameDate(selectedDate, yesterday),
+                onTap: () => onDateSelected(yesterday),
               ),
               const SizedBox(width: 6),
               _DateChoiceChip(
-                label: 'Selasa (21 Jul)',
-                isSelected: MockRecordHistoryData.isSameDate(selectedDate, MockRecordHistoryData.lastTuesday),
-                onTap: () => onDateSelected(MockRecordHistoryData.lastTuesday),
+                label: '2 Hari Lalu',
+                isSelected: _isSameDate(selectedDate, now.subtract(const Duration(days: 2))),
+                onTap: () => onDateSelected(now.subtract(const Duration(days: 2))),
               ),
               const SizedBox(width: 6),
               _DateChoiceChip(
-                label: '20 Jul',
-                isSelected: MockRecordHistoryData.isSameDate(selectedDate, MockRecordHistoryData.threeDaysAgo),
-                onTap: () => onDateSelected(MockRecordHistoryData.threeDaysAgo),
+                label: '3 Hari Lalu',
+                isSelected: _isSameDate(selectedDate, now.subtract(const Duration(days: 3))),
+                onTap: () => onDateSelected(now.subtract(const Duration(days: 3))),
               ),
               const SizedBox(width: 6),
               ActionChip(

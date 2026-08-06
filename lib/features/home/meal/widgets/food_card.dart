@@ -18,6 +18,10 @@ class FoodCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onAddPressed;
 
+  /// Smart format: whole numbers show without decimal (40g), fractional with 1 decimal (39.8g)
+  String _fmt(double val) =>
+      val == val.truncateToDouble() ? val.toInt().toString() : val.toStringAsFixed(1);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -60,21 +64,21 @@ class FoodCard extends StatelessWidget {
                   children: [
                     MacroChip(
                       label: 'Karbo',
-                      value: '${food.carbs.toStringAsFixed(0)}g',
+                      value: '${_fmt(food.carbs)}g',
                       chipColor: AppColors.primaryFixed,
                       textColor: AppColors.onPrimaryFixedVariant,
                     ),
                     const SizedBox(width: 8),
                     MacroChip(
                       label: 'Prot',
-                      value: '${food.protein.toStringAsFixed(0)}g',
+                      value: '${_fmt(food.protein)}g',
                       chipColor: AppColors.secondaryFixed,
                       textColor: AppColors.onSecondaryFixedVariant,
                     ),
                     const SizedBox(width: 8),
                     MacroChip(
                       label: 'Lemak',
-                      value: '${food.fat.toStringAsFixed(0)}g',
+                      value: '${_fmt(food.fat)}g',
                       chipColor: AppColors.tertiaryFixed,
                       textColor: AppColors.onTertiaryFixedVariant,
                     ),

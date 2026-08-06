@@ -125,9 +125,8 @@ class LoginScreen extends ConsumerWidget {
                               isLoading: state.isLoading,
                               height: 54,
                               onPressed: () async {
-                                await notifier.submit();
-                                if (context.mounted &&
-                                    state.errorMessage == null) {
+                                final success = await notifier.submit();
+                                if (context.mounted && success) {
                                   context.go(RouteNames.home);
                                 }
                               },
@@ -325,15 +324,15 @@ class _LoginOptions extends StatelessWidget {
             ),
           ),
         ),
-        // Forgot password link
+        // Forgot password link (Disabled for now)
         GestureDetector(
-          onTap: () => context.push(RouteNames.forgotPassword),
+          onTap: null, // Disabled for now
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text(
               AppStrings.loginForgotPassword,
               style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.primary,
+                color: AppColors.outline,
                 fontWeight: FontWeight.w600,
               ),
             ),

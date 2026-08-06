@@ -44,7 +44,7 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
     }
   }
 
-  int get _adjustedCalories => (widget.food.calories * _quantity).round();
+  double get _adjustedCalories => widget.food.energyKcal * _quantity;
   double get _adjustedCarbs => widget.food.carbs * _quantity;
   double get _adjustedProtein => widget.food.protein * _quantity;
   double get _adjustedFat => widget.food.fat * _quantity;
@@ -84,12 +84,17 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Menambahkan ${widget.food.name}',
-                  style: AppTextStyles.headlineMd.copyWith(
-                    fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Text(
+                    widget.food.name,
+                    style: AppTextStyles.headlineMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
                   child: Container(
@@ -344,10 +349,20 @@ class _NutritionGrid extends StatelessWidget {
     required this.fat,
   });
 
-  final int calories;
+  final double calories;
   final double carbs;
   final double protein;
   final double fat;
+
+  String _formatVal(double val) {
+    // Show whole numbers without decimals (370 not 370.0),
+    // but keep 1 decimal for fractional values (39.8)
+    if (val == val.truncateToDouble()) {
+      return val.toInt().toString();
+    }
+    return val.toStringAsFixed(1);
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -374,23 +389,23 @@ class _NutritionGrid extends StatelessWidget {
           child: Row(
             children: [
               _NutritionCell(
-                value: '$calories',
+                value: _formatVal(calories),
                 label: 'Kalori',
                 unit: 'kcal',
                 isPrimary: true,
               ),
               _NutritionCell(
-                value: carbs.toStringAsFixed(1),
+                value: _formatVal(carbs),
                 label: 'Karbo',
                 unit: 'g',
               ),
               _NutritionCell(
-                value: protein.toStringAsFixed(1),
+                value: _formatVal(protein),
                 label: 'Protein',
                 unit: 'g',
               ),
               _NutritionCell(
-                value: fat.toStringAsFixed(1),
+                value: _formatVal(fat),
                 label: 'Lemak',
                 unit: 'g',
               ),

@@ -1,158 +1,428 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../data/education_mock_data.dart';
+import '../../../../core/widgets/app_smart_image.dart';
 import '../models/education_article.dart';
+import '../viewmodels/education_notifier.dart';
 import '../widgets/article_information.dart';
-import '../widgets/article_section.dart';
+import '../widgets/education_review_dialog.dart';
+import '../widgets/education_skeleton.dart';
 import '../widgets/youtube_preview_card.dart';
 
-class EducationDetailScreen extends StatefulWidget {
-  const EducationDetailScreen({
-    super.key,
-    required this.articleId,
-  });
+class EducationDetailScreen extends ConsumerStatefulWidget {
+  const EducationDetailScreen({super.key, required this.articleId});
 
   final String articleId;
 
   @override
-  State<EducationDetailScreen> createState() => _EducationDetailScreenState();
+  ConsumerState<EducationDetailScreen> createState() =>
+      _EducationDetailScreenState();
 }
 
-class _EducationDetailScreenState extends State<EducationDetailScreen> {
-  late EducationArticle _article;
-  bool _isBookmarked = false;
-  bool _isCompleted = false;
+class _EducationDetailScreenState
+    extends ConsumerState<EducationDetailScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  // ──────────────────────────────────────────────────────────────
+  // Cached Notifier Reference (Safe for lifecycle/deactivate)
+  // ──────────────────────────────────────────────────────────────
+  EducationDetailNotifier? _cachedNotifier;
+
+  // ──────────────────────────────────────────────────────────────
+  // Read-progress tracking state
+  // ──────────────────────────────────────────────────────────────
+  DateTime? _readStartTime;
+  int _lastReportedScrollPct = 0;
+  bool _hasMarkedComplete = false;
+
+  // ──────────────────────────────────────────────────────────────
+  // Video watch tracking state
+  // ──────────────────────────────────────────────────────────────
+  int _videoWatchSeconds = 0;
+  int _videoLastTimestampSeconds = 0;
 
   @override
   void initState() {
     super.initState();
-    _article = MockEducationData.getArticleById(widget.articleId);
-    _isCompleted = _article.isCompleted || _article.readStatus == 'Selesai';
-    _isBookmarked = _article.isBookmarked;
+    _readStartTime = DateTime.now();
+    _scrollController.addListener(_onScroll);
   }
 
-  void _toggleBookmark() {
-    MockEducationData.toggleBookmark(_article.id);
-    setState(() {
-      _isBookmarked = MockEducationData.isBookmarked(_article.id);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isBookmarked
-              ? 'Artikel "${_article.title}" berhasil disimpan di Markah Buku'
-              : 'Artikel dihapus dari Markah Buku',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Cache the notifier instance safely while mounted
+    _cachedNotifier = ref.read(educationDetailProvider(widget.articleId).notifier);
+  }
+
+  @override
+  void deactivate() {
+    // deactivate() runs BEFORE dispose() while the element is still active
+    _flushReadProgress();
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Scroll tracking
+  // ──────────────────────────────────────────────────────────────
+  void _onScroll() {
+    if (!mounted) return;
+    final pos = _scrollController.position;
+    if (pos.maxScrollExtent <= 0) return;
+
+    final pct = ((pos.pixels / pos.maxScrollExtent) * 100).round().clamp(
+      0,
+      100,
     );
+
+    // Throttle: only report every 10% change
+    if (pct - _lastReportedScrollPct >= 10) {
+      _lastReportedScrollPct = pct;
+      _flushReadProgress(scrollPct: pct);
+    }
   }
 
-  void _handleShare() {
-    final mockUrl = 'https://dsmes-aceh.id/edukasi/${_article.id}';
+  void _flushReadProgress({int? scrollPct}) {
+    if (_readStartTime == null) return;
+    final duration = DateTime.now().difference(_readStartTime!).inSeconds;
+    final pct = scrollPct ?? _lastReportedScrollPct;
+
+    // Use cached notifier instance if ref is unmounted/disposed
+    if (mounted) {
+      ref
+          .read(educationDetailProvider(widget.articleId).notifier)
+          .reportReadProgress(duration: duration, scrollPercentage: pct);
+    } else {
+      _cachedNotifier?.reportReadProgress(
+        duration: duration,
+        scrollPercentage: pct,
+      );
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Video watch tracking callbacks (passed to YouTubePreviewCard)
+  // ──────────────────────────────────────────────────────────────
+  void _onVideoProgressUpdated(int watchedSeconds, int lastTimestamp) {
+    _videoWatchSeconds = watchedSeconds;
+    _videoLastTimestampSeconds = lastTimestamp;
+  }
+
+  void _onVideoEnded() {
+    if (!mounted) return;
+    ref
+        .read(educationDetailProvider(widget.articleId).notifier)
+        .markVideoWatched();
+  }
+
+  Future<void> _markComplete() async {
+    try {
+      await ref
+          .read(educationDetailProvider(widget.articleId).notifier)
+          .markArticleRead();
+
+      if (mounted) {
+        setState(() {
+          _hasMarkedComplete = true;
+        });
+      }
+
+      if (!mounted) return;
+
+      final article =
+          ref.read(educationDetailProvider(widget.articleId)).value;
+      final articleTitle = article?.title ?? 'Artikel Edukasi';
+
+      final result = await EducationReviewDialog.show(
+        context,
+        articleTitle: articleTitle,
+      );
+
+      if (result != null && mounted) {
+        final rating = result['rating'] as int? ?? 5;
+        final note = result['note'] as String? ?? '';
+
+        await ref
+            .read(educationDetailProvider(widget.articleId).notifier)
+            .submitReview(rating: rating, note: note);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Ulasan berhasil dikirim! Terima kasih atas masukan Anda. 🎉',
+              ),
+              backgroundColor: AppColors.primaryContainer,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Artikel edukasi berhasil ditandai selesai! 🎉'),
+            backgroundColor: AppColors.primaryContainer,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menandai artikel. Silakan coba lagi.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Bookmark toggle
+  // ──────────────────────────────────────────────────────────────
+  Future<void> _toggleBookmark() async {
+    try {
+      await ref
+          .read(educationDetailProvider(widget.articleId).notifier)
+          .toggleBookmark();
+      if (!mounted) return;
+      final isNowBookmarked =
+          ref
+              .read(educationDetailProvider(widget.articleId))
+              .value
+              ?.isBookmarked ??
+          false;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isNowBookmarked
+                  ? 'Artikel berhasil disimpan di Markah Buku'
+                  : 'Artikel dihapus dari Markah Buku',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal mengubah bookmark. Silakan coba lagi.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Share sheet
+  // ──────────────────────────────────────────────────────────────
+  void _handleShare(EducationArticle article) {
+    final mockUrl = 'https://dsmes-aceh.id/edukasi/${article.id}';
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: AppColors.surfaceContainerLowest,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: AppColors.outlineVariant,
-                  borderRadius: BorderRadius.circular(3),
+      builder:
+          (ctx) => Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.outlineVariant,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Bagikan Artikel Edukasi',
+                  style: AppTextStyles.headlineMd.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  article.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.link_rounded, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          mockUrl,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyMd.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tautan artikel berhasil disalin'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('Salin'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
+          ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Build
+  // ──────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final articleAsync = ref.watch(educationDetailProvider(widget.articleId));
+
+    return articleAsync.when(
+      loading:
+          () => Scaffold(
+            backgroundColor: AppColors.surface,
+            appBar: AppBar(
+              backgroundColor: AppColors.surface,
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: AppColors.primary,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                'Detail Edukasi',
+                style: AppTextStyles.headlineMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Bagikan Artikel Edukasi',
-              style: AppTextStyles.headlineMd.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
+            body: const EducationDetailSkeleton(),
+          ),
+      error:
+          (e, _) => Scaffold(
+            backgroundColor: AppColors.surface,
+            appBar: AppBar(
+              backgroundColor: AppColors.surface,
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: AppColors.primary,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                'Detail Edukasi',
+                style: AppTextStyles.headlineMd.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              _article.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.link_rounded, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      mockUrl,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.bodyMd.copyWith(color: AppColors.primary),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 56,
+                      color: AppColors.outline,
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Tautan artikel berhasil disalin'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    child: const Text('Salin'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      'Gagal memuat artikel',
+                      style: AppTextStyles.headlineMd.copyWith(
+                        color: AppColors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Periksa koneksi internet Anda lalu coba lagi.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed:
+                          () => ref.invalidate(
+                            educationDetailProvider(widget.articleId),
+                          ),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-        ),
-      ),
+          ),
+      data: (article) => _buildContent(article),
     );
   }
 
-  void _toggleCompleted() {
-    setState(() {
-      _isCompleted = !_isCompleted;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isCompleted
-              ? 'Artikel berhasil ditandai selesai!'
-              : 'Status artikel diubah',
-        ),
-        backgroundColor: AppColors.primary,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  Widget _buildContent(EducationArticle article) {
+    final isBookmarked = article.isBookmarked;
+    final isCompleted = article.isCompleted || _hasMarkedComplete;
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -171,16 +441,61 @@ class _EducationDetailScreenState extends State<EducationDetailScreen> {
           ),
         ),
         actions: [
+          if (isCompleted)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Tooltip(
+                message: 'Selesai Dibaca',
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Selesai',
+                        style: AppTextStyles.labelMd.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           IconButton(
             icon: Icon(
-              _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-              color: _isBookmarked ? AppColors.primary : AppColors.onSurfaceVariant,
+              isBookmarked
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+              color:
+                  isBookmarked
+                      ? AppColors.primary
+                      : AppColors.onSurfaceVariant,
             ),
             onPressed: _toggleBookmark,
           ),
           IconButton(
-            icon: const Icon(Icons.share_rounded, color: AppColors.onSurfaceVariant),
-            onPressed: _handleShare,
+            icon: const Icon(
+              Icons.share_rounded,
+              color: AppColors.onSurfaceVariant,
+            ),
+            onPressed: () => _handleShare(article),
           ),
           const SizedBox(width: 8),
         ],
@@ -188,224 +503,215 @@ class _EducationDetailScreenState extends State<EducationDetailScreen> {
       body: Stack(
         children: [
           SingleChildScrollView(
+            controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Hero Image Section (240px height)
                 SizedBox(
                   width: double.infinity,
-                  height: 240,
-                  child: ClipRRect(
+                  height: 200,
+                  child: AppSmartImage(
+                    imageUrl: article.imageUrl,
+                    fit: BoxFit.cover,
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(16),
                       bottomRight: Radius.circular(16),
                     ),
-                    child: Image.network(
-                      _article.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: AppColors.primaryContainer,
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_book_rounded,
-                            size: 64,
-                            color: AppColors.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                    ),
+                    fallbackIcon: Icons.menu_book_rounded,
                   ),
                 ),
-
-                // Badges & Metadata Section
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.page,
-                    AppSpacing.lg,
+                    AppSpacing.md,
                     AppSpacing.page,
                     0,
                   ),
-                  child: ArticleInformation(article: _article),
+                  child: ArticleInformation(article: article),
                 ),
-
-                // Content Section
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.page),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Main Headline Title
                       Text(
-                        _article.title,
+                        article.title,
                         style: AppTextStyles.poppinsHeadline.copyWith(
-                          fontSize: 24,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          height: 1.3,
+                          height: 1.35,
                           color: AppColors.onSurface,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: 12),
+                      for (final contentHtml in article.bodyParagraphs) ...[
+                        HtmlWidget(
+                          contentHtml,
+                          onTapUrl: (url) async {
+                            final uri = Uri.parse(url);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(
+                                uri,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                            return true;
+                          },
+                          textStyle: AppTextStyles.bodyLg.copyWith(
+                            fontSize: 14.5,
+                            height: 1.55,
+                            color: const Color(0xFF334155),
+                          ),
+                          customWidgetBuilder: (element) {
+                            final youtubeId =
+                                element.attributes['data-youtube-id'] ??
+                                (element.localName == 'a' &&
+                                        element.attributes['href'] != null
+                                    ? YoutubePlayer.convertUrlToId(
+                                      element.attributes['href']!,
+                                    )
+                                    : null);
+                            if (youtubeId != null && youtubeId.isNotEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: YouTubePreviewCard(
+                                  videoTitle: article.title,
+                                  videoDuration: 'Video Edukasi',
+                                  channelName:
+                                      article.channelName ?? 'DSMES Official',
+                                  imageUrl: article.imageUrl,
+                                  videoUrl:
+                                      'https://www.youtube.com/watch?v=$youtubeId',
+                                  isWatched:
+                                      article.isYoutubeWatched ||
+                                      article.isCompleted,
+                                  onWatchProgress: _onVideoProgressUpdated,
+                                  onVideoEnded: _onVideoEnded,
+                                ),
+                              );
+                            }
 
-                      // YouTube Video Preview & Embedded Player Card (if available)
-                      if (_article.hasVideo) ...[
-                        YouTubePreviewCard(
-                          videoTitle: _article.title,
-                          videoDuration: _article.videoDuration ?? '08:45',
-                          channelName: _article.channelName ?? 'DSMES Aceh Official',
-                          imageUrl: _article.imageUrl,
-                          videoUrl: _article.videoUrl,
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-
-                      // Intro Blockquote Card
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryContainer.withValues(alpha: 0.06),
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(16),
-                            bottomRight: Radius.circular(16),
-                          ),
-                          border: const Border(
-                            left: BorderSide(
-                              color: AppColors.primaryContainer,
-                              width: 4,
-                            ),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primaryContainer.withValues(alpha: 0.04),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          _article.quoteText,
-                          style: AppTextStyles.bodyLg.copyWith(
-                            fontSize: 15,
-                            fontStyle: FontStyle.italic,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primary,
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // Body Paragraphs
-                      for (final para in _article.bodyParagraphs) ...[
-                        Text(
-                          para,
-                          style: AppTextStyles.bodyLg.copyWith(
-                            fontSize: 16,
-                            height: 1.6,
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-
-                      // Illustration Grid (2 Columns)
-                      if (_article.galleryImageUrls.isNotEmpty) ...[
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 1.0,
-                          ),
-                          itemCount: _article.galleryImageUrls.length,
-                          itemBuilder: (context, index) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.network(
-                                _article.galleryImageUrls[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: AppColors.surfaceContainerHigh,
-                                  child: const Icon(
-                                    Icons.image_outlined,
-                                    color: AppColors.outline,
+                            if (element.localName == 'img' &&
+                                element.attributes['src'] != null) {
+                              final src = element.attributes['src']!;
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AppSmartImage(
+                                    imageUrl: src,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
+
+                            if (element.classes.contains('bg-teal-50') ||
+                                element.localName == 'blockquote') {
+                              return Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F9F8),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(10),
+                                    bottomRight: Radius.circular(10),
+                                  ),
+                                  border: const Border(
+                                    left: BorderSide(
+                                      color: AppColors.primary,
+                                      width: 4,
+                                    ),
+                                  ),
+                                ),
+                                child: HtmlWidget(
+                                  element.innerHtml,
+                                  textStyle: AppTextStyles.bodyLg.copyWith(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return null;
+                          },
+                          customStylesBuilder: (element) {
+                            if (element.localName == 'h1') {
+                              return {
+                                'color': '#1E293B',
+                                'font-weight': 'bold',
+                                'font-size': '18px',
+                                'margin-top': '14px',
+                                'margin-bottom': '6px',
+                              };
+                            }
+                            if (element.localName == 'h2') {
+                              return {
+                                'color': '#1E293B',
+                                'font-weight': 'bold',
+                                'font-size': '17px',
+                                'margin-top': '12px',
+                                'margin-bottom': '6px',
+                              };
+                            }
+                            if (element.localName == 'h3') {
+                              return {
+                                'color': '#1E293B',
+                                'font-weight': 'bold',
+                                'font-size': '16px',
+                                'margin-top': '10px',
+                                'margin-bottom': '4px',
+                              };
+                            }
+                            if (element.localName == 'h4') {
+                              return {
+                                'color': '#1E293B',
+                                'font-weight': 'bold',
+                                'font-size': '15px',
+                                'margin-top': '8px',
+                                'margin-bottom': '4px',
+                              };
+                            }
+                            if (element.localName == 'p') {
+                              return {
+                                'color': '#4A5568',
+                                'line-height': '1.55',
+                                'margin-bottom': '8px',
+                              };
+                            }
+                            if (element.localName == 'ol' ||
+                                element.localName == 'ul') {
+                              return {
+                                'color': '#4A5568',
+                                'padding-left': '18px',
+                                'margin-bottom': '8px',
+                              };
+                            }
+                            if (element.localName == 'li') {
+                              return {'margin-bottom': '4px'};
+                            }
+                            return null;
                           },
                         ),
-                        const SizedBox(height: AppSpacing.xl),
+                        const SizedBox(height: 8),
                       ],
-
-                      // Subheadings & Sections
-                      for (final section in _article.sections) ...[
-                        ArticleSection(section: section),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-
-                      // Callout Card Quote
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainer,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Text(
-                          _article.calloutText,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.headlineMd.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // Tags Row
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _article.tags.map((tag) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppColors.outlineVariant,
-                              ),
-                            ),
-                            child: Text(
-                              tag,
-                              style: AppTextStyles.labelMd.copyWith(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.onSurfaceVariant,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-
-          // Sticky Bottom Footer Bar
           Positioned(
             left: 0,
             right: 0,
@@ -430,28 +736,31 @@ class _EducationDetailScreenState extends State<EducationDetailScreen> {
                     height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isCompleted ? AppColors.secondary : AppColors.primary,
+                        backgroundColor:
+                            isCompleted
+                                ? AppColors.secondary
+                                : AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: _toggleCompleted,
+                      onPressed: isCompleted ? null : _markComplete,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            _isCompleted
+                            isCompleted
                                 ? Icons.check_circle_rounded
                                 : Icons.check_circle_outline_rounded,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _isCompleted
-                                ? 'Selesai Membaca ✓'
-                                : 'Selesai Membaca & Tandai Selesai',
+                            isCompleted
+                                ? 'Sudah Membaca Artikel ✓'
+                                : 'Tandai Sudah Membaca Artikel',
                             style: AppTextStyles.poppinsButton.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -463,7 +772,7 @@ class _EducationDetailScreenState extends State<EducationDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '© 2024 DSMES Aceh',
+                    '© 2026 DSMES Aceh',
                     style: AppTextStyles.bodyMd.copyWith(
                       fontSize: 11,
                       color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),

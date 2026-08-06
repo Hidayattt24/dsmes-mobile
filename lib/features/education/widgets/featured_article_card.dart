@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../../../core/widgets/app_smart_image.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -41,21 +41,10 @@ class FeaturedArticleCard extends StatelessWidget {
               children: [
                 // Background Image
                 Positioned.fill(
-                  child: Image.network(
-                    article.imageUrl,
+                  child: AppSmartImage(
+                    imageUrl: article.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppColors.primaryContainer,
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_book_rounded,
-                            size: 64,
-                            color: AppColors.onPrimaryContainer,
-                          ),
-                        ),
-                      );
-                    },
+                    fallbackIcon: Icons.menu_book_rounded,
                   ),
                 ),
                 // Gradient Overlay

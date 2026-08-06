@@ -167,6 +167,10 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
     final picked = await showTimePicker(
       context: context,
       initialTime: current,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
     );
     if (picked != null) {
       ref
@@ -360,6 +364,10 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
                                 final picked = await showTimePicker(
                                   context: context,
                                   initialTime: time,
+                                  builder: (context, child) => MediaQuery(
+                                    data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                    child: child!,
+                                  ),
                                 );
                                 if (picked != null) {
                                   setSheetState(() => time = picked);
@@ -523,6 +531,7 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
   }
 
   Widget _buildFooter(BuildContext context, WidgetRef ref, double bottomPadding) {
+    final state = ref.watch(dailyRoutineProvider);
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.page,
@@ -544,14 +553,29 @@ class DailyRoutineSetupScreen extends ConsumerWidget {
         label: AppStrings.dailyRoutineButton,
         trailingIcon: Icons.arrow_forward,
         borderRadius: AppRadius.buttonPill,
-        onPressed: () {
-          ref.read(onboardingProvider.notifier).finishOnboarding().then((_) {
-            if (context.mounted) context.go(RouteNames.accountCreatedSuccess);
-          });
+        isLoading: state.isLoading,
+        onPressed: () async {
+          final ok = await ref.read(dailyRoutineProvider.notifier).finishOnboarding();
+          if (context.mounted) {
+            if (ok) {
+              context.go(RouteNames.preTestIntro);
+            } else {
+              final currState = ref.read(dailyRoutineProvider);
+              if (currState.errorMessage != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(currState.errorMessage!),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            }
+          }
         },
       ),
     );
   }
+
 }
 
 class _OptionCard extends StatelessWidget {

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../models/history_mock_data.dart';
+import '../viewmodels/history_provider.dart';
 import '../views/monthly_calendar_view.dart';
 import 'daily_history_summary.dart';
 import 'history_empty_state.dart';
 
-class CalendarHistoryBottomSheet extends StatefulWidget {
+class CalendarHistoryBottomSheet extends ConsumerStatefulWidget {
   const CalendarHistoryBottomSheet({
     super.key,
     required this.initialDate,
@@ -19,10 +20,10 @@ class CalendarHistoryBottomSheet extends StatefulWidget {
   final ValueChanged<DateTime> onDateSelected;
 
   @override
-  State<CalendarHistoryBottomSheet> createState() => _CalendarHistoryBottomSheetState();
+  ConsumerState<CalendarHistoryBottomSheet> createState() => _CalendarHistoryBottomSheetState();
 }
 
-class _CalendarHistoryBottomSheetState extends State<CalendarHistoryBottomSheet> {
+class _CalendarHistoryBottomSheetState extends ConsumerState<CalendarHistoryBottomSheet> {
   late int _currentYear;
   late int _currentMonth;
   late DateTime _selectedDate;
@@ -33,6 +34,12 @@ class _CalendarHistoryBottomSheetState extends State<CalendarHistoryBottomSheet>
     _selectedDate = widget.initialDate;
     _currentYear = widget.initialDate.year;
     _currentMonth = widget.initialDate.month;
+
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(historyProvider.notifier).refresh();
+      }
+    });
   }
 
   void _handlePreviousMonth() {
@@ -61,7 +68,6 @@ class _CalendarHistoryBottomSheetState extends State<CalendarHistoryBottomSheet>
     setState(() {
       _selectedDate = date;
     });
-    // Synchronize to main home screen selected date
     widget.onDateSelected(date);
   }
 
@@ -69,8 +75,7 @@ class _CalendarHistoryBottomSheetState extends State<CalendarHistoryBottomSheet>
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final maxHeight = mediaQuery.size.height * 0.85;
-
-    final record = MockHistoryData.getRecord(_selectedDate);
+    final historyAsync = ref.watch(historyProvider);
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -101,7 +106,7 @@ class _CalendarHistoryBottomSheetState extends State<CalendarHistoryBottomSheet>
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: Row(
                 children: [
-                  const SizedBox(width: 48), // Spacer to balance close button
+                  const SizedBox(width: 48),
                   Expanded(
                     child: Center(
                       child: Text(
@@ -129,47 +134,76 @@ class _CalendarHistoryBottomSheetState extends State<CalendarHistoryBottomSheet>
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  children: [
-                    // Smooth monthly transition view
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
-                      child: MonthlyCalendarView(
-                        key: ValueKey('month_${_currentYear}_$_currentMonth'),
-                        year: _currentYear,
-                        month: _currentMonth,
-                        selectedDate: _selectedDate,
-                        onDateSelected: _handleDateSelected,
-                        onPreviousMonth: _handlePreviousMonth,
-                        onNextMonth: _handleNextMonth,
+                child: historyAsync.when(
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (err, _) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Colors.red, size: 40),
+                          const SizedBox(height: 8),
+                          Text('Gagal memuat riwayat', style: AppTextStyles.labelMd),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () => ref.read(historyProvider.notifier).refresh(),
+                            child: const Text('Coba Lagi'),
+                          ),
+                        ],
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                      child: Divider(height: 1, color: AppColors.outlineVariant),
-                    ),
+                  ),
+                  data: (state) {
+                    final record = state.getAggregateForDate(_selectedDate);
+                    return Column(
+                      children: [
+                        // Smooth monthly transition view
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          transitionBuilder: (child, animation) => FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                          child: MonthlyCalendarView(
+                            key: ValueKey('month_${_currentYear}_$_currentMonth'),
+                            year: _currentYear,
+                            month: _currentMonth,
+                            selectedDate: _selectedDate,
+                            onDateSelected: _handleDateSelected,
+                            onPreviousMonth: _handlePreviousMonth,
+                            onNextMonth: _handleNextMonth,
+                            dailyAggregates: state.dailyAggregates,
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                          child: Divider(height: 1, color: AppColors.outlineVariant),
+                        ),
 
-                    // Selected Date Detail Section
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
-                      child: record != null && record.status != HealthActivityStatus.noActivity
-                          ? DailyHistorySummary(
-                              key: ValueKey('summary_${record.date.millisecondsSinceEpoch}'),
-                              record: record,
-                            )
-                          : HistoryEmptyState(
-                              key: ValueKey('empty_${_selectedDate.millisecondsSinceEpoch}'),
-                            ),
-                    ),
-                  ],
+                        // Selected Date Detail Section
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          transitionBuilder: (child, animation) => FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                          child: record != null && record.hasAnyActivity
+                              ? DailyHistorySummary(
+                                  key: ValueKey('summary_${_selectedDate.millisecondsSinceEpoch}'),
+                                  aggregate: record,
+                                )
+                              : HistoryEmptyState(
+                                  key: ValueKey('empty_${_selectedDate.millisecondsSinceEpoch}'),
+                                ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

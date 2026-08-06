@@ -22,18 +22,18 @@ class LoginForm extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Email Field
+          // Phone Field
           AppTextField(
-            label: AppStrings.loginEmail,
-            hint: AppStrings.loginEmailHint,
-            controller: notifier.emailController,
-            keyboardType: TextInputType.emailAddress,
+            label: AppStrings.loginPhone,
+            hint: AppStrings.loginPhoneHint,
+            controller: notifier.phoneController,
+            keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
-            prefixIcon: Icons.email_outlined,
-            autofillHints: const [AutofillHints.email],
-            semanticLabel: 'Kolom input email',
-            validator: notifier.validateEmail,
-            onChanged: notifier.onEmailChanged,
+            prefixIcon: Icons.phone_outlined,
+            autofillHints: const [AutofillHints.telephoneNumber],
+            semanticLabel: 'Kolom input nomor handphone',
+            validator: notifier.validatePhone,
+            onChanged: notifier.onPhoneChanged,
           ),
           const SizedBox(height: AppSpacing.md),
 

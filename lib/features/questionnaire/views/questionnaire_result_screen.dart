@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../education/views/education_detail_screen.dart';
-import '../data/questionnaire_mock_data.dart';
-import '../models/questionnaire.dart';
-import 'questionnaire_detail_screen.dart';
+import '../../../../data/repositories/questionnaire_repository.dart';
+import '../models/quiz_attempt_model.dart';
+import 'questionnaire_questions_screen.dart';
+import 'questionnaire_review_screen.dart';
 
-class QuestionnaireResultScreen extends StatelessWidget {
+/// Displays the result returned by the backend after submitting a questionnaire.
+///
+/// For Post-Test, allows retaking the test ("Kerjakan Ulang Post-Test") anytime.
+class QuestionnaireResultScreen extends ConsumerWidget {
   const QuestionnaireResultScreen({
     super.key,
-    required this.questionnaireId,
-    required this.scorePercentage,
-    required this.correctCount,
-    required this.totalQuestions,
-    this.userAnswers,
+    required this.result,
+    required this.questionnaireTitle,
+    this.isPreTest = false,
   });
 
-  final String questionnaireId;
-  final double scorePercentage;
-  final int correctCount;
-  final int totalQuestions;
-  final Map<int, int>? userAnswers;
+  final QuizSubmitResultModel result;
+  final String questionnaireTitle;
+  final bool isPreTest;
 
   @override
-  Widget build(BuildContext context) {
-    final Questionnaire questionnaire =
-        MockQuestionnaireData.getQuestionnaireById(questionnaireId);
-
-    final scoreInt = scorePercentage.toInt();
-    final incorrectCount = (totalQuestions - correctCount).clamp(0, totalQuestions);
-    final isPassed = scorePercentage >= 70.0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final score = result.score;
+    final percentage = result.percentage;
+    final correctCount = result.correctCount;
+    final incorrectCount = result.incorrectCount;
+    final totalQuestions = result.totalQuestions;
+    final isPassed = result.passed;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -39,12 +41,9 @@ class QuestionnaireResultScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         elevation: 1,
         shadowColor: AppColors.primaryContainer.withValues(alpha: 0.1),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
-          'Hasil Kuesioner',
+          isPreTest ? 'Kuesioner Selesai' : 'Hasil Post-Test',
           style: AppTextStyles.headlineMd.copyWith(
             color: AppColors.primary,
             fontWeight: FontWeight.bold,
@@ -56,376 +55,375 @@ class QuestionnaireResultScreen extends StatelessWidget {
         children: [
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: AppSpacing.page,
               right: AppSpacing.page,
               top: AppSpacing.lg,
-              bottom: 160,
+              bottom: isPreTest ? 120 : 250,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Bento Score Hero Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryContainer.withValues(alpha: 0.08),
-                        blurRadius: 24,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
+            child: isPreTest
+                ? Column(
                     children: [
-                      Text(
-                        'Nilai Akhir',
-                        style: AppTextStyles.labelLg.copyWith(
-                          color: AppColors.outline,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-
-                      // Circular Score Ring
+                      const SizedBox(height: AppSpacing.xl),
                       Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primaryContainer.withValues(alpha: 0.08),
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 6,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$scoreInt',
-                            style: AppTextStyles.headlineLg.copyWith(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-
-                      Text(
-                        isPassed ? 'Sangat Baik' : 'Perlu Belajar Lagi',
-                        style: AppTextStyles.headlineMd.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryContainer,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.outline),
-                          const SizedBox(width: 4),
-                          Text(
-                            '24 Okt 2023',
-                            style: AppTextStyles.bodyMd.copyWith(fontSize: 13, color: AppColors.outline),
-                          ),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.schedule_rounded, size: 14, color: AppColors.outline),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${questionnaire.estimatedMinutes} Menit',
-                            style: AppTextStyles.bodyMd.copyWith(fontSize: 13, color: AppColors.outline),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Asymmetric Stats Row (Benar / Salah)
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.md),
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.xl),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                              blurRadius: 24,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: Row(
+                        child: Column(
                           children: [
                             Container(
-                              width: 40,
-                              height: 40,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFABF4AC),
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
+                                color: AppColors.primary.withValues(alpha: 0.1),
                               ),
                               child: const Icon(
                                 Icons.check_circle_rounded,
-                                color: Color(0xFF07521D),
-                                size: 22,
+                                size: 64,
+                                color: AppColors.primary,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '$correctCount',
-                                  style: AppTextStyles.headlineMd.copyWith(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Benar',
-                                  style: AppTextStyles.bodyMd.copyWith(
-                                    fontSize: 12,
-                                    color: AppColors.outline,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: AppSpacing.xl),
+                            Text(
+                              'Terima Kasih',
+                              style: AppTextStyles.headlineLg.copyWith(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'Terima kasih telah menyelesaikan Kuesioner Awal DSMES. Jawaban Anda telah berhasil disimpan dan akan digunakan untuk membantu memahami tingkat keyakinan Anda dalam mengelola diabetes.',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodyLg.copyWith(
+                                fontSize: 15,
+                                color: AppColors.onSurfaceVariant,
+                                height: 1.6,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFFFDAD6),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.cancel_rounded,
-                                color: Color(0xFF93000A),
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '$incorrectCount',
-                                  style: AppTextStyles.headlineMd.copyWith(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Salah',
-                                  style: AppTextStyles.bodyMd.copyWith(
-                                    fontSize: 12,
-                                    color: AppColors.outline,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // Recommendation Banner
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
+                    ],
+                  )
+                : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.lightbulb_rounded, color: Colors.white, size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: AppTextStyles.bodyMd.copyWith(
-                              color: Colors.white,
-                              fontSize: 14,
-                              height: 1.4,
+                      // ── Score hero card ──────────────────────────────────────
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                              blurRadius: 24,
+                              offset: const Offset(0, 4),
                             ),
-                            children: [
-                              const TextSpan(
-                                text: 'Luar Biasa! ',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Nilai Akhir',
+                              style: AppTextStyles.labelLg.copyWith(
+                                color: AppColors.outline,
+                                fontSize: 14,
                               ),
-                              TextSpan(
-                                text: isPassed
-                                    ? 'Materi telah dipahami dengan baik. Tetap konsisten dalam menerapkan pola makan sehat.'
-                                    : 'Pelajari kembali materi edukasi untuk memperdalam pemahaman manajemen diabetes.',
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+
+                            // Circular score ring
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                                border: Border.all(
+                                  color: AppColors.primary,
+                                  width: 6,
+                                ),
                               ),
-                            ],
+                              child: Center(
+                                child: Text(
+                                  '$score',
+                                  style: AppTextStyles.headlineLg.copyWith(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+
+                            Text(
+                              isPassed ? 'Sangat Baik!' : 'Perlu Belajar Lagi',
+                              style: AppTextStyles.headlineMd.copyWith(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryContainer,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.percent_rounded,
+                                    size: 14, color: AppColors.outline),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$percentage% benar',
+                                  style: AppTextStyles.bodyMd.copyWith(
+                                    fontSize: 13,
+                                    color: AppColors.outline,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const Icon(Icons.quiz_rounded,
+                                    size: 14, color: AppColors.outline),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$totalQuestions soal',
+                                  style: AppTextStyles.bodyMd.copyWith(
+                                    fontSize: 13,
+                                    color: AppColors.outline,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // ── Correct / Incorrect stats ────────────────────────────
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.check_circle_rounded,
+                              iconBg: const Color(0xFFABF4AC),
+                              iconColor: const Color(0xFF07521D),
+                              count: correctCount,
+                              label: 'Benar',
+                            ),
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.cancel_rounded,
+                              iconBg: const Color(0xFFFFDAD6),
+                              iconColor: const Color(0xFF93000A),
+                              count: incorrectCount,
+                              label: 'Salah',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // ── Recommendation banner ────────────────────────────────
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.lightbulb_rounded,
+                                color: Colors.white, size: 22),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: AppTextStyles.bodyMd.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    height: 1.4,
+                                  ),
+                                  children: [
+                                    if (isPassed)
+                                      const TextSpan(
+                                        text: 'Luar Biasa! ',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    TextSpan(
+                                      text: isPassed
+                                          ? 'Pengetahuan Anda sangat baik. Anda dapat mempelajari materi lain atau mengulang Post-Test kapan saja.'
+                                          : 'Jangan khawatir! Anda dapat membaca pembahasan jawaban dan mengerjakan ulang Post-Test ini kapan saja.',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Question Review List Header
-                Text(
-                  'Ulasan Pertanyaan',
-                  style: AppTextStyles.headlineMd.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-
-                // Question Review Cards List
-                for (int idx = 0; idx < questionnaire.questions.length; idx++) ...[
-                  _buildReviewCard(
-                    questionIndex: idx,
-                    question: questionnaire.questions[idx],
-                    userSelected: userAnswers?[idx],
-                  ),
-                  const SizedBox(height: 14),
-                ],
-              ],
-            ),
           ),
 
-          // Fixed Action Buttons at Bottom
+          // ── Fixed bottom CTA buttons ─────────────────────────────────────
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              padding: const EdgeInsets.all(AppSpacing.page),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.page,
+                AppSpacing.md,
+                AppSpacing.page,
+                AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+              ),
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.95),
+                color: AppColors.surface.withValues(alpha: 0.97),
                 border: Border(
                   top: BorderSide(
                     color: AppColors.outlineVariant.withValues(alpha: 0.3),
                   ),
                 ),
               ),
-              child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isPreTest) ...[
+                    // Button: Lihat Pembahasan Jawaban (Post-Test only)
                     SizedBox(
                       width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(
+                              color: AppColors.primary, width: 1.5),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => const EducationDetailScreen(articleId: 'art_featured'),
+                              builder: (_) => QuestionnaireReviewScreen(
+                                questionnaireId: result.questionnaireId,
+                                quizTitle: questionnaireTitle,
+                              ),
                             ),
                           );
                         },
-                        child: Text(
-                          'Lihat Materi Edukasi',
+                        icon: const Icon(Icons.assignment_turned_in_outlined,
+                            size: 18),
+                        label: Text(
+                          'Lihat Pembahasan Jawaban',
                           style: AppTextStyles.poppinsButton.copyWith(
                             fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Button: Kerjakan Ulang Post-Test (Post-Test only)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final detail = await ref
+                              .read(questionnaireRepositoryProvider)
+                              .getQuestionnaireById(result.questionnaireId);
+                          if (context.mounted) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (_) => QuestionnaireQuestionsScreen(
+                                  questionnaire: detail,
+                                  isPreTest: false,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.replay_rounded,
+                            color: Colors.white, size: 18),
+                        label: Text(
+                          'Kerjakan Ulang Post-Test',
+                          style: AppTextStyles.poppinsButton.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                             color: Colors.white,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 52,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: AppColors.surfaceTint.withValues(alpha: 0.1),
-                                foregroundColor: AppColors.primary,
-                                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                    builder: (context) => QuestionnaireDetailScreen(
-                                      questionnaireId: questionnaire.id,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                'Ulangi',
-                                style: AppTextStyles.poppinsButton.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SizedBox(
-                            height: 52,
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.outline,
-                                side: const BorderSide(color: AppColors.outline),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: Text(
-                                'Kembali',
-                                style: AppTextStyles.poppinsButton.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.outline,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 8),
                   ],
-                ),
+
+                  // Main Navigation Button (Home or Back)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (isPreTest) {
+                          context.go(RouteNames.home);
+                        } else {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      icon: Icon(
+                        isPreTest
+                            ? Icons.home_rounded
+                            : Icons.arrow_back_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      label: Text(
+                        isPreTest ? 'Lanjutkan ke Beranda' : 'Kembali',
+                        style: AppTextStyles.poppinsButton.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -433,186 +431,67 @@ class QuestionnaireResultScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildReviewCard({
-    required int questionIndex,
-    required dynamic question,
-    required int? userSelected,
-  }) {
-    final bool isCorrect = userSelected == question.correctAnswerIndex;
+// ── Stat card widget ──────────────────────────────────────────────────────────
 
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.count,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color iconBg;
+  final Color iconColor;
+  final int count;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppColors.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Pertanyaan ${questionIndex + 1}',
-                  style: AppTextStyles.labelMd.copyWith(
-                    fontSize: 12,
-                    color: AppColors.outline,
-                  ),
+              Text(
+                '$count',
+                style: AppTextStyles.headlineMd.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              Icon(
-                isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                color: isCorrect ? AppColors.secondary : AppColors.error,
-                size: 22,
+              Text(
+                label,
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontSize: 12,
+                  color: AppColors.outline,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            question.questionText,
-            style: AppTextStyles.bodyLg.copyWith(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          if (isCorrect) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: const Color(0xFFABF4AC).withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.secondary.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Jawaban Anda (Benar):',
-                    style: AppTextStyles.labelMd.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    question.options[userSelected ?? question.correctAnswerIndex],
-                    style: AppTextStyles.bodyMd.copyWith(
-                      fontSize: 14,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            if (userSelected != null) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFDAD6).withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.close_rounded, size: 14, color: AppColors.error),
-                        SizedBox(width: 4),
-                        Text(
-                          'Jawaban Anda:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      question.options[userSelected],
-                      style: AppTextStyles.bodyMd.copyWith(
-                        fontSize: 14,
-                        decoration: TextDecoration.lineThrough,
-                        color: AppColors.outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: const Color(0xFFABF4AC).withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppColors.secondary.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.check_rounded, size: 14, color: AppColors.secondary),
-                      SizedBox(width: 4),
-                      Text(
-                        'Jawaban Benar:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    question.options[question.correctAnswerIndex],
-                    style: AppTextStyles.bodyMd.copyWith(
-                      fontSize: 14,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  if (question.explanation != null) ...[
-                    const Divider(height: 16),
-                    Text(
-                      'Penjelasan: ${question.explanation}',
-                      style: AppTextStyles.bodyMd.copyWith(
-                        fontSize: 12,
-                        color: AppColors.outline,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );

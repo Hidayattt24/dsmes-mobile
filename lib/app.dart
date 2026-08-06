@@ -9,18 +9,19 @@ import 'core/theme/app_theme.dart';
 ///
 /// Wrapped in [ProviderScope] for Riverpod DI.
 /// Uses [GoRouter] for declarative routing.
-class App extends StatelessWidget {
+class App extends ConsumerWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
       title: 'DSMES Aceh',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      routerConfig: appRouter,
+      routerConfig: router,
       supportedLocales: const [
         Locale('id', 'ID'),
         Locale('en', 'US'),

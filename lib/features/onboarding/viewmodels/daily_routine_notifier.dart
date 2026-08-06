@@ -4,27 +4,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_strings.dart';
 import '../models/routine_model.dart';
 
+import '../../../data/repositories/routine_repository.dart';
+
 @immutable
 class DailyRoutineState {
   const DailyRoutineState({
     required this.routines,
     this.useReminder = true,
     this.isLoading = false,
+    this.errorMessage,
   });
 
   final List<RoutineModel> routines;
   final bool useReminder;
   final bool isLoading;
+  final String? errorMessage;
 
   DailyRoutineState copyWith({
     List<RoutineModel>? routines,
     bool? useReminder,
     bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
   }) {
     return DailyRoutineState(
       routines: routines ?? this.routines,
       useReminder: useReminder ?? this.useReminder,
       isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
@@ -124,12 +131,26 @@ class DailyRoutineNotifier extends Notifier<DailyRoutineState> {
     state = state.copyWith(useReminder: value);
   }
 
-  Future<void> finishOnboarding() async {
-    state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    state = state.copyWith(isLoading: false);
+  Future<bool> finishOnboarding() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final repo = ref.read(routineRepositoryProvider);
+      await repo.saveRoutinesSetup(
+        useReminder: state.useReminder,
+        routines: state.routines,
+      );
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal menyimpan pengaturan rutinitas: ${e.toString()}',
+      );
+      return false;
+    }
   }
 }
+
 
 final dailyRoutineProvider =
     NotifierProvider<DailyRoutineNotifier, DailyRoutineState>(

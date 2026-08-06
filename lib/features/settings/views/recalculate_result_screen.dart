@@ -19,6 +19,42 @@ class RecalculateResultScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final metrics = ref.watch(bodyMetricsProvider);
 
+    final rec = metrics.recommendations;
+
+    Map<String, dynamic> getRecDetail(String key) {
+      if (rec != null && rec.containsKey(key)) {
+        final val = rec[key];
+        if (val is Map) {
+          return Map<String, dynamic>.from(val);
+        }
+      }
+      return {};
+    }
+
+    final maintainData = getRecDetail('maintain');
+    final mildLossData = getRecDetail('mild_loss');
+    final weightLossData = getRecDetail('weight_loss');
+    final extremeLossData = getRecDetail('extreme_loss');
+
+    final maintainTitle = maintainData['title'] as String? ?? 'Pertahankan Berat Badan';
+    final maintainCal = maintainData['calories'] as int? ?? metrics.dailyCalorie;
+    final maintainPct = maintainData['percentage'] as int? ?? 100;
+
+    final mildTitle = mildLossData['title'] as String? ?? 'Menurunkan Berat Badan Ringan';
+    final mildTarget = mildLossData['weekly_target'] as String? ?? '0,25 kg/minggu';
+    final mildCal = mildLossData['calories'] as int? ?? (metrics.dailyCalorie * 0.9).round();
+    final mildPct = mildLossData['percentage'] as int? ?? 90;
+
+    final weightTitle = weightLossData['title'] as String? ?? 'Menurunkan Berat Badan';
+    final weightTarget = weightLossData['weekly_target'] as String? ?? '0,5 kg/minggu';
+    final weightCal = weightLossData['calories'] as int? ?? (metrics.dailyCalorie * 0.8).round();
+    final weightPct = weightLossData['percentage'] as int? ?? 80;
+
+    final extremeTitle = extremeLossData['title'] as String? ?? 'Menurunkan Berat Badan Ekstrem';
+    final extremeTarget = extremeLossData['weekly_target'] as String? ?? '1 kg/minggu';
+    final extremeCal = extremeLossData['calories'] as int? ?? (metrics.dailyCalorie - 1000);
+    final extremePct = extremeLossData['percentage'] as int? ?? 70;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -104,32 +140,61 @@ class RecalculateResultScreen extends ConsumerWidget {
 
                     const SizedBox(height: AppSpacing.md),
 
-                    // ── Calorie Recommendation Result Card ───────────────────
-                    _ResultCard(
-                      icon: Icons.restaurant_rounded,
-                      iconBg: AppColors.tertiary.withValues(alpha: 0.1),
-                      iconColor: AppColors.tertiary,
-                      title: 'Rekomendasi Kalori Harian',
-                      value: '${metrics.dailyCalorieFormatted} kcal/hari',
-                      badgeText: 'Target Baru',
-                      badgeColor: AppColors.tertiary,
-                      description:
-                          'Kebutuhan energi harian untuk menjaga kestabilan gula darah sesuai aktivitas ${metrics.activityLevel}.',
-                    ),
-
-                    const SizedBox(height: AppSpacing.md),
-
-                    // ── Water Intake Recommendation Card ────────────────────
-                    _ResultCard(
-                      icon: Icons.water_drop_rounded,
-                      iconBg: AppColors.primaryContainer.withValues(alpha: 0.15),
-                      iconColor: AppColors.primaryContainer,
-                      title: 'Rekomendasi Asupan Air',
-                      value: metrics.dailyWaterLitersFormatted,
-                      badgeText: 'Hidrasi',
-                      badgeColor: AppColors.primaryContainer,
-                      description:
-                          'Estimasi konsumsi air putih per hari untuk menjaga metabolisme tubuh optimal.',
+                    // ── 4-Tier Calorie Recommendation Section ──────────────────
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                        ),
+                        boxShadow: AppShadows.soft,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.restaurant_menu_rounded,
+                                  color: AppColors.tertiary, size: 22),
+                              const SizedBox(width: AppSpacing.xs),
+                              Text(
+                                'Opsi Target Kalori Harian',
+                                style: AppTextStyles.labelLg.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          _RecommendationRow(
+                            title: maintainTitle,
+                            calories: '$maintainCal kcal/hari',
+                            percentage: '$maintainPct%',
+                            isPrimary: true,
+                          ),
+                          const Divider(height: 16),
+                          _RecommendationRow(
+                            title: '$mildTitle ($mildTarget)',
+                            calories: '$mildCal kcal/hari',
+                            percentage: '$mildPct%',
+                          ),
+                          const Divider(height: 16),
+                          _RecommendationRow(
+                            title: '$weightTitle ($weightTarget)',
+                            calories: '$weightCal kcal/hari',
+                            percentage: '$weightPct%',
+                          ),
+                          const Divider(height: 16),
+                          _RecommendationRow(
+                            title: '$extremeTitle ($extremeTarget)',
+                            calories: '$extremeCal kcal/hari',
+                            percentage: '$extremePct%',
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: AppSpacing.lg),
@@ -298,6 +363,67 @@ class _ResultCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RecommendationRow extends StatelessWidget {
+  const _RecommendationRow({
+    required this.title,
+    required this.calories,
+    required this.percentage,
+    this.isPrimary = false,
+  });
+
+  final String title;
+  final String calories;
+  final String percentage;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.bodyMd.copyWith(
+                  fontWeight: isPrimary ? FontWeight.bold : FontWeight.w500,
+                  color: isPrimary ? AppColors.primary : AppColors.onSurface,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                calories,
+                style: AppTextStyles.labelLg.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isPrimary ? AppColors.primary : AppColors.tertiary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: isPrimary
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : AppColors.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            percentage,
+            style: AppTextStyles.labelMd.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isPrimary ? AppColors.primary : AppColors.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

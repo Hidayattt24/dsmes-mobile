@@ -10,6 +10,10 @@ class BodyMetrics {
     required this.activityLevel,
     this.gender = 'Laki-laki',
     this.age = 45,
+    this.calculatedTdee,
+    this.bmiVal,
+    this.bmiCatVal,
+    this.recommendations,
   });
 
   final double heightCm;
@@ -17,9 +21,14 @@ class BodyMetrics {
   final String activityLevel;
   final String gender;
   final int age;
+  final int? calculatedTdee;
+  final double? bmiVal;
+  final String? bmiCatVal;
+  final Map<String, dynamic>? recommendations;
 
   /// Body Mass Index (BMI) = weight (kg) / (height (m))^2
   double get bmi {
+    if (bmiVal != null) return bmiVal!;
     if (heightCm <= 0) return 0;
     final heightMeters = heightCm / 100.0;
     return weightKg / (heightMeters * heightMeters);
@@ -30,6 +39,7 @@ class BodyMetrics {
 
   /// BMI Category according to standard classification.
   String get bmiCategory {
+    if (bmiCatVal != null && bmiCatVal!.isNotEmpty) return bmiCatVal!;
     final value = bmi;
     if (value < 18.5) {
       return 'Kurus';
@@ -58,28 +68,10 @@ class BodyMetrics {
 
   /// Estimated Daily Calorie Recommendation (BMR * Activity Factor).
   int get dailyCalorie {
-    if (heightCm <= 0 || weightKg <= 0) return 2000;
-    // Mifflin-St Jeor Equation
-    final isMale = gender.toLowerCase().contains('laki');
-    final bmr = isMale
-        ? (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5
-        : (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161;
-
-    double multiplier = 1.375; // Default moderate/light
-    final act = activityLevel.toLowerCase();
-    if (act.contains('jarang') || act.contains('sedentary')) {
-      multiplier = 1.2;
-    } else if (act.contains('ringan')) {
-      multiplier = 1.375;
-    } else if (act.contains('sedang')) {
-      multiplier = 1.55;
-    } else if (act.contains('sangat aktif')) {
-      multiplier = 1.9;
-    } else if (act.contains('berat') || act.contains('aktif')) {
-      multiplier = 1.725;
+    if (calculatedTdee != null && calculatedTdee! > 0) {
+      return calculatedTdee!;
     }
-
-    return (bmr * multiplier).round();
+    return 2000; // Fallback default
   }
 
   /// Daily Calorie formatted with thousands separator (e.g. 1,850 kcal)
@@ -112,6 +104,10 @@ class BodyMetrics {
     String? activityLevel,
     String? gender,
     int? age,
+    int? calculatedTdee,
+    double? bmiVal,
+    String? bmiCatVal,
+    Map<String, dynamic>? recommendations,
   }) {
     return BodyMetrics(
       heightCm: heightCm ?? this.heightCm,
@@ -119,6 +115,10 @@ class BodyMetrics {
       activityLevel: activityLevel ?? this.activityLevel,
       gender: gender ?? this.gender,
       age: age ?? this.age,
+      calculatedTdee: calculatedTdee ?? this.calculatedTdee,
+      bmiVal: bmiVal ?? this.bmiVal,
+      bmiCatVal: bmiCatVal ?? this.bmiCatVal,
+      recommendations: recommendations ?? this.recommendations,
     );
   }
 }

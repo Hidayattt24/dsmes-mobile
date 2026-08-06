@@ -7,14 +7,19 @@ abstract final class RouteNames {
   static const String welcome = '/welcome';
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
+  static const String otpVerification = '/otp-verification';
+  static const String resetPassword = '/reset-password';
 
   /// Signup entry = first onboarding step
   static const String signup = '/onboarding/1';
 
   static const String home = '/home';
+  static const String registrationWelcome = '/onboarding/welcome';
   static const String dailyRoutineSetup = '/daily-routine-setup';
   static const String accountCreatedSuccess = '/account-created-success';
+  static const String preTestIntro = '/pre-test-intro';
   static const String notifications = '/notifications';
+
   static const String bloodSugarEntry = '/blood-sugar-entry';
   static const String reminders = '/reminders';
 
@@ -25,17 +30,23 @@ abstract final class RouteNames {
   static const String nameWelcome = 'welcome';
   static const String nameLogin = 'login';
   static const String nameForgotPassword = 'forgot-password';
+  static const String nameOtpVerification = 'otp-verification';
+  static const String nameResetPassword = 'reset-password';
   static const String nameOnboarding = 'onboarding';
   static const String nameHome = 'home';
   static const String nameDailyRoutineSetup = 'daily-routine-setup';
   static const String nameAccountCreatedSuccess = 'account-created-success';
+  static const String namePreTestIntro = 'pre-test-intro';
   static const String nameNotifications = 'notifications';
+
   static const String nameBloodSugarEntry = 'blood-sugar-entry';
   static const String nameReminders = 'reminders';
   static const String mealEntry = '/meal-entry';
   static const String nameMealEntry = 'meal-entry';
   static const String educationDetail = '/education-detail';
   static const String nameEducationDetail = 'education-detail';
+  static const String allArticles = '/all-articles';
+  static const String nameAllArticles = 'all-articles';
   static const String questionnaireDetail = '/questionnaire-detail';
   static const String nameQuestionnaireDetail = 'questionnaire-detail';
   static const String questionnaireResult = '/questionnaire-result';
@@ -48,12 +59,12 @@ abstract final class RouteNames {
   static const String nameRecalculateResult = 'recalculate-result';
   static const String personalInformation = '/personal-information';
   static const String namePersonalInformation = 'personal-information';
-  static const String reminderSettings = '/reminder-settings';
-  static const String nameReminderSettings = 'reminder-settings';
   static const String securityPrivacy = '/security-privacy';
   static const String nameSecurityPrivacy = 'security-privacy';
   static const String helpCenter = '/help-center';
   static const String nameHelpCenter = 'help-center';
   static const String about = '/about';
   static const String nameAbout = 'about';
+  static const String aiChat = '/ai-chat';
+  static const String nameAiChat = 'ai-chat';
 }

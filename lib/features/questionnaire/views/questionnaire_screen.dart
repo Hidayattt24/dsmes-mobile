@@ -1,196 +1,182 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../education/views/education_detail_screen.dart';
-import '../data/questionnaire_mock_data.dart';
-import '../models/questionnaire.dart';
-import '../widgets/empty_questionnaire.dart';
-import '../widgets/questionnaire_card.dart';
-import '../widgets/questionnaire_category_filter.dart';
-import '../widgets/questionnaire_progress_card.dart';
-import 'questionnaire_detail_screen.dart';
-import 'questionnaire_result_screen.dart';
+import '../viewmodels/questionnaire_notifier.dart';
+import '../widgets/questionnaire_empty_state.dart';
+import '../widgets/questionnaire_history_section.dart';
+import '../widgets/questionnaire_list_card.dart';
+import '../widgets/questionnaire_section_header.dart';
+import '../widgets/questionnaire_skeleton.dart';
+import 'survey_card.dart';
+import '../viewmodels/survey_notifier.dart';
 
-class QuestionnaireScreen extends StatefulWidget {
+/// Questionnaire tab.
+class QuestionnaireScreen extends ConsumerWidget {
   const QuestionnaireScreen({super.key});
 
   @override
-  State<QuestionnaireScreen> createState() => _QuestionnaireScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listAsync = ref.watch(questionnaireListProvider);
+    final historyAsync = ref.watch(allQuestionnaireHistoryProvider);
 
-class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  String _selectedCategory = 'Semua';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _startQuestionnaire(Questionnaire questionnaire) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => QuestionnaireDetailScreen(questionnaireId: questionnaire.id),
-      ),
-    ).then((_) {
-      setState(() {});
-    });
-  }
-
-  void _viewResult(Questionnaire questionnaire) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => QuestionnaireResultScreen(
-          questionnaireId: questionnaire.id,
-          scorePercentage: questionnaire.scorePercentage ?? 85.0,
-          correctCount: (questionnaire.questionCount * 0.85).round(),
-          totalQuestions: questionnaire.questionCount,
-        ),
-      ),
-    ).then((_) {
-      setState(() {});
-    });
-  }
-
-  void _openEducationMaterial() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const EducationDetailScreen(articleId: 'art_featured'),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final filteredQuestionnaires = MockQuestionnaireData.filterQuestionnaires(
-      query: _searchQuery,
-      category: _selectedCategory,
-    );
+    Future<void> handleRefresh() async {
+      ref.invalidate(allQuestionnaireHistoryProvider);
+      ref.invalidate(preTestHistoryProvider);
+      ref.invalidate(activeSurveyProvider);
+      ref.invalidate(activeSurveysProvider);
+      await ref.read(questionnaireListProvider.notifier).refresh();
+    }
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppSpacing.sm),
-            // Hero Title Section
-            Text(
-              'Kuesioner Pemahaman',
-              style: AppTextStyles.headlineLg.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: AppColors.onSurface,
-              ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: handleRefresh,
+          color: AppColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Uji dan evaluasi mandiri pemahaman diabetes Anda.',
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: AppSpacing.md),
 
-            // Analytics Dashboard Card
-            QuestionnaireProgressCard(
-              completedCount: MockQuestionnaireData.completedCount,
-              uncompletedCount: MockQuestionnaireData.uncompletedCount,
-              averageScore: MockQuestionnaireData.averageScore,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Search Bar Input
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryContainer.withValues(alpha: 0.04),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Cari topik kuesioner...',
-                  hintStyle: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.outline,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: AppColors.outline,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 16,
+                // ── Header Title ─────────────────────────────────────────
+                Text(
+                  'Kuesioner DSMES',
+                  style: AppTextStyles.headlineLg.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    color: AppColors.onSurface,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 4),
+                Text(
+                  'Evaluasi dan ukur pemahaman Anda tentang pengelolaan Diabetes.',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
-            // Category Filter Chips
-            QuestionnaireCategoryFilter(
-              selectedCategory: _selectedCategory,
-              onCategorySelected: (cat) {
-                setState(() {
-                  _selectedCategory = cat;
-                });
-              },
-            ),
-            const SizedBox(height: AppSpacing.lg),
+                // ── Unified Questionnaire List ───────────────────────────
+                listAsync.when(
+                  loading: () => const QuestionnaireSkeleton(),
+                  error: (err, _) => _ErrorCard(
+                    message: 'Gagal memuat kuesioner',
+                    onRetry: () =>
+                        ref.read(questionnaireListProvider.notifier).refresh(),
+                  ),
+                  data: (result) {
+                    if (result.items.isEmpty) {
+                      return const QuestionnaireEmptyState();
+                    }
+                    return Column(
+                      children: [
+                        for (int i = 0; i < result.items.length; i++) ...[
+                          QuestionnaireListCard(item: result.items[i]),
+                          if (i < result.items.length - 1)
+                            const SizedBox(height: AppSpacing.md),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
-            // Questionnaire Cards List
-            if (filteredQuestionnaires.isEmpty)
-              EmptyQuestionnaireWidget(
-                onResetTap: () {
-                  setState(() {
-                    _searchQuery = '';
-                    _selectedCategory = 'Semua';
-                    _searchController.clear();
-                  });
-                },
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filteredQuestionnaires.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final questionnaire = filteredQuestionnaires[index];
-                  return QuestionnaireCard(
-                    questionnaire: questionnaire,
-                    onStartTap: () => _startQuestionnaire(questionnaire),
-                    onViewResultTap: () => _viewResult(questionnaire),
-                    onReadMaterialTap: questionnaire.id == 'q_3'
-                        ? _openEducationMaterial
-                        : null,
-                  );
-                },
-              ),
-            const SizedBox(height: 100),
-          ],
+                // ── Survey Penelitian Section ────────────────────────────
+                const QuestionnaireSectionHeader(
+                  title: 'Survey Penelitian',
+                  subtitle: 'Evaluasi akhir periode penggunaan aplikasi',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const SurveyCardSection(),
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── Riwayat Kuesioner ────────────────────────────────────
+                const QuestionnaireSectionHeader(
+                  title: 'Riwayat Kuesioner',
+                  subtitle: 'Diklasifikasikan per modul kuesioner',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                historyAsync.when(
+                  loading: () => const _SkeletonCard(height: 100),
+                  error: (err, _) => _ErrorCard(
+                    message: 'Gagal memuat riwayat',
+                    onRetry: () =>
+                        ref.read(allQuestionnaireHistoryProvider.notifier).refresh(),
+                  ),
+                  data: (history) =>
+                      QuestionnaireHistorySection(history: history),
+                ),
+
+                const SizedBox(height: 100),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.errorContainer.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded,
+              color: AppColors.error, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.bodyMd.copyWith(
+                fontSize: 13,
+                color: AppColors.error,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Coba Lagi'),
+          ),
+        ],
       ),
     );
   }

@@ -72,14 +72,18 @@ class OnboardingNavButtons extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      isLastStep
-                          ? AppStrings.step13ButtonCreate
-                          : AppStrings.buttonNext,
+                      currentStep == 6
+                          ? "Buat Akun"
+                          : isLastStep
+                              ? AppStrings.step13ButtonCreate
+                              : AppStrings.buttonNext,
                       style: AppTextStyles.poppinsButton,
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Icon(
-                      isLastStep ? Icons.check_circle_outline : Icons.arrow_forward,
+                      currentStep == 6 || isLastStep
+                          ? Icons.check_circle_outline
+                          : Icons.arrow_forward,
                       size: 20,
                     ),
                   ],

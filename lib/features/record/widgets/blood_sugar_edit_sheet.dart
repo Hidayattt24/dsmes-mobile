@@ -39,8 +39,10 @@ class _BloodSugarEditSheetState extends State<BloodSugarEditSheet> {
 
   final List<String> _statuses = [
     'Normal',
-    'Tinggi',
-    'Rendah',
+    'Prediabetes',
+    'Elevated',
+    'Hiperglikemia',
+    'Hipoglikemia',
   ];
 
   final List<String> _times = [

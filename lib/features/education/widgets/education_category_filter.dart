@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../data/education_mock_data.dart';
 
 class EducationCategoryFilter extends StatelessWidget {
   const EducationCategoryFilter({
     super.key,
     required this.selectedCategory,
     required this.onCategorySelected,
+    required this.categories,
   });
 
   final String selectedCategory;
   final ValueChanged<String> onCategorySelected;
+
+  /// Dynamic list from backend (e.g. ['Semua', 'Nutrisi', 'Aktivitas', ...])
+  final List<String> categories;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +23,7 @@ class EducationCategoryFilter extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
-        children: MockEducationData.categories.map((category) {
+        children: categories.map((category) {
           final isSelected = selectedCategory == category;
           return Padding(
             padding: const EdgeInsets.only(right: 12),

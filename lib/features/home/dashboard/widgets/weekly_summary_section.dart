@@ -49,7 +49,7 @@ class WeeklySummarySection extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: AppSpacing.md,
             mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.35,
+            childAspectRatio: 1.2,
           ),
           itemCount: summaries.length,
           itemBuilder: (context, index) {
@@ -70,7 +70,10 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: AppRadius.card,
@@ -88,11 +91,12 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Icon Circular Box
           Container(
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             decoration: const BoxDecoration(
               color: AppColors.surfaceContainer,
               shape: BoxShape.circle,
@@ -100,15 +104,17 @@ class _SummaryCard extends StatelessWidget {
             child: Icon(
               data.icon,
               color: AppColors.primary,
-              size: 20,
+              size: 18,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           // Value
           Text(
             data.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.poppinsHeadline.copyWith(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.onSurface,
               height: 1.1,
@@ -118,9 +124,12 @@ class _SummaryCard extends StatelessWidget {
           // Title/Label
           Text(
             data.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bodyMd.copyWith(
               color: AppColors.onSurfaceVariant,
-              fontSize: 12,
+              fontSize: 11,
+              height: 1.2,
             ),
           ),
         ],

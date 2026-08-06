@@ -60,11 +60,30 @@ class ArticleInformation extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
 
-        // Metadata Info Row (Date, Read Time, Views)
+        // Metadata Info Row (Author, Date, Read Time, Views)
         Wrap(
           spacing: 16,
           runSpacing: 8,
           children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.person_outline_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  article.author,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [

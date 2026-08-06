@@ -7,21 +7,115 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_avatar.dart';
-import '../../../core/widgets/app_snackbar.dart';
-import '../data/settings_mock_data.dart';
 import '../viewmodels/settings_notifier.dart';
 import '../widgets/bmi_summary_card.dart';
 import '../widgets/body_metric_card.dart';
+import '../../../data/repositories/auth_repository.dart';
+import '../../home/viewmodels/home_dashboard_notifier.dart';
+import '../../ai_chat/viewmodels/ai_chat_notifier.dart';
+import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 
-/// Primary Settings / Profile Screen matching HTML reference design.
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  String _userName = '';
+  String _avatarUrl = '';
+  double? _averageBloodSugar;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLatestProfile();
+  }
+
+  Future<void> _fetchLatestProfile() async {
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final profile = await authRepo.getPatientProfile();
+      final h = (profile['height_cm'] as num?)?.toDouble();
+      final w = (profile['weight_kg'] as num?)?.toDouble();
+      final act = profile['physical_activity_level'] as String?;
+      final target = (profile['daily_calorie_target'] as num?)?.toInt();
+
+      final bmi = (profile['bmi'] as num?)?.toDouble();
+      final bmiCategory = profile['bmi_category'] as String?;
+      final recommendations = profile['recommendations'] as Map<String, dynamic>?;
+
+      if (mounted) {
+        _userName = (profile['full_name'] as String?) ?? '';
+        _avatarUrl = (profile['profile_photo_url'] as String?) ?? '';
+        _averageBloodSugar = (profile['average_blood_sugar'] as num?)?.toDouble();
+
+        if (h != null || w != null) {
+          ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
+                heightCm: h ?? 170,
+                weightKg: w ?? 65,
+                activityLevel: act ?? 'Ringan',
+                calculatedTdee: target,
+                bmiVal: bmi,
+                bmiCatVal: bmiCategory,
+                recommendations: recommendations,
+              );
+        }
+        ref.invalidate(homeDashboardProvider);
+        setState(() {});
+      }
+    } catch (e) {
+      // Log the failure so it is not silently swallowed; settings still render
+      // with default/empty values.
+      debugPrint('Settings: failed to load latest profile: $e');
+    }
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerLowest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text('Keluar Akun'),
+        content: const Text('Apakah Anda yakin ingin keluar? Sesi saat ini akan berakhir.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Keluar',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.logout();
+      ref.read(bodyMetricsProvider.notifier).reset();
+      ref.read(aiChatProvider.notifier).reset();
+      ref.invalidate(preTestHistoryProvider);
+      if (mounted) context.go(RouteNames.login);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final metrics = ref.watch(bodyMetricsProvider);
+    final initials = _userName.isNotEmpty
+        ? _userName.split(' ').where((e) => e.isNotEmpty).map((e) => e[0]).take(2).join().toUpperCase()
+        : 'U';
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -33,7 +127,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            // ── Profile Header Section ───────────────────────────────────────
             Center(
               child: Column(
                 children: [
@@ -65,10 +158,10 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          child: const AppAvatar(
-                            imageUrl: SettingsMockData.profileAvatarUrl,
+                          child: AppAvatar(
+                            imageUrl: _avatarUrl,
                             radius: 52,
-                            initials: 'BS',
+                            initials: initials,
                             hasBorder: false,
                           ),
                         ),
@@ -99,17 +192,10 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    SettingsMockData.userName,
+                    _userName,
                     style: AppTextStyles.headlineLg.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    SettingsMockData.userRole,
-                    style: AppTextStyles.bodyMd.copyWith(
-                      color: AppColors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -118,8 +204,7 @@ class SettingsScreen extends ConsumerWidget {
 
             const SizedBox(height: AppSpacing.xl),
 
-            // ── Stats Bento Grid (Avg Blood Sugar & Calorie Target) ─────────
-            BmiSummaryCard(metrics: metrics),
+            BmiSummaryCard(metrics: metrics, averageBloodSugar: _averageBloodSugar),
 
             const SizedBox(height: AppSpacing.lg),
 
@@ -138,19 +223,19 @@ class SettingsScreen extends ConsumerWidget {
                   icon: Icons.person_rounded,
                   title: 'Informasi Pribadi',
                   subtitle: 'Data diri dan medis',
-                  onTap: () => context.push(RouteNames.personalInformation),
+                  onTap: () async {
+                    await context.push(RouteNames.personalInformation);
+                    _fetchLatestProfile();
+                  },
                 ),
                 SettingsTile(
                   icon: Icons.monitor_weight_outlined,
                   title: 'Update Body Metrics',
                   subtitle: 'Tinggi, berat badan & aktivitas',
-                  onTap: () => context.push(RouteNames.editBodyMetrics),
-                ),
-                SettingsTile(
-                  icon: Icons.notifications_active_outlined,
-                  title: 'Pengaturan Pengingat',
-                  subtitle: 'Obat, cek gula & aktivitas',
-                  onTap: () => context.push(RouteNames.reminderSettings),
+                  onTap: () async {
+                    await context.push(RouteNames.editBodyMetrics);
+                    _fetchLatestProfile();
+                  },
                 ),
                 SettingsTile(
                   icon: Icons.lock_outline_rounded,
@@ -175,9 +260,7 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Keluar Akun',
                   subtitle: 'Sesi saat ini akan berakhir',
                   isDestructive: true,
-                  onTap: () {
-                    context.go(RouteNames.login);
-                  },
+                  onTap: _logout,
                 ),
               ],
             ),
