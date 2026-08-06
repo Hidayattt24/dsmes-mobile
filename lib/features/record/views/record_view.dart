@@ -94,34 +94,31 @@ class _RecordViewState extends ConsumerState<RecordView> {
       );
     }
 
-    // 2. Create/Sync reminder in reminderListProvider (lib/features/home/reminders)
+    // 2. Sync the reminder list — submitMedication() already created/updated
+    //    the backend reminder, so we only refresh the in-memory list here
+    //    (avoids creating a duplicate reminder).
     try {
-      final formattedSched = schedule.contains(':')
-          ? (schedule.split(':').length == 2 ? '$schedule:00' : schedule)
-          : '$schedule:00';
-      await ref.read(reminderListProvider.notifier).create(
-        activityName: 'Minum Obat $medicationName ($dosage)',
-        category: 'medis_obat',
-        scheduledTime: formattedSched,
-        notes: isTaken ? 'Sudah diminum' : 'Belum diminum',
-        activeDays: const [1, 2, 3, 4, 5, 6, 7],
-      );
+      await ref.read(reminderListProvider.notifier).refresh();
+    } catch (_) {
+      // Ignore sync failures.
+    }
 
-      // Trigger system local notification & alarm
+    // 3. When the medication has NOT been taken yet, activate the system
+    //    reminder: immediate confirmation pop-up + daily scheduled alarm.
+    //    No pop-up/dialog is shown when the status is updated to consumed.
+    if (!isTaken) {
       final parts = schedule.split(':');
       final hour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
       final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
       final notifId = medicationName.hashCode.abs();
 
-      await LocalNotificationService.instance.showNotification(
-        id: notifId,
-        title: isTaken ? 'Catatan Obat Tersimpan 💊' : 'Pengingat Minum Obat Diaktifkan ⏰',
-        body: isTaken
-            ? 'Konsumsi $medicationName ($dosage) jam $schedule WIB berhasil dicatat.'
-            : 'Pengingat untuk $medicationName ($dosage) jam $schedule WIB telah aktif!',
-      );
+      try {
+        await LocalNotificationService.instance.showNotification(
+          id: notifId,
+          title: 'Pengingat Minum Obat Diaktifkan ⏰',
+          body: 'Pengingat untuk $medicationName ($dosage) jam $schedule WIB telah aktif!',
+        );
 
-      if (!isTaken) {
         await LocalNotificationService.instance.scheduleDailyNotification(
           id: notifId + 1,
           title: 'Waktunya Minum Obat! 💊',
@@ -129,14 +126,14 @@ class _RecordViewState extends ConsumerState<RecordView> {
           hour: hour,
           minute: minute,
         );
+      } catch (_) {
+        // Ignore if scheduling failed; the inbox entry is already added above.
       }
-    } catch (_) {
-      // Ignore if error or duplicate
-    }
 
-    // 3. Show Pop Up Pengingat Obat Dialog
-    if (mounted) {
-      _showMedicationReminderPopup(context, medicationName, dosage, schedule, isTaken);
+      // 4. Show the medication reminder dialog only when activating a reminder.
+      if (mounted) {
+        _showMedicationReminderPopup(context, medicationName, dosage, schedule, isTaken);
+      }
     }
   }
 

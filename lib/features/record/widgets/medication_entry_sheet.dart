@@ -413,7 +413,11 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Catatan obat "$medName ($dose)" berhasil diperbarui'),
+                        content: Text(
+                          _isTaken
+                              ? 'Konsumsi "$medName ($dose)" telah dicatat.'
+                              : 'Pengingat minum "$medName ($dose)" diaktifkan jam $_selectedTime WIB.',
+                        ),
                         duration: const Duration(seconds: 2),
                       ),
                     );

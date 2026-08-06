@@ -11,6 +11,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/app_snackbar.dart';
 
 import '../../../data/repositories/auth_repository.dart';
+import '../../home/viewmodels/home_dashboard_notifier.dart';
 import '../../onboarding/models/onboarding_form_state.dart';
 import '../viewmodels/settings_notifier.dart';
 import '../widgets/activity_selector.dart';
@@ -141,6 +142,10 @@ class _EditBodyMetricsScreenState
             bmiCatVal: bmiCategory,
             recommendations: recommendations,
           );
+
+      // Refresh the home dashboard so updated weight/height/calorie target
+      // (and patient profile) appear immediately without manual refresh.
+      ref.invalidate(homeDashboardProvider);
 
       if (mounted) {
         context.push(RouteNames.recalculateResult);

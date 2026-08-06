@@ -14,11 +14,13 @@ class LocalNotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    tz.initializeTimeZones();
     try {
+      tz.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
-    } catch (_) {
-      // Fallback if Asia/Jakarta is unavailable
+    } catch (e) {
+      // If timezone initialization fails, the schedule would silently be off.
+      // Log it so the issue is visible instead of scheduling at the wrong time.
+      debugPrint('LocalNotificationService: timezone init failed: $e');
     }
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -100,7 +102,12 @@ class LocalNotificationService {
     );
   }
 
-  /// Schedule a system alarm notification for daily/weekly reminders
+  /// Schedule a system alarm notification for daily/weekly reminders.
+  ///
+  /// Schedules at the given hour:minute in Asia/Jakarta regardless of the
+  /// device timezone. Uses `inexactAllowWhileIdle` which does NOT require the
+  /// SCHEDULE_EXACT_ALARM permission on Android 12+, making it far more likely
+  /// to actually fire at the intended time.
   Future<void> scheduleDailyNotification({
     required int id,
     required String title,
@@ -109,12 +116,6 @@ class LocalNotificationService {
     required int minute,
   }) async {
     await initialize();
-
-    final now = DateTime.now();
-    var scheduledDate = DateTime(now.year, now.month, now.day, hour, minute);
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
 
     const androidDetails = AndroidNotificationDetails(
       'dsmes_reminders_channel',
@@ -136,8 +137,14 @@ class LocalNotificationService {
     );
 
     try {
-      final tzLocation = tz.local;
-      final scheduledTzDateTime = tz.TZDateTime.from(scheduledDate, tzLocation);
+      final tzLocation = tz.getLocation('Asia/Jakarta');
+      final now = tz.TZDateTime.now(tzLocation);
+      var scheduledTzDateTime =
+          tz.TZDateTime(tzLocation, now.year, now.month, now.day, hour, minute);
+      // If today's target time already passed, schedule for tomorrow.
+      if (!scheduledTzDateTime.isAfter(now)) {
+        scheduledTzDateTime = scheduledTzDateTime.add(const Duration(days: 1));
+      }
 
       await _notificationsPlugin.zonedSchedule(
         id,
@@ -145,15 +152,18 @@ class LocalNotificationService {
         body,
         scheduledTzDateTime,
         notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
     } catch (e) {
-      debugPrint('Failed to schedule zoned notification: $e');
-      // Fallback: show immediate confirmation pop-up if scheduling API is restricted
-      await showNotification(id: id, title: title, body: body);
+      // Scheduling a recurring alarm can fail on some devices. We intentionally
+      // do NOT fall back to an immediate pop-up (that would notify the user at
+      // the wrong time); the in-app inbox entry still reminds the user while
+      // the app is open.
+      debugPrint('LocalNotificationService: failed to schedule daily notification '
+          '(id=$id): $e');
     }
   }
 
