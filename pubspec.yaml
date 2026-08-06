@@ -57,9 +57,6 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
-  # Environment
-  flutter_dotenv: ^5.2.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -75,9 +72,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - .env.local
-    - .env.development.local
-    - .env.staging.local
-    - .env.production.local
+    # NOTE: .env.*.local files are intentionally NOT bundled here. Environment
+    # (BASE_URL) is injected at build time via --dart-define. Bundling the env
+    # files would embed production API hostnames inside every APK/IPA.
     - assets/images/
     - assets/icons/

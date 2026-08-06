@@ -74,12 +74,18 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
       final results = await Future.wait([
         authRepo.getPatientProfile(),
         bloodSugarRepo.getBloodSugarHistory(limit: 20),
-        foodRepo.getDailyNutritionSummary(),
       ]);
 
       final profileJson = results[0] as Map<String, dynamic>;
       final bloodSugarLogs = results[1] as List<BloodSugarLogModel>;
-      nutritionSummary = results[2] as DailyNutritionSummary;
+
+      // Fetch the nutrition summary independently so a failure of this endpoint
+      // does not break the whole dashboard — the card simply shows empty state.
+      try {
+        nutritionSummary = await foodRepo.getDailyNutritionSummary();
+      } catch (_) {
+        nutritionSummary = null;
+      }
 
       final dashboardData = HomeDashboardModel.fromJson(profileJson);
       final latestBs = bloodSugarLogs.isNotEmpty ? bloodSugarLogs.first : null;

@@ -61,13 +61,16 @@ class FoodRepository implements IFoodRepository {
       final data = response.data['data'] as List<dynamic>? ?? [];
       final names = <String>[];
       for (final item in data) {
-        if (item is Map<String, dynamic> && item.containsKey('name')) {
+        if (item is String) {
+          names.add(item);
+        } else if (item is Map<String, dynamic> && item.containsKey('name')) {
           names.add(item['name'].toString());
         }
       }
       return names;
-    } catch (_) {
-      return ['Nasi Goreng', 'Ayam Bakar', 'Tempe Goreng', 'Tahu Goreng'];
+    } on DioException catch (e) {
+      // Propagate the error — never fall back to hardcoded fake food names.
+      throw ApiException.fromDioException(e);
     }
   }
 
@@ -117,15 +120,9 @@ class FoodRepository implements IFoodRepository {
       final data = response.data['data'] as Map<String, dynamic>? ?? {};
       return DailyNutritionSummary.fromJson(data);
     } on DioException catch (e) {
-      return const DailyNutritionSummary(
-        caloriesConsumed: 0,
-        dailyCalorieTarget: 2000,
-        caloriesRemaining: 2000,
-        totalFoodToday: 0,
-        totalCarbsG: 0,
-        totalProteinG: 0,
-        totalFatG: 0,
-      );
+      // Propagate the error — never return a fake zero-nutrition summary that
+      // would silently mislead the user into thinking nothing was eaten.
+      throw ApiException.fromDioException(e);
     }
   }
 }

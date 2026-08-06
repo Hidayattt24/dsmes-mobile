@@ -38,7 +38,8 @@ class LocalNotificationService {
     await _notificationsPlugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        debugPrint('Notification clicked: ${response.payload}');
+        // Intentionally no logging of the payload — it may contain
+        // user-identifiable data.
       },
     );
 

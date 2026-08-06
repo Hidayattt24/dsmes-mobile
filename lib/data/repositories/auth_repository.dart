@@ -346,6 +346,10 @@ class AuthRepository implements IAuthRepository {
     await _storage.delete(key: AppConstants.keyAuthToken);
     await _storage.delete(key: AppConstants.keyRefreshToken);
     await _storage.delete(key: AppConstants.keyUserId);
+    // Clear session-scoped preferences so a different user logging in on the
+    // same device starts fresh (no stale onboarding/biometric flags).
+    await _storage.delete(key: AppConstants.keyOnboardingComplete);
+    await _storage.delete(key: AppConstants.keyBiometricEnabled);
   }
 }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/repositories/ai_chat_repository.dart';
 import '../models/chat_message.dart';
@@ -111,7 +112,9 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
     for (final s in state.sessions) {
       try {
         await _repository.deleteConversation(s.id);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('AIChat: failed to delete conversation ${s.id}: $e');
+      }
     }
     state = state.copyWith(sessions: [], clearActiveSessionId: true);
     await startNewSession();
@@ -120,7 +123,9 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
   Future<void> deleteSession(String sessionId) async {
     try {
       await _repository.deleteConversation(sessionId);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AIChat: failed to delete session $sessionId: $e');
+    }
 
     final updatedSessions = state.sessions.where((s) => s.id != sessionId).toList();
     String? nextActiveId = state.activeSessionId;

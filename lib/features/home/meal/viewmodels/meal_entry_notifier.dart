@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../data/repositories/food_repository.dart';
@@ -30,7 +31,10 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
       if (recent.isNotEmpty) {
         state = state.copyWith(recentSearches: recent);
       }
-    } catch (_) {}
+    } catch (e) {
+      // Recent searches are non-critical; log instead of showing an error.
+      debugPrint('MealEntry: failed to fetch recent searches: $e');
+    }
   }
 
   Future<void> fetchFoods({bool isRefresh = true}) async {

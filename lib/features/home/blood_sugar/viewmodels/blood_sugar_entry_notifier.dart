@@ -55,6 +55,12 @@ class BloodSugarEntryNotifier extends Notifier<BloodSugarEntryState> {
       state = state.copyWith(errorMessage: 'Nilai gula darah harus lebih dari 0');
       return null;
     }
+    if (val > 600) {
+      state = state.copyWith(
+        errorMessage: 'Nilai gula darah tidak valid (maksimal 600 mg/dL)',
+      );
+      return null;
+    }
 
     state = state.copyWith(isSubmitting: true, clearError: true);
 

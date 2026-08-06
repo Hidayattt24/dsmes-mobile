@@ -141,9 +141,11 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
 
       // Compute medication info from history + reminders
       final medReminder = reminders.where((r) => r.category == 'medis_obat').toList();
-      String medName = 'Obat';
+      // '-' is treated as the "no data yet" placeholder by the UI (see
+      // RecordView's "Catat Obat" vs "Perbarui" logic). Never show fake data.
+      String medName = '-';
       String medDosage = '';
-      String medSchedule = '08:00';
+      String medSchedule = '';
       bool isMedTaken = false;
 
       // Prioritize latest actual medication log from history

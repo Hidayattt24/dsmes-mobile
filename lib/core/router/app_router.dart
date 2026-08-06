@@ -8,6 +8,7 @@ import '../../features/auth/views/forgot_password_screen.dart';
 import '../../features/auth/views/login_screen.dart';
 import '../../features/auth/views/otp_verification_screen.dart';
 import '../../features/auth/views/reset_password_screen.dart';
+import '../../features/education/views/all_articles_screen.dart';
 import '../../features/education/views/education_detail_screen.dart';
 import '../../features/home/blood_sugar/views/blood_sugar_entry_screen.dart';
 import '../../features/home/meal/views/meal_entry_screen.dart';
@@ -242,6 +243,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: EducationDetailScreen(articleId: id),
         );
       },
+    ),
+
+    // ── All Articles (Education) ─────────────────────────────────────────
+    GoRoute(
+      path: RouteNames.allArticles,
+      name: RouteNames.nameAllArticles,
+      pageBuilder: (context, state) => _buildSlideTransition(
+        state: state,
+        child: const AllArticlesScreen(),
+      ),
     ),
 
     // ── Settings ─────────────────────────────────────────────────────────

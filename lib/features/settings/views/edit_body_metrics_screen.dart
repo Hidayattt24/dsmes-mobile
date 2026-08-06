@@ -12,7 +12,6 @@ import '../../../core/widgets/app_snackbar.dart';
 
 import '../../../data/repositories/auth_repository.dart';
 import '../../home/viewmodels/home_dashboard_notifier.dart';
-import '../../onboarding/models/onboarding_form_state.dart';
 import '../viewmodels/settings_notifier.dart';
 import '../widgets/activity_selector.dart';
 import '../widgets/save_button.dart';
@@ -78,7 +77,11 @@ class _EditBodyMetricsScreenState
               );
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      // Log the failure so it is not silently swallowed; the form still opens
+      // with default values.
+      debugPrint('EditBodyMetrics: failed to load current profile: $e');
+    }
   }
 
   @override

@@ -23,6 +23,12 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
   String _searchQuery = '';
   final _feedbackController = TextEditingController();
 
+  @override
+  void dispose() {
+    _feedbackController.dispose();
+    super.dispose();
+  }
+
   void _showFeedbackDialog() {
     showDialog(
       context: context,

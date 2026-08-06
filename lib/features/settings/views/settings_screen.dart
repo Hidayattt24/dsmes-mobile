@@ -67,7 +67,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ref.invalidate(homeDashboardProvider);
         setState(() {});
       }
-    } catch (_) {}
+    } catch (e) {
+      // Log the failure so it is not silently swallowed; settings still render
+      // with default/empty values.
+      debugPrint('Settings: failed to load latest profile: $e');
+    }
   }
 
   Future<void> _logout() async {

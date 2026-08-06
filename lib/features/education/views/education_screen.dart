@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -11,8 +13,6 @@ import '../widgets/education_search_bar.dart';
 import '../widgets/featured_article_card.dart';
 import '../widgets/education_skeleton.dart';
 import '../viewmodels/education_notifier.dart';
-import 'all_articles_screen.dart';
-import 'education_detail_screen.dart';
 
 class EducationScreen extends ConsumerStatefulWidget {
   const EducationScreen({super.key});
@@ -34,22 +34,14 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
   }
 
   void _navigateToDetail(EducationArticle article) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => EducationDetailScreen(articleId: article.id),
-      ),
-    ).then((_) {
+    context.push('${RouteNames.educationDetail}/${article.id}').then((_) {
       ref.invalidate(educationListProvider);
       ref.invalidate(savedArticlesProvider);
     });
   }
 
   void _navigateToAllArticles() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const AllArticlesScreen(),
-      ),
-    ).then((_) {
+    context.push(RouteNames.allArticles).then((_) {
       ref.invalidate(educationListProvider);
       ref.invalidate(savedArticlesProvider);
     });

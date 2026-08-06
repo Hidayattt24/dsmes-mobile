@@ -397,9 +397,20 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                     ),
                   ),
                   onPressed: () {
-                    final name = _activityNameController.text.trim().isEmpty
-                        ? 'Aktivitas Fisik'
-                        : _activityNameController.text.trim();
+                    final name = _activityNameController.text.trim();
+
+                    // Activity name is required — do not silently fall back to
+                    // a placeholder value.
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nama aktivitas wajib diisi.'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      return;
+                    }
+
                     widget.onSaved?.call(name, _durationMinutes, _selectedIntensity, _isCompleted);
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(

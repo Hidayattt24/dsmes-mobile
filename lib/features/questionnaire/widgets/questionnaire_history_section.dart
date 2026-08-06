@@ -75,6 +75,9 @@ class _ModuleHistoryCardState extends State<_ModuleHistoryCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.attempts.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final latest = widget.attempts.first;
     final total = widget.attempts.length;
     final highestScore =

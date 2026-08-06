@@ -402,14 +402,27 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
                     ),
                   ),
                   onPressed: () {
-                    final medName = _medNameController.text.trim().isEmpty
-                        ? 'Obat'
-                        : _medNameController.text.trim();
-                    final dose = _dosageController.text.trim().isEmpty
-                        ? '500 mg'
-                        : _dosageController.text.trim();
+                    final medName = _medNameController.text.trim();
+                    final dose = _dosageController.text.trim();
 
-                    widget.onSaved?.call(medName, dose, _selectedTime, _isTaken);
+                    // Medication name is required — do not silently fall back
+                    // to a placeholder value.
+                    if (medName.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Nama obat wajib diisi.'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      return;
+                    }
+
+                    widget.onSaved?.call(
+                      medName,
+                      dose.isEmpty ? '500 mg' : dose,
+                      _selectedTime,
+                      _isTaken,
+                    );
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
