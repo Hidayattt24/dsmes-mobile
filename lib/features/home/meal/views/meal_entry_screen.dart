@@ -7,23 +7,44 @@ import '../models/food_item.dart';
 import '../viewmodels/meal_entry_notifier.dart';
 import '../widgets/food_card.dart';
 import '../widgets/food_detail_sheet.dart';
+import '../widgets/food_skeleton.dart';
 
-class MealEntryScreen extends ConsumerWidget {
+class MealEntryScreen extends ConsumerStatefulWidget {
   const MealEntryScreen({super.key});
 
   static const _mealTypes = ['Sarapan', 'Makan Siang', 'Makan Malam'];
-  static const _recentSearches = [
-    'Nasi Goreng',
-    'Ayam Bakar',
-    'Tempe Goreng',
-    'Tahu Goreng',
-  ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MealEntryScreen> createState() => _MealEntryScreenState();
+}
+
+class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(mealEntryProvider.notifier).fetchFoods(isRefresh: false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(mealEntryProvider);
     final notifier = ref.read(mealEntryProvider.notifier);
-    final filteredFoods = notifier.filteredFoods;
+    final foods = state.recommendedFoods;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -47,6 +68,7 @@ class MealEntryScreen extends ConsumerWidget {
         children: [
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,13 +80,14 @@ class MealEntryScreen extends ConsumerWidget {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          for (final type in _mealTypes) ...[
+                          for (final type in MealEntryScreen._mealTypes) ...[
                             _MealTypeTab(
                               label: type,
                               isSelected: state.selectedMealType == type,
                               onTap: () => notifier.setMealType(type),
                             ),
-                            if (type != _mealTypes.last) const SizedBox(width: 12),
+                            if (type != MealEntryScreen._mealTypes.last)
+                              const SizedBox(width: 12),
                           ],
                         ],
                       ),
@@ -123,23 +146,26 @@ class MealEntryScreen extends ConsumerWidget {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            for (final search in _recentSearches)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surfaceContainer,
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: AppColors.outlineVariant,
+                            for (final search in state.recentSearches)
+                              GestureDetector(
+                                onTap: () => notifier.selectRecentSearch(search),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 6,
                                   ),
-                                ),
-                                child: Text(
-                                  search,
-                                  style: AppTextStyles.bodyMd.copyWith(
-                                    color: AppColors.onSurfaceVariant,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceContainer,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: AppColors.outlineVariant,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    search,
+                                    style: AppTextStyles.bodyMd.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -163,55 +189,79 @@ class MealEntryScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: filteredFoods.isEmpty
-                        ? Container(
-                            padding: const EdgeInsets.all(32),
-                            alignment: Alignment.center,
-                            child: Column(
-                              children: [
-                                const Icon(
-                                  Icons.restaurant_menu_rounded,
-                                  size: 48,
-                                  color: AppColors.outline,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Makanan tidak ditemukan',
-                                  style: AppTextStyles.labelLg.copyWith(
-                                    color: AppColors.onSurfaceVariant,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Coba kata kunci pencarian yang lain.',
-                                  style: AppTextStyles.bodyMd.copyWith(
-                                    color: AppColors.outline,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.separated(
+                    child: state.isLoading
+                        ? ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: filteredFoods.length,
+                            itemCount: 4,
                             separatorBuilder: (context, index) =>
                                 const SizedBox(height: 16),
-                            itemBuilder: (context, index) {
-                              final food = filteredFoods[index];
-                              return FoodCard(
-                                food: food,
-                                isSelected:
-                                    state.selectedFoodIds.contains(food.id),
-                                onAddPressed: () => _onFoodAddPressed(
-                                  context,
-                                  ref,
-                                  food,
+                            itemBuilder: (context, index) => const FoodSkeleton(),
+                          )
+                        : foods.isEmpty
+                            ? Container(
+                                padding: const EdgeInsets.all(32),
+                                alignment: Alignment.center,
+                                child: Column(
+                                  children: [
+                                    const Icon(
+                                      Icons.restaurant_menu_rounded,
+                                      size: 48,
+                                      color: AppColors.outline,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'Makanan tidak ditemukan',
+                                      style: AppTextStyles.labelLg.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Coba kata kunci pencarian yang lain.',
+                                      style: AppTextStyles.bodyMd.copyWith(
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              );
-                            },
-                          ),
+                              )
+                            : Column(
+                                children: [
+                                  ListView.separated(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: foods.length,
+                                    separatorBuilder: (context, index) =>
+                                        const SizedBox(height: 16),
+                                    itemBuilder: (context, index) {
+                                      final food = foods[index];
+                                      return FoodCard(
+                                        food: food,
+                                        isSelected: state.selectedFoodIds
+                                            .contains(food.id),
+                                        onAddPressed: () => _onFoodAddPressed(
+                                          context,
+                                          ref,
+                                          food,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  if (state.isMoreLoading)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 16),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                   ),
                   const SizedBox(height: 160),
                 ],
@@ -223,14 +273,32 @@ class MealEntryScreen extends ConsumerWidget {
           _StickyFooter(
             totalCalories: state.totalCalories,
             selectedCount: state.selectedFoodIds.length,
-            onSave: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Log makanan berhasil disimpan!'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-              Navigator.of(context).pop();
+            onSave: () async {
+              if (state.selectedFoodIds.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Pilih minimal satu makanan terlebih dahulu'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              final success = await notifier.saveMealLogs();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success
+                          ? 'Log makanan berhasil disimpan!'
+                          : 'Gagal menyimpan log makanan.',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                if (success) {
+                  Navigator.of(context).pop();
+                }
+              }
             },
           ),
         ],
@@ -280,7 +348,8 @@ class _MealTypeTab extends StatelessWidget {
         child: Text(
           label,
           style: AppTextStyles.labelLg.copyWith(
-            color: isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+            color:
+                isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
             fontWeight: FontWeight.w500,
           ),
         ),

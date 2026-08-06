@@ -14,6 +14,7 @@ class DailyCaloriesCard extends StatelessWidget {
     required this.remaining,
     required this.target,
     required this.onRecordFoodPressed,
+    this.onViewHistoryPressed,
     this.isToday = true,
     this.hasRecord = true,
     this.historyMessage,
@@ -22,6 +23,7 @@ class DailyCaloriesCard extends StatelessWidget {
   const DailyCaloriesCard.empty({
     super.key,
     required this.onRecordFoodPressed,
+    this.onViewHistoryPressed,
     this.isToday = true,
     this.historyMessage,
   })  : consumed = 0,
@@ -33,6 +35,7 @@ class DailyCaloriesCard extends StatelessWidget {
   final int remaining;
   final int target;
   final VoidCallback onRecordFoodPressed;
+  final VoidCallback? onViewHistoryPressed;
   final bool isToday;
   final bool hasRecord;
   final String? historyMessage;
@@ -104,6 +107,15 @@ class DailyCaloriesCard extends StatelessWidget {
               )
             else
               _buildHistoryBanner(),
+            if (isToday && onViewHistoryPressed != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              AppButton(
+                label: 'Riwayat Makanan',
+                icon: Icons.history_rounded,
+                variant: AppButtonVariant.text,
+                onPressed: onViewHistoryPressed,
+              ),
+            ],
           ],
         ),
       );
@@ -215,6 +227,15 @@ class DailyCaloriesCard extends StatelessWidget {
             )
           else
             _buildHistoryBanner(),
+          if (isToday && onViewHistoryPressed != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            AppButton(
+              label: 'Riwayat Makanan',
+              icon: Icons.history_rounded,
+              variant: AppButtonVariant.text,
+              onPressed: onViewHistoryPressed,
+            ),
+          ],
         ],
       ),
     );

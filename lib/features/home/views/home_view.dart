@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell/app_shell.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -152,7 +153,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
         _selectedDate.year == now.year;
 
     final historyState = historyAsync.valueOrNull;
-    final targetCalorie = dash?.dailyCalorieTarget ?? 2000;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,11 +208,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
         const SizedBox(height: AppSpacing.lg),
 
         DailyCaloriesCard(
-          consumed: 0,
-          remaining: targetCalorie,
-          target: targetCalorie,
+          consumed: state.consumedCalories,
+          remaining: state.remainingCalories,
+          target: state.dailyCalorieTarget,
           isToday: isSelectedToday,
           onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
+          onViewHistoryPressed: () =>
+              ref.read(appShellTabIndexProvider.notifier).state = 1,
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -320,6 +322,14 @@ class _HomeViewState extends ConsumerState<HomeView> {
                                 fontSize: 12,
                               ),
                             ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _formatActivityDate(act.parsedMeasuredAt),
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+                                fontSize: 11,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -405,5 +415,15 @@ class _HomeViewState extends ConsumerState<HomeView> {
       default:
         return item.status;
     }
+  }
+
+  String _formatActivityDate(DateTime? date) {
+    if (date == null) return '';
+    final d = date.toLocal();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
 }

@@ -1,37 +1,68 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import '../../../../data/models/food_master_model.dart';
 
 @immutable
 class FoodItem {
   final String id;
   final String name;
+  final String manufacturer;
   final String servingSize;
-  final int calories;
+  final double energyKcal;
   final double carbs;
   final double protein;
   final double fat;
+  final double sugarG;
+  final double sodiumMg;
+  final double fiberG;
+  final String nutritionBasis;
   final String mealType;
   final List<String>? servingOptions;
 
   const FoodItem({
     required this.id,
     required this.name,
+    this.manufacturer = '',
     required this.servingSize,
-    required this.calories,
+    required this.energyKcal,
     required this.carbs,
     required this.protein,
     required this.fat,
+    this.sugarG = 0.0,
+    this.sodiumMg = 0.0,
+    this.fiberG = 0.0,
+    this.nutritionBasis = 'PER_100G',
     this.mealType = 'Makan Siang',
     this.servingOptions,
   });
 
+  int get calories => energyKcal.round();
+
+  factory FoodItem.fromFoodMasterModel(FoodMasterModel model, {String mealType = 'Makan Siang'}) {
+    final String cleanServingSize = model.servingSize.trim().isNotEmpty
+        ? model.servingSize.trim()
+        : '1 porsi';
+    return FoodItem(
+      id: model.id,
+      name: model.name,
+      manufacturer: model.manufacturer,
+      servingSize: cleanServingSize,
+      energyKcal: model.energyKcal,
+      carbs: model.carbohydrateG,
+      protein: model.proteinG,
+      fat: model.fatG,
+      sugarG: model.sugarG,
+      sodiumMg: model.sodiumMg,
+      fiberG: model.fiberG,
+      nutritionBasis: model.nutritionBasis,
+      mealType: mealType,
+      servingOptions: [
+        cleanServingSize,
+      ],
+    );
+  }
+
   List<String> get servingOptionsList {
-    final list = servingOptions ??
-        [
-          servingSize,
-          '1 Porsi Standar (100g)',
-          '1 Mangkuk (150g)',
-          '100 Gram',
-        ];
+    final list = servingOptions ?? [servingSize];
     if (!list.contains(servingSize)) {
       return [servingSize, ...list];
     }
@@ -45,12 +76,22 @@ class MealEntryState {
   final String searchQuery;
   final List<FoodItem> recommendedFoods;
   final Set<String> selectedFoodIds;
+  final List<String> recentSearches;
+  final bool isLoading;
+  final bool isMoreLoading;
+  final int currentPage;
+  final bool hasMore;
 
   const MealEntryState({
     this.selectedMealType = 'Makan Siang',
     this.searchQuery = '',
-    this.recommendedFoods = defaultFoods,
+    this.recommendedFoods = const [],
     this.selectedFoodIds = const {},
+    this.recentSearches = const ['Nasi Goreng', 'Ayam Bakar', 'Tempe Goreng', 'Tahu Goreng'],
+    this.isLoading = false,
+    this.isMoreLoading = false,
+    this.currentPage = 1,
+    this.hasMore = true,
   });
 
   int get totalCalories {
@@ -71,79 +112,24 @@ class MealEntryState {
     String? searchQuery,
     List<FoodItem>? recommendedFoods,
     Set<String>? selectedFoodIds,
+    List<String>? recentSearches,
+    bool? isLoading,
+    bool? isMoreLoading,
+    int? currentPage,
+    bool? hasMore,
   }) {
     return MealEntryState(
       selectedMealType: selectedMealType ?? this.selectedMealType,
       searchQuery: searchQuery ?? this.searchQuery,
       recommendedFoods: recommendedFoods ?? this.recommendedFoods,
       selectedFoodIds: selectedFoodIds ?? this.selectedFoodIds,
+      recentSearches: recentSearches ?? this.recentSearches,
+      isLoading: isLoading ?? this.isLoading,
+      isMoreLoading: isMoreLoading ?? this.isMoreLoading,
+      currentPage: currentPage ?? this.currentPage,
+      hasMore: hasMore ?? this.hasMore,
     );
   }
 }
 
-const List<FoodItem> defaultFoods = [
-  FoodItem(
-    id: 'nasi_putih',
-    name: 'Nasi Putih',
-    servingSize: '1 centong (100g)',
-    servingOptions: [
-      '1 centong (100g)',
-      '1 porsi (150g)',
-      '1/2 centong (50g)',
-      '100 Gram',
-    ],
-    calories: 178,
-    carbs: 39.0,
-    protein: 3.0,
-    fat: 0.4,
-    mealType: 'Makan Siang',
-  ),
-  FoodItem(
-    id: 'mie_aceh',
-    name: 'Mie Aceh Goreng',
-    servingSize: '1 porsi (250g)',
-    servingOptions: [
-      '1 porsi (250g)',
-      '1/2 porsi (125g)',
-      '1 mangkuk (200g)',
-      '100 Gram',
-    ],
-    calories: 450,
-    carbs: 55.0,
-    protein: 18.0,
-    fat: 15.0,
-    mealType: 'Makan Siang',
-  ),
-  FoodItem(
-    id: 'kuah_pliek_u',
-    name: 'Kuah Pliek U',
-    servingSize: '1 mangkuk',
-    servingOptions: [
-      '1 mangkuk',
-      '1/2 mangkuk',
-      '1 porsi (200g)',
-      '100 Gram',
-    ],
-    calories: 210,
-    carbs: 12.0,
-    protein: 6.0,
-    fat: 14.0,
-    mealType: 'Makan Siang',
-  ),
-  FoodItem(
-    id: 'sate_matang',
-    name: 'Sate Matang',
-    servingSize: '5 tusuk (150g)',
-    servingOptions: [
-      '5 tusuk (150g)',
-      '10 tusuk (300g)',
-      '1 tusuk (30g)',
-      '1 porsi (150g)',
-    ],
-    calories: 310,
-    carbs: 12.0,
-    protein: 24.0,
-    fat: 18.0,
-    mealType: 'Makan Siang',
-  ),
-];
+const List<FoodItem> defaultFoods = [];

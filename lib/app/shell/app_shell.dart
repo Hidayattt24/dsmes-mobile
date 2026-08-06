@@ -18,6 +18,8 @@ import '../../features/ai_chat/widgets/floating_ai_chat_button.dart';
 import 'app_bottom_navigation.dart';
 import 'app_header.dart';
 
+final appShellTabIndexProvider = StateProvider<int>((ref) => 0);
+
 /// Main Shell screen for the DSMES Mobile application containing the shared AppHeader and AppBottomNavigation.
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, this.nowOverride});
@@ -29,7 +31,7 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver {
-  int _selectedIndex = 0;
+  int get _selectedIndex => ref.watch(appShellTabIndexProvider);
 
   Widget _buildScreen(int index) {
     return switch (index) {
@@ -123,9 +125,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                     onCalendarTap: _openCalendarHistoryBottomSheet,
                     onNotificationTap: () => context.push(RouteNames.notifications),
                     onProfileTap: () {
-                      setState(() {
-                        _selectedIndex = 4; // Switch to Profil tab
-                      });
+                      ref.read(appShellTabIndexProvider.notifier).state = 4;
                     },
                   ),
                 ),
@@ -155,9 +155,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       bottomNavigationBar: AppBottomNavigation(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          ref.read(appShellTabIndexProvider.notifier).state = index;
         },
       ),
     );

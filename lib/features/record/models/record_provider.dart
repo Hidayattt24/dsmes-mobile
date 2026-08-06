@@ -9,6 +9,7 @@ import '../../../data/repositories/measurement_repository.dart';
 import '../../../data/repositories/reminder_repository.dart';
 import '../../home/history/models/history_item_model.dart';
 import '../../home/history/viewmodels/history_provider.dart';
+import '../../home/viewmodels/home_dashboard_notifier.dart';
 import '../../home/reminders/models/reminder_model.dart';
 import 'record_entry.dart';
 
@@ -547,6 +548,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       await dio.delete('/patient/history/$typeStr/$id');
       await loadData();
       _ref.read(historyProvider.notifier).refresh();
+      _ref.read(homeDashboardProvider.notifier).refresh();
       return true;
     } catch (e) {
       state = state.copyWith(errorMessage: _formatError(e));
