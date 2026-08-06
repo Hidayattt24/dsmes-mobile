@@ -63,19 +63,18 @@ class HomeDashboardModel {
     }
   }
 
+  /// Returns the backend-generated recommendation message. If no reading exists
+  /// yet, falls back to a generic encouragement. The backend classifier already
+  /// accounts for measurement type (GDP/GD2PP/GDS) and patient age.
   String get motivationalMessage {
+    if (latestBloodSugarRecommendation != null &&
+        latestBloodSugarRecommendation!.isNotEmpty) {
+      return latestBloodSugarRecommendation!;
+    }
     if (latestBloodSugar == null) {
       return 'Ayo catat gula darah Anda untuk memantau kesehatan hari ini!';
     }
-    if (latestBloodSugar! < 70) {
-      return 'Perhatikan kadar gula darah Anda. Konsumsi karbohidrat cepat serap jika merasa lemas.';
-    } else if (latestBloodSugar! <= 140) {
-      return 'Kadar gula darah Anda terjaga dengan baik! Pertahankan pola hidup sehat Anda.';
-    } else if (latestBloodSugar! <= 200) {
-      return 'Gula darah agak tinggi. Tetap utamakan konsumsi makanan bergizi seimbang.';
-    } else {
-      return 'Kadar gula darah tinggi. Pastikan rutin minum obat dan periksakan diri jika perlu.';
-    }
+    return 'Pertahankan pemantauan gula darah Anda secara rutin.';
   }
 
   factory HomeDashboardModel.fromJson(Map<String, dynamic> json) {

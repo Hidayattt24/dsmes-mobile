@@ -195,6 +195,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
             value: latestBs.glucoseValue.toString(),
             unit: 'mg/dL',
             statusLabel: latestBs.classificationLabel,
+            statusColor: _parseHexColor(latestBs.colorIndicator),
             timeAndMealText: latestBs.formattedTimeAndType,
             percentagePosition: (latestBs.glucoseValue / 200.0).clamp(0.1, 0.9),
             isToday: isSelectedToday,
@@ -425,5 +426,20 @@ class _HomeViewState extends ConsumerState<HomeView> {
       'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
     ];
     return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  /// Parses a hex color string (e.g. "#10B981") from the backend into a
+  /// Flutter Color so the badge colour matches the server's classification.
+  Color? _parseHexColor(String hex) {
+    if (hex.isEmpty) return null;
+    try {
+      final h = hex.replaceFirst('#', '');
+      if (h.length == 6) {
+        return Color(int.parse('FF$h', radix: 16));
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

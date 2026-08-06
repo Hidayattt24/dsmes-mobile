@@ -15,10 +15,11 @@ class BloodSugarCard extends StatelessWidget {
     required this.statusLabel,
     required this.timeAndMealText,
     required this.onRecordPressed,
-    this.percentagePosition = 0.6, // 0.0 to 1.0 position in slider
+    this.percentagePosition = 0.6,
     this.isToday = true,
     this.hasRecord = true,
     this.historyMessage,
+    this.statusColor,
   });
 
   const BloodSugarCard.empty({
@@ -31,7 +32,8 @@ class BloodSugarCard extends StatelessWidget {
         statusLabel = '',
         timeAndMealText = '',
         percentagePosition = 0.0,
-        hasRecord = false;
+        hasRecord = false,
+        statusColor = null;
 
   final String value;
   final String unit;
@@ -42,6 +44,7 @@ class BloodSugarCard extends StatelessWidget {
   final bool isToday;
   final bool hasRecord;
   final String? historyMessage;
+  final Color? statusColor;
 
   @override
   Widget build(BuildContext context) {
@@ -177,13 +180,13 @@ class BloodSugarCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.secondaryContainer,
+                  color: (statusColor ?? AppColors.secondaryContainer).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text(
                   statusLabel,
                   style: AppTextStyles.labelMd.copyWith(
-                    color: AppColors.onSecondaryContainer,
+                    color: statusColor ?? AppColors.onSecondaryContainer,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),

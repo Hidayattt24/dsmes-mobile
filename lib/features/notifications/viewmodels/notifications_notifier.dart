@@ -116,6 +116,11 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       for (final notification in state)
         if (notification.id == id) notification.copyWith(isUnread: false) else notification,
     ];
+    // Locally-generated notifications (id prefix "notif_") only live in the
+    // app's in-memory inbox and do NOT exist in the backend DB. Sending their
+    // id to the API would fail (the DB uses UUID primary keys), so only
+    // backend-synced (UUID) notifications are persisted via the API.
+    if (id.startsWith('notif_')) return;
     try {
       await ref.read(notificationRepositoryProvider).markAsRead(id);
     } catch (_) {
@@ -140,6 +145,8 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       for (final notification in state)
         if (notification.id != id) notification,
     ];
+    // Same as markAsRead: local notifications are not persisted in the backend.
+    if (id.startsWith('notif_')) return;
     try {
       await ref.read(notificationRepositoryProvider).deleteNotification(id);
     } catch (_) {
