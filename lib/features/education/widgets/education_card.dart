@@ -134,46 +134,4 @@ class EducationCard extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildStatusWidget(EducationArticle article) {
-    if (article.isCompleted || article.readStatus == 'Selesai') {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.check_circle_rounded,
-            size: 16,
-            color: AppColors.secondary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'Selesai',
-            style: AppTextStyles.labelMd.copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: AppColors.secondary,
-            ),
-          ),
-        ],
-      );
-    } else if (article.readStatus == 'Sedang dibaca' && article.readProgress != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: LinearProgressIndicator(
-          value: article.readProgress,
-          minHeight: 6,
-          backgroundColor: AppColors.surfaceContainerHighest,
-          color: AppColors.primary,
-        ),
-      );
-    }
-
-    return Text(
-      article.readStatus ?? 'Belum dibaca',
-      style: AppTextStyles.labelMd.copyWith(
-        fontSize: 12,
-        color: AppColors.onSurfaceVariant,
-      ),
-    );
-  }
 }

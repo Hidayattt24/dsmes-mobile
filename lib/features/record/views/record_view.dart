@@ -19,7 +19,6 @@ import '../widgets/blood_sugar_edit_sheet.dart';
 import '../widgets/food_edit_sheet.dart';
 import '../widgets/medication_entry_sheet.dart';
 import '../widgets/record_action_card.dart';
-import '../widgets/record_progress_card.dart';
 import '../widgets/record_timeline_section.dart';
 
 class RecordView extends ConsumerStatefulWidget {

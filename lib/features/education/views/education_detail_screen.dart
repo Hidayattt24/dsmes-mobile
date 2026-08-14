@@ -43,12 +43,6 @@ class _EducationDetailScreenState
   int _lastReportedScrollPct = 0;
   bool _hasMarkedComplete = false;
 
-  // ──────────────────────────────────────────────────────────────
-  // Video watch tracking state
-  // ──────────────────────────────────────────────────────────────
-  int _videoWatchSeconds = 0;
-  int _videoLastTimestampSeconds = 0;
-
   @override
   void initState() {
     super.initState();
@@ -118,11 +112,6 @@ class _EducationDetailScreenState
   // ──────────────────────────────────────────────────────────────
   // Video watch tracking callbacks (passed to YouTubePreviewCard)
   // ──────────────────────────────────────────────────────────────
-  void _onVideoProgressUpdated(int watchedSeconds, int lastTimestamp) {
-    _videoWatchSeconds = watchedSeconds;
-    _videoLastTimestampSeconds = lastTimestamp;
-  }
-
   void _onVideoEnded() {
     if (!mounted) return;
     ref
@@ -589,7 +578,6 @@ class _EducationDetailScreenState
                                   isWatched:
                                       article.isYoutubeWatched ||
                                       article.isCompleted,
-                                  onWatchProgress: _onVideoProgressUpdated,
                                   onVideoEnded: _onVideoEnded,
                                 ),
                               );

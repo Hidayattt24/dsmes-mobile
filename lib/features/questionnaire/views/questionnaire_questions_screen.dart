@@ -3,14 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../models/questionnaire_detail_model.dart';
-import '../models/quiz_attempt_model.dart';
 import '../viewmodels/questionnaire_notifier.dart';
 import 'questionnaire_result_screen.dart';
 
