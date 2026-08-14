@@ -82,7 +82,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
         }
       }
     } else if (widget.step == AppConstants.totalOnboardingSteps) {
-      context.go(RouteNames.dailyRoutineSetup);
+      context.go(RouteNames.preTestIntro);
     } else {
       notifier.nextStep();
       context.go('/onboarding/${widget.step + 1}');

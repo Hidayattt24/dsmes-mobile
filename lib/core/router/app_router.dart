@@ -15,7 +15,6 @@ import '../../features/home/meal/views/meal_entry_screen.dart';
 import '../../features/home/reminders/views/reminders_management_screen.dart';
 import '../../features/notifications/views/notifications_screen.dart';
 import '../../features/onboarding/views/account_created_success_screen.dart';
-import '../../features/onboarding/views/daily_routine_setup_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
 import '../../features/onboarding/views/registration_welcome_screen.dart';
 import '../../features/questionnaire/viewmodels/questionnaire_notifier.dart';
@@ -37,7 +36,6 @@ const _publicRoutes = <String>{
   RouteNames.login,
   RouteNames.forgotPassword,
   RouteNames.registrationWelcome,
-  RouteNames.dailyRoutineSetup,
   RouteNames.preTestIntro,
   RouteNames.accountCreatedSuccess,
 };
@@ -152,17 +150,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-    // ── Daily Routine Setup ─────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.dailyRoutineSetup,
-      name: RouteNames.nameDailyRoutineSetup,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const DailyRoutineSetupScreen(),
-      ),
-    ),
-
-    // ── Pre-Test Intro (mandatory after Daily Routine Setup) ────────────
+    // ── Pre-Test Intro (mandatory after onboarding) ─────────────────────
     GoRoute(
       path: RouteNames.preTestIntro,
       name: RouteNames.namePreTestIntro,

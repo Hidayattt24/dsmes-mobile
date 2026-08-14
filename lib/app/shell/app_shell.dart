@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_text_styles.dart';
 import '../../features/education/views/education_screen.dart';
 import '../../features/questionnaire/views/questionnaire_screen.dart';
 import '../../features/settings/views/settings_screen.dart';
@@ -14,7 +13,6 @@ import '../../features/record/views/record_view.dart';
 import '../../features/home/history/widgets/calendar_history_bottom_sheet.dart';
 import '../../features/notifications/viewmodels/notifications_notifier.dart';
 import '../../features/home/viewmodels/home_dashboard_notifier.dart';
-import '../../features/ai_chat/widgets/floating_ai_chat_button.dart';
 import 'app_bottom_navigation.dart';
 import 'app_header.dart';
 
@@ -157,66 +155,6 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
         onDestinationSelected: (index) {
           ref.read(appShellTabIndexProvider.notifier).state = index;
         },
-      ),
-    );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  const _PlaceholderTab({
-    required this.title,
-    required this.icon,
-    required this.description,
-  });
-
-  final String title;
-  final IconData icon;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: AppColors.primary,
-                size: 56,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              title,
-              style: AppTextStyles.poppinsHeadline.copyWith(
-                color: AppColors.primary,
-                fontSize: 24,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text(
-                description,
-                style: AppTextStyles.bodyLg.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

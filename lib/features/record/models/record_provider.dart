@@ -217,7 +217,6 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     int actDuration = 0;
     String actIntensity = '';
     int completedCount = 0;
-    int totalCount = 0;
 
     final categories = <String>{};
     bool medCompleted = false;
@@ -252,7 +251,6 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     if (categories.contains('meal')) completedCount++;
     if (categories.contains('activity')) completedCount++;
     if (categories.contains('medication') && medCompleted) completedCount++;
-    totalCount = categories.length;
 
     return _TodaySummary(
       bloodSugarValue: bsValue,
