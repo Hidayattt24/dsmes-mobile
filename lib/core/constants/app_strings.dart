@@ -32,22 +32,11 @@ abstract final class AppStrings {
   // ── Auth — Forgot Password ─────────────────────────────────────────────────
   static const String forgotPasswordTitle = 'Lupa Kata Sandi';
   static const String forgotPasswordSubtitle =
-      'Masukkan email Anda untuk menerima kode OTP 6 digit.';
-  static const String forgotPasswordEmail = 'Email';
-  static const String forgotPasswordEmailHint = 'Masukkan email Anda';
-  static const String forgotPasswordButton = 'Kirim Kode OTP';
+      'Masukkan nomor handphone Anda yang terdaftar untuk mereset kata sandi.';
+  static const String forgotPasswordPhone = 'Nomor Handphone';
+  static const String forgotPasswordPhoneHint = 'Masukkan nomor handphone Anda';
+  static const String forgotPasswordButton = 'Lanjut';
   static const String forgotPasswordBackToLogin = 'Kembali ke masuk';
-  static const String forgotPasswordSuccessMessage =
-      'Kode OTP telah dikirim ke email Anda.';
-
-  // ── Auth — OTP Verification ────────────────────────────────────────────────
-  static const String otpTitle = 'Verifikasi Kode OTP';
-  static const String otpSubtitle = 'Masukkan kode OTP 6 digit yang dikirim ke';
-  static const String otpFieldLabel = 'Kode OTP';
-  static const String otpButton = 'Verifikasi';
-  static const String otpResend = 'Kirim Ulang';
-  static const String otpErrorInvalid = 'Kode OTP tidak valid. Coba lagi.';
-  static const String otpErrorExpired = 'Kode OTP telah kedaluwarsa.';
 
   // ── Auth — Reset Password ──────────────────────────────────────────────────
   static const String resetPasswordTitle = 'Buat Kata Sandi Baru';

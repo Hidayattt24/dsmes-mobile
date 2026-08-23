@@ -22,22 +22,22 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
+  String? _validatePhone(String? value) {
     if (value == null || value.trim().isEmpty) {
       return AppStrings.validationRequired;
     }
-    final emailRegex = RegExp(r'^[\w.-]+@[\w.-]+\.\w{2,}$');
-    if (!emailRegex.hasMatch(value.trim())) {
-      return AppStrings.validationEmail;
+    final clean = value.replaceAll(RegExp(r'[\s\-+]'), '');
+    if (clean.length < 8 || clean.length > 15) {
+      return AppStrings.validationPhoneNumber;
     }
     return null;
   }
@@ -46,13 +46,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).forgotPassword(
-            email: _emailController.text.trim(),
+      await ref.read(authRepositoryProvider).checkPhoneNumber(
+            phoneNumber: _phoneController.text.trim(),
           );
       if (mounted) {
         setState(() => _isLoading = false);
-        context.push(RouteNames.otpVerification,
-            extra: _emailController.text.trim());
+        await context.push(RouteNames.resetPassword,
+            extra: _phoneController.text.trim());
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -94,14 +94,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 Form(
                   key: _formKey,
                   child: AppTextField(
-                    label: AppStrings.forgotPasswordEmail,
-                    hint: AppStrings.forgotPasswordEmailHint,
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
+                    label: AppStrings.forgotPasswordPhone,
+                    hint: AppStrings.forgotPasswordPhoneHint,
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.email_outlined,
-                    semanticLabel: 'Kolom email',
-                    validator: _validateEmail,
+                    prefixIcon: Icons.phone_outlined,
+                    semanticLabel: 'Kolom nomor handphone',
+                    validator: _validatePhone,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),

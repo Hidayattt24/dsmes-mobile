@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/route_names.dart';
@@ -14,13 +15,11 @@ import '../../../core/widgets/app_text_field.dart';
 import '../../../data/repositories/auth_repository.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
-  final String email;
-  final String otpCode;
+  final String phoneNumber;
 
   const ResetPasswordScreen({
     super.key,
-    required this.email,
-    required this.otpCode,
+    required this.phoneNumber,
   });
 
   @override
@@ -46,7 +45,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (value == null || value.trim().isEmpty) {
       return AppStrings.validationRequired;
     }
-    if (value.trim().length < 8) {
+    if (value.trim().length < AppConstants.passwordMinLength) {
       return AppStrings.validationPasswordMin;
     }
     return null;
@@ -66,9 +65,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).resetPassword(
-            email: widget.email,
-            otpCode: widget.otpCode,
+      await ref.read(authRepositoryProvider).resetPasswordByPhone(
+            phoneNumber: widget.phoneNumber,
             newPassword: _passwordController.text.trim(),
             confirmPassword: _confirmController.text.trim(),
           );
