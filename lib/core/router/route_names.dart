@@ -7,7 +7,6 @@ abstract final class RouteNames {
   static const String welcome = '/welcome';
   static const String login = '/login';
   static const String forgotPassword = '/forgot-password';
-  static const String otpVerification = '/otp-verification';
   static const String resetPassword = '/reset-password';
 
   /// Signup entry = first onboarding step
@@ -29,7 +28,6 @@ abstract final class RouteNames {
   static const String nameWelcome = 'welcome';
   static const String nameLogin = 'login';
   static const String nameForgotPassword = 'forgot-password';
-  static const String nameOtpVerification = 'otp-verification';
   static const String nameResetPassword = 'reset-password';
   static const String nameOnboarding = 'onboarding';
   static const String nameHome = 'home';

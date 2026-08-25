@@ -324,15 +324,15 @@ class _LoginOptions extends StatelessWidget {
             ),
           ),
         ),
-        // Forgot password link (Disabled for now)
+        // Forgot password link
         GestureDetector(
-          onTap: null, // Disabled for now
+          onTap: () => context.push(RouteNames.forgotPassword),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text(
               AppStrings.loginForgotPassword,
               style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.outline,
+                color: AppColors.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),

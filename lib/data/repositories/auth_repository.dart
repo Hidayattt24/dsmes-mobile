@@ -40,16 +40,10 @@ abstract class IAuthRepository {
     required String newPassword,
   });
 
-  Future<void> forgotPassword({required String email});
+  Future<void> checkPhoneNumber({required String phoneNumber});
 
-  Future<void> verifyOTP({
-    required String email,
-    required String otpCode,
-  });
-
-  Future<void> resetPassword({
-    required String email,
-    required String otpCode,
+  Future<void> resetPasswordByPhone({
+    required String phoneNumber,
     required String newPassword,
     required String confirmPassword,
   });
@@ -255,11 +249,11 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
-  Future<void> forgotPassword({required String email}) async {
+  Future<void> checkPhoneNumber({required String phoneNumber}) async {
     try {
       await _dio.post(
-        '/auth/forgot-password',
-        data: {'email': email.trim(), 'owner_type': 'patient'},
+        '/auth/forgot-password/check-phone',
+        data: {'phone_number': phoneNumber.trim()},
       );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -267,40 +261,18 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
-  Future<void> verifyOTP({
-    required String email,
-    required String otpCode,
-  }) async {
-    try {
-      await _dio.post(
-        '/auth/verify-otp',
-        data: {
-          'email': email.trim(),
-          'otp_code': otpCode,
-          'owner_type': 'patient',
-        },
-      );
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
-  }
-
-  @override
-  Future<void> resetPassword({
-    required String email,
-    required String otpCode,
+  Future<void> resetPasswordByPhone({
+    required String phoneNumber,
     required String newPassword,
     required String confirmPassword,
   }) async {
     try {
       await _dio.post(
-        '/auth/reset-password',
+        '/auth/reset-password-by-phone',
         data: {
-          'email': email.trim(),
-          'otp_code': otpCode,
+          'phone_number': phoneNumber.trim(),
           'new_password': newPassword,
           'confirm_password': confirmPassword,
-          'owner_type': 'patient',
         },
       );
     } on DioException catch (e) {
