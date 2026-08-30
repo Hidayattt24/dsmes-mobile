@@ -525,7 +525,7 @@ class _RecordViewState extends ConsumerState<RecordView> {
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: FloatingActionButton(

@@ -25,11 +25,12 @@ class EducationReviewDialog extends StatefulWidget {
     return showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: true,
-      builder: (context) => EducationReviewDialog(
-        articleTitle: articleTitle,
-        initialRating: initialRating,
-        initialNote: initialNote,
-      ),
+      builder:
+          (context) => EducationReviewDialog(
+            articleTitle: articleTitle,
+            initialRating: initialRating,
+            initialNote: initialNote,
+          ),
     );
   }
 
@@ -65,9 +66,7 @@ class _EducationReviewDialogState extends State<EducationReviewDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: AppColors.surfaceContainerLowest,
       elevation: 8,
       child: Padding(
@@ -129,11 +128,19 @@ class _EducationReviewDialogState extends State<EducationReviewDialog> {
                     },
                     borderRadius: BorderRadius.circular(20),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
                       child: Icon(
-                        isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                        isSelected
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
                         size: 36,
-                        color: isSelected ? const Color(0xFFFFB800) : const Color(0xFFCBD5E1),
+                        color:
+                            isSelected
+                                ? const Color(0xFFFFB800)
+                                : const Color(0xFFCBD5E1),
                       ),
                     ),
                   );
@@ -154,7 +161,7 @@ class _EducationReviewDialogState extends State<EducationReviewDialog> {
 
             // Optional Note Input
             Text(
-              'Catatan Tambahan (Opsional)',
+              'Apakah ada hal yang ingin kamu tanyakan lebih lanjut? (Opsional)',
               style: AppTextStyles.labelMd.copyWith(
                 fontWeight: FontWeight.w600,
                 color: AppColors.onSurface,
@@ -167,7 +174,8 @@ class _EducationReviewDialogState extends State<EducationReviewDialog> {
               maxLines: 3,
               style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurface),
               decoration: InputDecoration(
-                hintText: 'Bagikan pendapat atau saran Anda mengenai materi ini...',
+                hintText:
+                    'Bagikan pendapat atau saran Anda mengenai materi ini...',
                 hintStyle: AppTextStyles.bodyMd.copyWith(
                   color: AppColors.outline,
                   fontSize: 13,

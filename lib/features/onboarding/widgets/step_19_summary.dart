@@ -11,8 +11,8 @@ import '../../../core/widgets/app_card.dart';
 import '../models/onboarding_form_state.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step14Summary extends ConsumerWidget {
-  const Step14Summary({super.key});
+class Step19Summary extends ConsumerWidget {
+  const Step19Summary({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -350,6 +350,36 @@ class _PersonalSummary extends StatelessWidget {
         Icons.directions_run,
         AppStrings.step13LabelActivity,
         state.activityLevel ?? '-',
+      ),
+      (
+        Icons.home_outlined,
+        AppStrings.summaryLabelAddress,
+        state.address.isEmpty ? '-' : state.address,
+      ),
+      (
+        Icons.location_on_outlined,
+        AppStrings.summaryLabelDistrict,
+        state.district.isEmpty ? '-' : state.district,
+      ),
+      (
+        Icons.local_hospital_outlined,
+        AppStrings.summaryLabelFacility,
+        state.healthFacility.isEmpty ? '-' : state.healthFacility,
+      ),
+      (
+        Icons.people_outline,
+        AppStrings.summaryLabelLiving,
+        state.livingArrangement ?? '-',
+      ),
+      (
+        Icons.menu_book_outlined,
+        AppStrings.summaryLabelEducation,
+        state.educationLevel ?? '-',
+      ),
+      (
+        Icons.bloodtype_rounded,
+        AppStrings.summaryLabelDiabetesDuration,
+        state.diabetesDuration ?? '-',
       ),
     ];
 

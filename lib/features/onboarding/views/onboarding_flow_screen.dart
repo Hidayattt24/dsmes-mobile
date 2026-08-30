@@ -9,11 +9,16 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_progress_header.dart';
 import '../viewmodels/onboarding_notifier.dart';
 import '../widgets/onboarding_nav_buttons.dart';
-import '../widgets/step_10_blood_type.dart';
-import '../widgets/step_11_height.dart';
-import '../widgets/step_12_weight.dart';
-import '../widgets/step_13_activity.dart';
-import '../widgets/step_14_summary.dart';
+import '../widgets/step_10_living_arrangement.dart';
+import '../widgets/step_11_education.dart';
+import '../widgets/step_12_diabetes_duration.dart';
+import '../widgets/step_13_gender.dart';
+import '../widgets/step_14_birthdate.dart';
+import '../widgets/step_15_blood_type.dart';
+import '../widgets/step_16_height.dart';
+import '../widgets/step_17_weight.dart';
+import '../widgets/step_18_activity.dart';
+import '../widgets/step_19_summary.dart';
 import '../widgets/step_1_name.dart';
 import '../widgets/step_2_nickname.dart';
 import '../widgets/step_3_email.dart';
@@ -21,8 +26,8 @@ import '../widgets/step_4_phone.dart';
 import '../widgets/step_5_password.dart';
 import '../widgets/step_6_confirm_password.dart';
 import '../widgets/step_7_welcome_intro.dart';
-import '../widgets/step_8_gender.dart';
-import '../widgets/step_9_birthdate.dart';
+import '../widgets/step_8_residence.dart';
+import '../widgets/step_9_health_facility.dart';
 
 class OnboardingFlowScreen extends ConsumerStatefulWidget {
   const OnboardingFlowScreen({super.key, required this.step});
@@ -63,12 +68,30 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
           }
         }
       }
-    } else if (widget.step == 13) {
+    } else if (widget.step == 12) {
+      final ok = await notifier.submitSociodemographic();
+      if (mounted) {
+        if (ok) {
+          notifier.nextStep();
+          context.go('/onboarding/13');
+        } else {
+          final state = ref.read(onboardingProvider);
+          if (state.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      }
+    } else if (widget.step == 18) {
       final ok = await notifier.setupHealthProfileFromBackend();
       if (mounted) {
         if (ok) {
           notifier.nextStep();
-          context.go('/onboarding/14');
+          context.go('/onboarding/19');
         } else {
           final state = ref.read(onboardingProvider);
           if (state.errorMessage != null) {
@@ -158,13 +181,18 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
       5 => const Step5Password(),
       6 => const Step6ConfirmPassword(),
       7 => const Step7WelcomeIntro(),
-      8 => const Step8Gender(),
-      9 => const Step9Birthdate(),
-      10 => const Step10BloodType(),
-      11 => const Step11Height(),
-      12 => const Step12Weight(),
-      13 => const Step13Activity(),
-      14 => const Step14Summary(),
+      8 => const Step8Residence(),
+      9 => const Step9HealthFacility(),
+      10 => const Step10LivingArrangement(),
+      11 => const Step11Education(),
+      12 => const Step12DiabetesDuration(),
+      13 => const Step13Gender(),
+      14 => const Step14Birthdate(),
+      15 => const Step15BloodType(),
+      16 => const Step16Height(),
+      17 => const Step17Weight(),
+      18 => const Step18Activity(),
+      19 => const Step19Summary(),
       _ => const SizedBox.shrink(),
     };
   }

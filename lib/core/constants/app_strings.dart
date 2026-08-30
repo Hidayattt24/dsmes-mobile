@@ -115,10 +115,58 @@ abstract final class AppStrings {
   static const String step5FieldHint = 'Masukkan ulang kata sandi';
 
   // ── Step 6: Welcome Introduction ───────────────────────────────────────────
-  static const String step6Title = 'Mari mengenal Anda lebih dekat...';
+  static const String step6Title = 'Lengkapi Data Diri Anda';
   static const String step6Subtitle =
-      'Kami akan menyesuaikan pengalaman penggunaan Digital DSMES berdasarkan informasi berikut.';
+      'Kami akan menyesuaikan pengalaman Digital DSMES berdasarkan informasi tempat tinggal, sosial, pendidikan, dan riwayat diabetes Anda.';
   static const String step6Button = 'Lanjutkan';
+
+  // ── Step 8: Tempat Tinggal ──────────────────────────────────────────────────
+  static const String residenceTitle = 'Di mana tempat tinggal Anda?';
+  static const String residenceSubtitle =
+      'Informasi ini membantu kami menghubungkan Anda dengan fasilitas kesehatan terdekat.';
+  static const String residenceCityLabel = 'Kota/Kabupaten';
+  static const String residenceDistrictLabel = 'Kecamatan';
+  static const String residenceDistrictHint = 'Tulis kecamatan Anda';
+  static const String residenceAddressLabel = 'Alamat Lengkap';
+  static const String residenceAddressHint = 'Contoh: Jl. Contoh Raya No. 1';
+
+  // ── Step 9: Fasilitas Kesehatan ─────────────────────────────────────────────
+  static const String healthFacilityTitle = 'Puskesmas tempat Anda berobat?';
+  static const String healthFacilitySubtitle =
+      'Pilih puskesmas tempat Anda saat ini berobat.';
+  static const String healthFacilityHint = 'Pilih puskesmas';
+  static const String healthFacilitySearchHint = 'Cari puskesmas...';
+  static const String healthFacilityEmpty = 'Belum ada puskesmas tersedia.';
+  static const String healthFacilityLoading = 'Memuat daftar puskesmas...';
+
+  // ── Step 10: Informasi Sosial ───────────────────────────────────────────────
+  static const String livingArrangementTitle = 'Tinggal bersama siapa?';
+  static const String livingArrangementSubtitle =
+      'Informasi ini membantu kami memberikan dukungan yang lebih sesuai.';
+  static const String livingAlone = 'Sendiri';
+  static const String livingFamily = 'Keluarga';
+
+  // ── Step 11: Pendidikan ─────────────────────────────────────────────────────
+  static const String educationTitle = 'Pendidikan terakhir Anda?';
+  static const String educationSubtitle =
+      'Informasi ini membantu kami menyesuaikan materi edukasi diabetes.';
+  static const String educationNoSchool = 'Tidak sekolah';
+  static const String educationSD = 'SD';
+  static const String educationSMP = 'SMP';
+  static const String educationSMK = 'SMA/SMK';
+  static const String educationD3 = 'D3';
+  static const String educationS1 = 'S1';
+  static const String educationS2S3 = 'S2/S3';
+
+  // ── Step 12: Informasi Diabetes ─────────────────────────────────────────────
+  static const String diabetesDurationTitle =
+      'Lama menderita Diabetes Tipe 2?';
+  static const String diabetesDurationSubtitle =
+      'Informasi ini membantu kami menyesuaikan program edukasi Anda.';
+  static const String diabetesDurationLess1 = '< 1 tahun';
+  static const String diabetesDuration1to3 = '1–3 tahun';
+  static const String diabetesDuration4to6 = '4–6 tahun';
+  static const String diabetesDurationMore6 = '> 6 tahun';
 
   // ── Step 7: Jenis Kelamin ──────────────────────────────────────────────────
   static const String step7Title = 'Apa jenis kelamin Anda?';
@@ -179,6 +227,12 @@ abstract final class AppStrings {
   static const String step13LabelHeight = 'Tinggi Badan';
   static const String step13LabelWeight = 'Berat Badan';
   static const String step13LabelActivity = 'Aktivitas Harian';
+  static const String summaryLabelAddress = 'Alamat';
+  static const String summaryLabelDistrict = 'Kecamatan';
+  static const String summaryLabelFacility = 'Puskesmas';
+  static const String summaryLabelLiving = 'Tinggal Bersama';
+  static const String summaryLabelEducation = 'Pendidikan';
+  static const String summaryLabelDiabetesDuration = 'Lama Diabetes';
   static const String step13ButtonBack = 'Kembali';
   static const String step13ButtonCreate = 'Buat Akun';
   static const String step13CelebrationTitle = 'Selamat! Profil Anda Siap';

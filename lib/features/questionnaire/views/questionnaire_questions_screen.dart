@@ -102,10 +102,13 @@ class _QuestionnaireQuestionsScreenState
 
     setState(() => _isSubmitting = true);
     _stopwatch.stop();
+    debugPrint('PRETEST_SUBMIT_START questionnaire=${widget.questionnaire.id}');
 
     final durationSeconds = _stopwatch.elapsed.inSeconds;
 
-    final result = await ref.read(quizSubmissionProvider.notifier).submit(
+    final result = await ref
+        .read(quizSubmissionProvider.notifier)
+        .submit(
           questionnaireId: widget.questionnaire.id,
           answers: _answers,
           durationSeconds: durationSeconds,
@@ -116,18 +119,46 @@ class _QuestionnaireQuestionsScreenState
     setState(() => _isSubmitting = false);
 
     if (result != null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => QuestionnaireResultScreen(
-            result: result,
-            questionnaireTitle: widget.questionnaire.title,
-            isPreTest: widget.isPreTest,
-          ),
-        ),
+      debugPrint(
+        'PRETEST_SUBMIT_SUCCESS attempt=${result.attemptId} score=${result.score}',
       );
+      if (widget.isPreTest) {
+        debugPrint('PRETEST_RESULT_OPEN attempt=${result.attemptId}');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder:
+                (_) => QuestionnaireResultScreen(
+                  questionnaireId: widget.questionnaire.id,
+                  questionnaireTitle: widget.questionnaire.title,
+                  isPreTest: true,
+                  initialResult: result,
+                ),
+          ),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder:
+                (_) => QuestionnaireResultScreen(
+                  questionnaireId: widget.questionnaire.id,
+                  questionnaireTitle: widget.questionnaire.title,
+                  isPreTest: false,
+                ),
+          ),
+        );
+      }
+
+      // Do not refresh the completion guard while the Pre-Test result is on
+      // screen. It is refreshed when the user explicitly continues to Home.
+      if (!widget.isPreTest) {
+        ref
+            .read(quizSubmissionProvider.notifier)
+            .refreshAfterSubmission(widget.questionnaire.id);
+      }
     } else {
       // Show error from state
       final errMsg = ref.read(quizSubmissionProvider).errorMessage;
+      debugPrint('PRETEST_SUBMIT_ERROR $errMsg');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errMsg ?? 'Gagal mengirim jawaban. Silakan coba lagi.'),
@@ -161,8 +192,10 @@ class _QuestionnaireQuestionsScreenState
         elevation: 1,
         shadowColor: AppColors.primaryContainer.withValues(alpha: 0.1),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded,
-              color: AppColors.onSurfaceVariant),
+          icon: const Icon(
+            Icons.close_rounded,
+            color: AppColors.onSurfaceVariant,
+          ),
           onPressed: () => _showExitDialog(context),
         ),
         title: Text(
@@ -300,8 +333,9 @@ class _QuestionnaireQuestionsScreenState
                         height: 56,
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            backgroundColor:
-                                AppColors.surfaceTint.withValues(alpha: 0.1),
+                            backgroundColor: AppColors.surfaceTint.withValues(
+                              alpha: 0.1,
+                            ),
                             foregroundColor: AppColors.primary,
                             side: BorderSide.none,
                             shape: RoundedRectangleBorder(
@@ -339,9 +373,10 @@ class _QuestionnaireQuestionsScreenState
                       height: 56,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _isAnswered
-                              ? AppColors.primary
-                              : AppColors.outlineVariant,
+                          backgroundColor:
+                              _isAnswered
+                                  ? AppColors.primary
+                                  : AppColors.outlineVariant,
                           foregroundColor: Colors.white,
                           elevation: _isAnswered ? 2 : 0,
                           shape: RoundedRectangleBorder(
@@ -350,43 +385,44 @@ class _QuestionnaireQuestionsScreenState
                         ),
                         onPressed:
                             _isAnswered && !_isSubmitting ? _goNext : null,
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      _isLastQuestion
-                                          ? 'Selesai & Kirim'
-                                          : 'Selanjutnya',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style:
-                                          AppTextStyles.poppinsButton.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    _isLastQuestion
-                                        ? Icons.check_circle_rounded
-                                        : Icons.arrow_forward_rounded,
-                                    size: 18,
+                        child:
+                            _isSubmitting
+                                ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
                                     color: Colors.white,
                                   ),
-                                ],
-                              ),
+                                )
+                                : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        _isLastQuestion
+                                            ? 'Selesai & Kirim'
+                                            : 'Selanjutnya',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.poppinsButton
+                                            .copyWith(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      _isLastQuestion
+                                          ? Icons.check_circle_rounded
+                                          : Icons.arrow_forward_rounded,
+                                      size: 18,
+                                      color: Colors.white,
+                                    ),
+                                  ],
+                                ),
                       ),
                     ),
                   ),
@@ -402,26 +438,24 @@ class _QuestionnaireQuestionsScreenState
   Future<void> _showExitDialog(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Keluar dari Kuesioner?'),
-        content: const Text(
-          'Jawaban yang belum dikirim tidak akan disimpan. '
-          'Apakah Anda yakin ingin keluar?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(
-              'Keluar',
-              style: TextStyle(color: AppColors.error),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Keluar dari Kuesioner?'),
+            content: const Text(
+              'Jawaban yang belum dikirim tidak akan disimpan. '
+              'Apakah Anda yakin ingin keluar?',
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text('Keluar', style: TextStyle(color: AppColors.error)),
+              ),
+            ],
           ),
-        ],
-      ),
     );
     if (confirm == true && mounted) {
       Navigator.of(context).pop();
@@ -453,30 +487,33 @@ class _OptionCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.05)
-                : AppColors.surfaceContainerLowest,
+            color:
+                isSelected
+                    ? AppColors.primary.withValues(alpha: 0.05)
+                    : AppColors.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.outlineVariant,
               width: 2,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color:
-                          AppColors.primaryContainer.withValues(alpha: 0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+            boxShadow:
+                isSelected
+                    ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                    : [
+                      BoxShadow(
+                        color: AppColors.primaryContainer.withValues(
+                          alpha: 0.04,
+                        ),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -486,10 +523,8 @@ class _OptionCard extends StatelessWidget {
                   optionText,
                   style: AppTextStyles.bodyLg.copyWith(
                     fontSize: 16,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color:
-                        isSelected ? AppColors.primary : AppColors.onSurface,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected ? AppColors.primary : AppColors.onSurface,
                   ),
                 ),
               ),
@@ -546,13 +581,15 @@ class _LikertOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final emoji = _getEmoji(choice.id, choice.displayOrder);
 
-    final int displayNum = choice.displayOrder > 0
-        ? choice.displayOrder
-        : (int.tryParse(choice.id) ?? 1);
+    final int displayNum =
+        choice.displayOrder > 0
+            ? choice.displayOrder
+            : (int.tryParse(choice.id) ?? 1);
 
-    final String optionTextDisplay = choice.optionText.contains(RegExp(r'^\d+\.'))
-        ? choice.optionText
-        : '$displayNum. ${choice.optionText}';
+    final String optionTextDisplay =
+        choice.optionText.contains(RegExp(r'^\d+\.'))
+            ? choice.optionText
+            : '$displayNum. ${choice.optionText}';
 
     return Material(
       color: Colors.transparent,
@@ -563,23 +600,25 @@ class _LikertOptionCard extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : AppColors.surfaceContainerLowest,
+            color:
+                isSelected
+                    ? AppColors.primary.withValues(alpha: 0.08)
+                    : AppColors.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.outlineVariant,
               width: isSelected ? 2 : 1,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [],
+            boxShadow:
+                isSelected
+                    ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                    : [],
           ),
           child: Row(
             children: [
@@ -587,16 +626,16 @@ class _LikertOptionCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.15)
-                      : AppColors.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color:
+                      isSelected
+                          ? AppColors.primary.withValues(alpha: 0.15)
+                          : AppColors.surfaceContainerHighest.withValues(
+                            alpha: 0.5,
+                          ),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 22),
-                  ),
+                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
                 ),
               ),
               const SizedBox(width: 14),
@@ -605,10 +644,8 @@ class _LikertOptionCard extends StatelessWidget {
                   optionTextDisplay,
                   style: AppTextStyles.bodyLg.copyWith(
                     fontSize: 15,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.w600,
-                    color:
-                        isSelected ? AppColors.primary : AppColors.onSurface,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? AppColors.primary : AppColors.onSurface,
                   ),
                 ),
               ),
@@ -624,13 +661,14 @@ class _LikertOptionCard extends StatelessWidget {
                     width: 2,
                   ),
                 ),
-                child: isSelected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        size: 14,
-                        color: Colors.white,
-                      )
-                    : null,
+                child:
+                    isSelected
+                        ? const Icon(
+                          Icons.check_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        )
+                        : null,
               ),
             ],
           ),
@@ -660,7 +698,8 @@ class _QuestionImageWidget extends StatelessWidget {
               width: double.infinity,
               height: 200,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+              errorBuilder:
+                  (context, error, stackTrace) => const SizedBox.shrink(),
             ),
           );
         }

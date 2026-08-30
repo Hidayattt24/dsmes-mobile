@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../models/login_form_state.dart';
 
 
@@ -105,6 +106,13 @@ class LoginNotifier extends Notifier<LoginFormState> {
             phoneNumber: phoneController.text.trim(),
             password: passwordController.text,
           );
+
+      // Reset questionnaire state for the logged-in account so the Pre-Test
+      // guard reflects THIS user (not a previous session's data).
+      ref.invalidate(preTestHistoryProvider);
+      ref.invalidate(allQuestionnaireHistoryProvider);
+      ref.invalidate(questionnaireListProvider);
+      ref.read(quizSubmissionProvider.notifier).reset();
 
       state = state.copyWith(isLoading: false);
       return true;

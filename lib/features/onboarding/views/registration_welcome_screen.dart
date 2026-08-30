@@ -145,7 +145,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "Langkah 2: Profil Kesehatan",
+                                            "Langkah 2: Lengkapi Data Diri",
                                             style: AppTextStyles.labelLg
                                                 .copyWith(
                                               fontWeight: FontWeight.bold,
@@ -155,7 +155,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                                           const SizedBox(
                                               height: AppSpacing.xxs),
                                           Text(
-                                            "Memperhitung BMR, TDEE & Target Kalori Harian Anda",
+                                            "Melengkapi tempat tinggal, data sosial, pendidikan & riwayat diabetes Anda",
                                             style: AppTextStyles.bodyMd
                                                 .copyWith(
                                               color: AppColors.onSurfaceVariant,
