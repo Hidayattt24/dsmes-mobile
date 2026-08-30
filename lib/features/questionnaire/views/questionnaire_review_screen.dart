@@ -93,9 +93,9 @@ class _ReviewContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool isPreTest =
+    final bool isPreTest = detail.isPreTest ||
         detail.quizTitle.toLowerCase().contains('pre-test') ||
-            detail.quizTitle.toLowerCase().contains('pretest');
+        detail.quizTitle.toLowerCase().contains('pretest');
 
     return Stack(
       children: [
@@ -164,9 +164,11 @@ class _ReviewContent extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: detail.passed
-                                ? const Color(0xFFABF4AC)
-                                : const Color(0xFFFFDAD6),
+                            color: isPreTest
+                                ? AppColors.primary.withValues(alpha: 0.1)
+                                : detail.passed
+                                    ? const Color(0xFFABF4AC)
+                                    : const Color(0xFFFFDAD6),
                             borderRadius: BorderRadius.circular(100),
                           ),
                           child: Text(
@@ -174,9 +176,11 @@ class _ReviewContent extends ConsumerWidget {
                             style: AppTextStyles.headlineMd.copyWith(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: detail.passed
-                                  ? const Color(0xFF07521D)
-                                  : const Color(0xFF93000A),
+                              color: isPreTest
+                                  ? AppColors.primary
+                                  : detail.passed
+                                      ? const Color(0xFF07521D)
+                                      : const Color(0xFF93000A),
                             ),
                           ),
                         ),
@@ -200,7 +204,7 @@ class _ReviewContent extends ConsumerWidget {
 
               // ── Itemized Question Analysis Cards ─────────────────────────
               for (final item in detail.questionAnalysis) ...[
-                _QuestionReviewCard(item: item),
+                _QuestionReviewCard(item: item, isPreTest: isPreTest),
                 const SizedBox(height: 16),
               ],
             ],
@@ -309,21 +313,41 @@ class _ReviewContent extends ConsumerWidget {
 // ── Question Review Card ──────────────────────────────────────────────────────
 
 class _QuestionReviewCard extends StatelessWidget {
-  const _QuestionReviewCard({required this.item});
+  const _QuestionReviewCard({required this.item, required this.isPreTest});
 
   final QuestionAnalysisModel item;
+  final bool isPreTest;
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = isPreTest
+        ? AppColors.outlineVariant.withValues(alpha: 0.4)
+        : item.isCorrect
+            ? const Color(0xFFABF4AC)
+            : const Color(0xFFFFDAD6);
+    final answerBg = isPreTest
+        ? AppColors.primary.withValues(alpha: 0.06)
+        : item.isCorrect
+            ? const Color(0xFF07521D).withValues(alpha: 0.06)
+            : const Color(0xFF93000A).withValues(alpha: 0.06);
+    final answerBorder = isPreTest
+        ? AppColors.primary.withValues(alpha: 0.2)
+        : item.isCorrect
+            ? const Color(0xFF07521D).withValues(alpha: 0.2)
+            : const Color(0xFF93000A).withValues(alpha: 0.2);
+    final answerLabelColor = isPreTest
+        ? AppColors.primary
+        : item.isCorrect
+            ? const Color(0xFF07521D)
+            : const Color(0xFF93000A);
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: item.isCorrect
-              ? const Color(0xFFABF4AC)
-              : const Color(0xFFFFDAD6),
+          color: borderColor,
           width: 1.5,
         ),
         boxShadow: [
@@ -356,41 +380,42 @@ class _QuestionReviewCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: item.isCorrect
-                      ? const Color(0xFFABF4AC)
-                      : const Color(0xFFFFDAD6),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      item.isCorrect
-                          ? Icons.check_circle_rounded
-                          : Icons.cancel_rounded,
-                      size: 16,
-                      color: item.isCorrect
-                          ? const Color(0xFF07521D)
-                          : const Color(0xFF93000A),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      item.isCorrect ? 'Benar' : 'Salah',
-                      style: AppTextStyles.labelMd.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+              if (!isPreTest)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: item.isCorrect
+                        ? const Color(0xFFABF4AC)
+                        : const Color(0xFFFFDAD6),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        item.isCorrect
+                            ? Icons.check_circle_rounded
+                            : Icons.cancel_rounded,
+                        size: 16,
                         color: item.isCorrect
                             ? const Color(0xFF07521D)
                             : const Color(0xFF93000A),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        item.isCorrect ? 'Benar' : 'Salah',
+                        style: AppTextStyles.labelMd.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: item.isCorrect
+                              ? const Color(0xFF07521D)
+                              : const Color(0xFF93000A),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -412,15 +437,9 @@ class _QuestionReviewCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: item.isCorrect
-                  ? const Color(0xFF07521D).withValues(alpha: 0.06)
-                  : const Color(0xFF93000A).withValues(alpha: 0.06),
+              color: answerBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: item.isCorrect
-                    ? const Color(0xFF07521D).withValues(alpha: 0.2)
-                    : const Color(0xFF93000A).withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: answerBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,9 +449,7 @@ class _QuestionReviewCard extends StatelessWidget {
                   style: AppTextStyles.labelMd.copyWith(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: item.isCorrect
-                        ? const Color(0xFF07521D)
-                        : const Color(0xFF93000A),
+                    color: answerLabelColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -448,8 +465,8 @@ class _QuestionReviewCard extends StatelessWidget {
             ),
           ),
 
-          // Correct Answer Box (if user was incorrect)
-          if (!item.isCorrect && item.correctAnswer.isNotEmpty) ...[
+          // Correct Answer Box (post-test only, if user was incorrect)
+          if (!isPreTest && !item.isCorrect && item.correctAnswer.isNotEmpty) ...[
             const SizedBox(height: 10),
             Container(
               width: double.infinity,
@@ -486,8 +503,8 @@ class _QuestionReviewCard extends StatelessWidget {
             ),
           ],
 
-          // Explanation Box (Pembahasan)
-          if (item.explanation.isNotEmpty) ...[
+          // Explanation Box (Pembahasan — post-test only)
+          if (!isPreTest && item.explanation.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               width: double.infinity,

@@ -10,6 +10,7 @@ import '../../../../data/repositories/questionnaire_repository.dart';
 import '../models/questionnaire_detail_model.dart';
 import '../viewmodels/questionnaire_notifier.dart';
 import '../views/questionnaire_detail_screen.dart';
+import '../views/questionnaire_result_screen.dart';
 import '../views/questionnaire_review_screen.dart';
 
 /// Single dynamic questionnaire card.
@@ -47,7 +48,9 @@ class QuestionnaireListCard extends ConsumerWidget {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal memuat kuesioner. Silakan coba lagi.')),
+        const SnackBar(
+          content: Text('Gagal memuat kuesioner. Silakan coba lagi.'),
+        ),
       );
     }
   }
@@ -55,10 +58,18 @@ class QuestionnaireListCard extends ConsumerWidget {
   void _viewResult(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => QuestionnaireReviewScreen(
-          questionnaireId: item.id,
-          quizTitle: item.title,
-        ),
+        builder:
+            (_) =>
+                item.isPreTest
+                    ? QuestionnaireResultScreen(
+                      questionnaireId: item.id,
+                      questionnaireTitle: item.title,
+                      isPreTest: true,
+                    )
+                    : QuestionnaireReviewScreen(
+                      questionnaireId: item.id,
+                      quizTitle: item.title,
+                    ),
       ),
     );
   }
@@ -151,50 +162,51 @@ class QuestionnaireListCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             height: 48,
-            child: isCompleted
-                ? OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: accent,
-                      side: BorderSide(color: accent, width: 1.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+            child:
+                isCompleted
+                    ? OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: accent,
+                        side: BorderSide(color: accent, width: 1.4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                    ),
-                    onPressed: () => _viewResult(context),
-                    icon: const Icon(Icons.remove_red_eye_outlined, size: 20),
-                    label: Text(
-                      'Lihat Hasil',
-                      style: AppTextStyles.poppinsButton.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: accent,
+                      onPressed: () => _viewResult(context),
+                      icon: const Icon(Icons.remove_red_eye_outlined, size: 20),
+                      label: Text(
+                        'Lihat Hasil',
+                        style: AppTextStyles.poppinsButton.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: accent,
+                        ),
                       ),
-                    ),
-                  )
-                : ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                    )
+                    : ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                    ),
-                    onPressed: () => _startQuestionnaire(context, ref),
-                    icon: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    label: Text(
-                      'Mulai Kuesioner',
-                      style: AppTextStyles.poppinsButton.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                      onPressed: () => _startQuestionnaire(context, ref),
+                      icon: const Icon(
+                        Icons.play_arrow_rounded,
                         color: Colors.white,
+                        size: 20,
+                      ),
+                      label: Text(
+                        'Mulai Kuesioner',
+                        style: AppTextStyles.poppinsButton.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
           ),
         ],
       ),

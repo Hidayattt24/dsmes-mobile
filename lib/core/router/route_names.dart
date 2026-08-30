@@ -13,9 +13,12 @@ abstract final class RouteNames {
   static const String signup = '/onboarding/1';
 
   static const String home = '/home';
+  static const String splash = '/splash';
   static const String registrationWelcome = '/onboarding/welcome';
   static const String accountCreatedSuccess = '/account-created-success';
   static const String preTestIntro = '/pre-test-intro';
+  static const String preTestQuestions = '/pre-test/questions';
+  static const String preTestResult = '/pre-test/result';
   static const String notifications = '/notifications';
 
   static const String bloodSugarEntry = '/blood-sugar-entry';
@@ -31,8 +34,11 @@ abstract final class RouteNames {
   static const String nameResetPassword = 'reset-password';
   static const String nameOnboarding = 'onboarding';
   static const String nameHome = 'home';
+  static const String nameSplash = 'splash';
   static const String nameAccountCreatedSuccess = 'account-created-success';
   static const String namePreTestIntro = 'pre-test-intro';
+  static const String namePreTestQuestions = 'pre-test-questions';
+  static const String namePreTestResult = 'pre-test-result';
   static const String nameNotifications = 'notifications';
 
   static const String nameBloodSugarEntry = 'blood-sugar-entry';
@@ -55,6 +61,8 @@ abstract final class RouteNames {
   static const String nameRecalculateResult = 'recalculate-result';
   static const String personalInformation = '/personal-information';
   static const String namePersonalInformation = 'personal-information';
+  static const String sociodemographic = '/sociodemographic';
+  static const String nameSociodemographic = 'sociodemographic';
   static const String securityPrivacy = '/security-privacy';
   static const String nameSecurityPrivacy = 'security-privacy';
   static const String helpCenter = '/help-center';

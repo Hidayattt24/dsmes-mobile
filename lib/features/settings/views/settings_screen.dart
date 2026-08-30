@@ -106,6 +106,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.read(bodyMetricsProvider.notifier).reset();
       ref.read(aiChatProvider.notifier).reset();
       ref.invalidate(preTestHistoryProvider);
+      ref.invalidate(allQuestionnaireHistoryProvider);
+      ref.invalidate(questionnaireListProvider);
+      ref.read(quizSubmissionProvider.notifier).reset();
       if (mounted) context.go(RouteNames.login);
     }
   }
@@ -234,6 +237,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: 'Tinggi, berat badan & aktivitas',
                   onTap: () async {
                     await context.push(RouteNames.editBodyMetrics);
+                    _fetchLatestProfile();
+                  },
+                ),
+                SettingsTile(
+                  icon: Icons.location_city_rounded,
+                  title: 'Data Sosiodemografi',
+                  subtitle: 'Domisili, puskesmas & riwayat diabetes',
+                  onTap: () async {
+                    await context.push(RouteNames.sociodemographic);
                     _fetchLatestProfile();
                   },
                 ),

@@ -10,6 +10,7 @@ class QuizSubmitResultModel {
     required this.passed,
     required this.totalQuestions,
     required this.correctCount,
+    this.selfEfficacyCategory = '',
   });
 
   final String attemptId;
@@ -18,6 +19,9 @@ class QuizSubmitResultModel {
   final bool passed;
   final int totalQuestions;
   final int correctCount;
+
+  /// Only populated for Pre-Test (DMSES) — e.g. "Good Self-Efficacy".
+  final String selfEfficacyCategory;
 
   int get incorrectCount => (totalQuestions - correctCount).clamp(0, totalQuestions);
   int get percentage => score;
@@ -30,6 +34,7 @@ class QuizSubmitResultModel {
       passed: json['passed'] as bool? ?? false,
       totalQuestions: json['total_questions'] as int? ?? 0,
       correctCount: json['correct_count'] as int? ?? 0,
+      selfEfficacyCategory: json['self_efficacy_category'] as String? ?? '',
     );
   }
 }
@@ -169,6 +174,8 @@ class AttemptDetailModel {
     required this.passed,
     required this.duration,
     required this.questionAnalysis,
+    this.type = 'POST_TEST',
+    this.selfEfficacyCategory = '',
   });
 
   final String quizTitle;
@@ -176,6 +183,14 @@ class AttemptDetailModel {
   final bool passed;
   final String duration;
   final List<QuestionAnalysisModel> questionAnalysis;
+
+  /// 'PRE_TEST' or 'POST_TEST'.
+  final String type;
+
+  /// Only populated for Pre-Test (DMSES).
+  final String selfEfficacyCategory;
+
+  bool get isPreTest => type == 'PRE_TEST';
 
   factory AttemptDetailModel.fromJson(Map<String, dynamic> json) {
     final participant = json['participant'] as Map<String, dynamic>? ?? {};
@@ -185,6 +200,9 @@ class AttemptDetailModel {
       score: participant['score'] as int? ?? 0,
       passed: participant['passed'] as bool? ?? false,
       duration: participant['duration'] as String? ?? '',
+      type: json['type'] as String? ?? 'POST_TEST',
+      selfEfficacyCategory:
+          participant['self_efficacy_category'] as String? ?? '',
       questionAnalysis: rawAnalysis
           .map((e) => QuestionAnalysisModel.fromJson(e as Map<String, dynamic>))
           .toList(),

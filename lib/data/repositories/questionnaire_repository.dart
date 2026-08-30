@@ -32,6 +32,10 @@ abstract class IQuestionnaireRepository {
 
   /// Returns full attempt analysis (questions, user answers, correct answers, explanations).
   Future<AttemptDetailModel> getMyAttemptDetail(String questionnaireId);
+  Future<AttemptDetailModel> getMyAttemptDetailById({
+    required String questionnaireId,
+    required String attemptId,
+  });
 
   /// Returns all questionnaire attempts by the current patient.
   /// Optionally filter by [type] = 'PRE_TEST' | 'POST_TEST'.
@@ -65,7 +69,8 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
 
   @override
   Future<QuestionnaireDetailModel> getPostTestByEducation(
-      String educationId) async {
+    String educationId,
+  ) async {
     try {
       final response = await _dio.get(
         '/patient/questionnaires/post-test',
@@ -101,29 +106,30 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
 
       if (isPreTest) {
         // PRE_TEST: backend expects `selected_value` (integer 1-5)
-        answerList = answers.entries.map((e) {
-          final val = int.tryParse(e.value) ?? 1;
-          return <String, dynamic>{
-            'question_id': e.key,
-            'selected_value': val,
-          };
-        }).toList();
+        answerList =
+            answers.entries.map((e) {
+              final val = int.tryParse(e.value) ?? 1;
+              return <String, dynamic>{
+                'question_id': e.key,
+                'selected_value': val,
+              };
+            }).toList();
       } else {
         // POST_TEST: backend expects `option_id` (UUID)
-        answerList = answers.entries
-            .map((e) => <String, dynamic>{
-                  'question_id': e.key,
-                  'option_id': e.value,
-                })
-            .toList();
+        answerList =
+            answers.entries
+                .map(
+                  (e) => <String, dynamic>{
+                    'question_id': e.key,
+                    'option_id': e.value,
+                  },
+                )
+                .toList();
       }
 
       final response = await _dio.post(
         '/patient/questionnaires/$questionnaireId/submit',
-        data: {
-          'duration_seconds': durationSeconds,
-          'answers': answerList,
-        },
+        data: {'duration_seconds': durationSeconds, 'answers': answerList},
       );
       final data = response.data['data'] as Map<String, dynamic>;
       return QuizSubmitResultModel.fromJson(data);
@@ -135,8 +141,9 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
   @override
   Future<MyAttemptModel> getMyAttempt(String questionnaireId) async {
     try {
-      final response =
-          await _dio.get('/patient/questionnaires/$questionnaireId/my-attempt');
+      final response = await _dio.get(
+        '/patient/questionnaires/$questionnaireId/my-attempt',
+      );
       final data = response.data['data'] as Map<String, dynamic>;
       return MyAttemptModel.fromJson(data);
     } on DioException catch (e) {
@@ -147,8 +154,25 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
   @override
   Future<AttemptDetailModel> getMyAttemptDetail(String questionnaireId) async {
     try {
-      final response = await _dio
-          .get('/patient/questionnaires/$questionnaireId/my-attempt/detail');
+      final response = await _dio.get(
+        '/patient/questionnaires/$questionnaireId/my-attempt/detail',
+      );
+      final data = response.data['data'] as Map<String, dynamic>;
+      return AttemptDetailModel.fromJson(data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<AttemptDetailModel> getMyAttemptDetailById({
+    required String questionnaireId,
+    required String attemptId,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/patient/questionnaires/$questionnaireId/attempts/$attemptId',
+      );
       final data = response.data['data'] as Map<String, dynamic>;
       return AttemptDetailModel.fromJson(data);
     } on DioException catch (e) {
@@ -163,10 +187,7 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
     int perPage = 20,
   }) async {
     try {
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'per_page': perPage,
-      };
+      final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
       if (type != null && type.isNotEmpty) {
         queryParams['type'] = type;
       }
@@ -175,7 +196,8 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
         queryParameters: queryParams,
       );
       return PaginatedQuestionnaireResult.fromJson(
-          response.data as Map<String, dynamic>);
+        response.data as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -202,8 +224,9 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
   }
 }
 
-final questionnaireRepositoryProvider =
-    Provider<IQuestionnaireRepository>((ref) {
+final questionnaireRepositoryProvider = Provider<IQuestionnaireRepository>((
+  ref,
+) {
   final dio = ref.watch(dioClientProvider);
   return QuestionnaireRepository(dio);
 });

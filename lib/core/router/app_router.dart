@@ -16,15 +16,20 @@ import '../../features/notifications/views/notifications_screen.dart';
 import '../../features/onboarding/views/account_created_success_screen.dart';
 import '../../features/onboarding/views/onboarding_flow_screen.dart';
 import '../../features/onboarding/views/registration_welcome_screen.dart';
+import '../../features/questionnaire/models/questionnaire_detail_model.dart';
 import '../../features/questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../../features/questionnaire/views/pre_test_intro_screen.dart';
+import '../../features/questionnaire/views/questionnaire_questions_screen.dart';
+import '../../features/questionnaire/views/questionnaire_result_screen.dart';
 import '../../features/settings/views/about_screen.dart';
 import '../../features/settings/views/edit_body_metrics_screen.dart';
+import '../../features/settings/views/edit_sociodemographic_screen.dart';
 import '../../features/settings/views/help_center_screen.dart';
 import '../../features/settings/views/personal_information_screen.dart';
 import '../../features/settings/views/recalculate_result_screen.dart';
 import '../../features/settings/views/security_privacy_screen.dart';
 import '../../features/settings/views/settings_screen.dart';
+import '../../features/splash/views/splash_gate_screen.dart';
 import '../../features/welcome/views/welcome_screen.dart';
 import '../constants/app_constants.dart';
 import 'route_names.dart';
@@ -36,6 +41,8 @@ const _publicRoutes = <String>{
   RouteNames.forgotPassword,
   RouteNames.registrationWelcome,
   RouteNames.preTestIntro,
+  RouteNames.preTestQuestions,
+  RouteNames.preTestResult,
   RouteNames.accountCreatedSuccess,
 };
 
@@ -54,7 +61,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: RouteNames.welcome,
     debugLogDiagnostics: true,
     redirect: (context, state) {
-      final location = state.uri.toString();
+      final location = state.matchedLocation;
+
+      // The splash gate resolves itself; never redirect away from it.
+      if (location == RouteNames.splash) {
+        return null;
+      }
+
+      // The result page must remain visible after submission. The completion
+      // provider is refreshed at the same time as navigation, so evaluating
+      // the guard for this route can otherwise race with the route transition.
+      if (location == RouteNames.preTestResult) {
+        return null;
+      }
 
       final preTestAsync = ref.read(hasCompletedPreTestProvider);
       final completed = preTestAsync.valueOrNull;
@@ -67,8 +86,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isOnboarding = location.startsWith('/onboarding/');
       if (_publicRoutes.contains(location) || isOnboarding) return null;
 
+      // Pre-test status not resolved yet — hold on the splash gate instead of
+      // granting access (prevents bypassing the mandatory Pre-Test).
+      if (completed == null) {
+        return RouteNames.splash;
+      }
+
       // Enforce Pre-Test completion before accessing any protected routes (e.g. /home)
-      // Only redirect if pre-test check has resolved and is explicitly false
       if (completed == false) {
         return RouteNames.preTestIntro;
       }
@@ -76,236 +100,304 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-    // ── Welcome ───────────────────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.welcome,
-      name: RouteNames.nameWelcome,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const WelcomeScreen(),
-      ),
-    ),
-
-    // ── Auth ──────────────────────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.login,
-      name: RouteNames.nameLogin,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const LoginScreen(),
-      ),
-    ),
-    GoRoute(
-      path: RouteNames.forgotPassword,
-      name: RouteNames.nameForgotPassword,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const ForgotPasswordScreen(),
-      ),
-    ),
-    GoRoute(
-      path: RouteNames.resetPassword,
-      name: RouteNames.nameResetPassword,
-      pageBuilder: (context, state) {
-        final phoneNumber = state.extra as String;
-        return _buildSlideTransition(
-          state: state,
-          child: ResetPasswordScreen(
-            phoneNumber: phoneNumber,
-          ),
-        );
-      },
-    ),
-
-    // ── Onboarding ────────────────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.registrationWelcome,
-      name: 'registration-welcome',
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const RegistrationWelcomeScreen(),
-      ),
-    ),
-
-    // Each step is a separate GoRoute for deep-linkability.
-    for (int step = 1; step <= AppConstants.totalOnboardingSteps; step++)
+      // ── Welcome ───────────────────────────────────────────────────────────
       GoRoute(
-        path: '/onboarding/$step',
-        name: '${RouteNames.nameOnboarding}_$step',
-        pageBuilder: (context, state) => _buildSlideTransition(
-          state: state,
-          child: OnboardingFlowScreen(step: step),
+        path: RouteNames.welcome,
+        name: RouteNames.nameWelcome,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const WelcomeScreen(),
+            ),
+      ),
+
+      // ── Auth ──────────────────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.login,
+        name: RouteNames.nameLogin,
+        pageBuilder:
+            (context, state) =>
+                _buildSlideTransition(state: state, child: const LoginScreen()),
+      ),
+      GoRoute(
+        path: RouteNames.forgotPassword,
+        name: RouteNames.nameForgotPassword,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const ForgotPasswordScreen(),
+            ),
+      ),
+      GoRoute(
+        path: RouteNames.resetPassword,
+        name: RouteNames.nameResetPassword,
+        pageBuilder: (context, state) {
+          final phoneNumber = state.extra as String;
+          return _buildSlideTransition(
+            state: state,
+            child: ResetPasswordScreen(phoneNumber: phoneNumber),
+          );
+        },
+      ),
+
+      // ── Onboarding ────────────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.registrationWelcome,
+        name: 'registration-welcome',
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const RegistrationWelcomeScreen(),
+            ),
+      ),
+
+      // Each step is a separate GoRoute for deep-linkability.
+      for (int step = 1; step <= AppConstants.totalOnboardingSteps; step++)
+        GoRoute(
+          path: '/onboarding/$step',
+          name: '${RouteNames.nameOnboarding}_$step',
+          pageBuilder:
+              (context, state) => _buildSlideTransition(
+                state: state,
+                child: OnboardingFlowScreen(step: step),
+              ),
         ),
+
+      // ── Pre-Test Intro (mandatory after onboarding) ─────────────────────
+      GoRoute(
+        path: RouteNames.preTestIntro,
+        name: RouteNames.namePreTestIntro,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const PreTestIntroScreen(),
+            ),
       ),
 
-    // ── Pre-Test Intro (mandatory after onboarding) ─────────────────────
-    GoRoute(
-      path: RouteNames.preTestIntro,
-      name: RouteNames.namePreTestIntro,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const PreTestIntroScreen(),
+      // ── Pre-Test Questions ──────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.preTestQuestions,
+        name: RouteNames.namePreTestQuestions,
+        pageBuilder: (context, state) {
+          final questionnaire = state.extra as QuestionnaireDetailModel;
+          return _buildSlideTransition(
+            state: state,
+            child: QuestionnaireQuestionsScreen(
+              questionnaire: questionnaire,
+              isPreTest: true,
+            ),
+          );
+        },
       ),
-    ),
 
-    // ── Account Created Successfully ─────────────────────────────────────
-    GoRoute(
-      path: RouteNames.accountCreatedSuccess,
-      name: RouteNames.nameAccountCreatedSuccess,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const AccountCreatedSuccessScreen(),
-      ),
-    ),
+      // ── Pre-Test Result ─────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.preTestResult,
+        name: RouteNames.namePreTestResult,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          final resultData = extra is PreTestResultData ? extra : null;
+          final questionnaireId =
+              resultData?.questionnaireId ?? (extra is String ? extra : '');
 
-    // ── Home ─────────────────────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.home,
-      name: RouteNames.nameHome,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const AppShell(),
+          return _buildSlideTransition(
+            state: state,
+            child: PreTestResultScreen(
+              questionnaireId: questionnaireId,
+              initialResult: resultData?.result,
+            ),
+          );
+        },
       ),
-    ),
 
-    // ── Notifications ──────────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.notifications,
-      name: RouteNames.nameNotifications,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const NotificationsScreen(),
+      // ── Splash Gate (Pre-Test completion check) ──────────────────────────
+      GoRoute(
+        path: RouteNames.splash,
+        name: RouteNames.nameSplash,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const SplashGateScreen(),
+            ),
       ),
-    ),
 
-    // ── Blood Sugar Entry ──────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.bloodSugarEntry,
-      name: RouteNames.nameBloodSugarEntry,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const BloodSugarEntryScreen(),
+      // ── Account Created Successfully ─────────────────────────────────────
+      GoRoute(
+        path: RouteNames.accountCreatedSuccess,
+        name: RouteNames.nameAccountCreatedSuccess,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const AccountCreatedSuccessScreen(),
+            ),
       ),
-    ),
 
-    // ── Reminders Management ───────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.reminders,
-      name: RouteNames.nameReminders,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const RemindersManagementScreen(),
+      // ── Home ─────────────────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.home,
+        name: RouteNames.nameHome,
+        pageBuilder:
+            (context, state) =>
+                _buildSlideTransition(state: state, child: const AppShell()),
       ),
-    ),
 
-    // ── Meal Entry ────────────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.mealEntry,
-      name: RouteNames.nameMealEntry,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const MealEntryScreen(),
+      // ── Notifications ──────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.notifications,
+        name: RouteNames.nameNotifications,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const NotificationsScreen(),
+            ),
       ),
-    ),
 
-    // ── Education Detail ─────────────────────────────────────────────────
-    GoRoute(
-      path: '${RouteNames.educationDetail}/:id',
-      name: RouteNames.nameEducationDetail,
-      pageBuilder: (context, state) {
-        final id = state.pathParameters['id'] ?? 'art_featured';
-        return _buildSlideTransition(
-          state: state,
-          child: EducationDetailScreen(articleId: id),
-        );
-      },
-    ),
+      // ── Blood Sugar Entry ──────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.bloodSugarEntry,
+        name: RouteNames.nameBloodSugarEntry,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const BloodSugarEntryScreen(),
+            ),
+      ),
 
-    // ── All Articles (Education) ─────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.allArticles,
-      name: RouteNames.nameAllArticles,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const AllArticlesScreen(),
+      // ── Reminders Management ───────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.reminders,
+        name: RouteNames.nameReminders,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const RemindersManagementScreen(),
+            ),
       ),
-    ),
 
-    // ── Settings ─────────────────────────────────────────────────────────
-    GoRoute(
-      path: RouteNames.settings,
-      name: RouteNames.nameSettings,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const SettingsScreen(),
+      // ── Meal Entry ────────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.mealEntry,
+        name: RouteNames.nameMealEntry,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const MealEntryScreen(),
+            ),
       ),
-    ),
-    GoRoute(
-      path: RouteNames.editBodyMetrics,
-      name: RouteNames.nameEditBodyMetrics,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const EditBodyMetricsScreen(),
+
+      // ── Education Detail ─────────────────────────────────────────────────
+      GoRoute(
+        path: '${RouteNames.educationDetail}/:id',
+        name: RouteNames.nameEducationDetail,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id'] ?? 'art_featured';
+          return _buildSlideTransition(
+            state: state,
+            child: EducationDetailScreen(articleId: id),
+          );
+        },
       ),
-    ),
-    GoRoute(
-      path: RouteNames.recalculateResult,
-      name: RouteNames.nameRecalculateResult,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const RecalculateResultScreen(),
+
+      // ── All Articles (Education) ─────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.allArticles,
+        name: RouteNames.nameAllArticles,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const AllArticlesScreen(),
+            ),
       ),
-    ),
-    GoRoute(
-      path: RouteNames.personalInformation,
-      name: RouteNames.namePersonalInformation,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const PersonalInformationScreen(),
+
+      // ── Settings ─────────────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.settings,
+        name: RouteNames.nameSettings,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const SettingsScreen(),
+            ),
       ),
-    ),
-    GoRoute(
-      path: RouteNames.securityPrivacy,
-      name: RouteNames.nameSecurityPrivacy,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const SecurityPrivacyScreen(),
+      GoRoute(
+        path: RouteNames.editBodyMetrics,
+        name: RouteNames.nameEditBodyMetrics,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const EditBodyMetricsScreen(),
+            ),
       ),
-    ),
-    GoRoute(
-      path: RouteNames.helpCenter,
-      name: RouteNames.nameHelpCenter,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const HelpCenterScreen(),
+      GoRoute(
+        path: RouteNames.recalculateResult,
+        name: RouteNames.nameRecalculateResult,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const RecalculateResultScreen(),
+            ),
       ),
-    ),
-    GoRoute(
-      path: RouteNames.about,
-      name: RouteNames.nameAbout,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const AboutScreen(),
+      GoRoute(
+        path: RouteNames.personalInformation,
+        name: RouteNames.namePersonalInformation,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const PersonalInformationScreen(),
+            ),
       ),
-    ),
-    GoRoute(
-      path: RouteNames.aiChat,
-      name: RouteNames.nameAiChat,
-      pageBuilder: (context, state) => _buildSlideTransition(
-        state: state,
-        child: const AiChatbotScreen(),
+      GoRoute(
+        path: RouteNames.sociodemographic,
+        name: RouteNames.nameSociodemographic,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const EditSociodemographicScreen(),
+            ),
       ),
-    ),
-  ],
+      GoRoute(
+        path: RouteNames.securityPrivacy,
+        name: RouteNames.nameSecurityPrivacy,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const SecurityPrivacyScreen(),
+            ),
+      ),
+      GoRoute(
+        path: RouteNames.helpCenter,
+        name: RouteNames.nameHelpCenter,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const HelpCenterScreen(),
+            ),
+      ),
+      GoRoute(
+        path: RouteNames.about,
+        name: RouteNames.nameAbout,
+        pageBuilder:
+            (context, state) =>
+                _buildSlideTransition(state: state, child: const AboutScreen()),
+      ),
+      GoRoute(
+        path: RouteNames.aiChat,
+        name: RouteNames.nameAiChat,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const AiChatbotScreen(),
+            ),
+      ),
+    ],
 
     // Error page
-    errorPageBuilder: (context, state) => MaterialPage(
-      child: Scaffold(
-        body: Center(
-          child: Text('Halaman tidak ditemukan: ${state.uri}'),
+    errorPageBuilder:
+        (context, state) => MaterialPage(
+          child: Scaffold(
+            body: Center(child: Text('Halaman tidak ditemukan: ${state.uri}')),
+          ),
         ),
-      ),
-    ),
   );
 
   ref.listen(hasCompletedPreTestProvider, (_, __) => router.refresh());
@@ -328,10 +420,9 @@ CustomTransitionPage<void> _buildSlideTransition({
         position: Tween<Offset>(
           begin: const Offset(1, 0),
           end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        )),
+        ).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        ),
         child: child,
       );
     },

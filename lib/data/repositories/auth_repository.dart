@@ -19,6 +19,17 @@ abstract class IAuthRepository {
 
   Future<Map<String, dynamic>> setupHealthProfile(OnboardingFormState form);
 
+  Future<Map<String, dynamic>> setupSociodemographic(OnboardingFormState form);
+
+  Future<Map<String, dynamic>> updateSociodemographic({
+    required String district,
+    required String address,
+    required String healthFacility,
+    required String livingArrangement,
+    required String educationLevel,
+    required String diabetesDuration,
+  });
+
   Future<Map<String, dynamic>> calculateCalories(OnboardingFormState form);
 
   Future<Map<String, dynamic>> getPatientProfile();
@@ -155,6 +166,57 @@ class AuthRepository implements IAuthRepository {
         data: payload,
       );
 
+      return response.data['data'] as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> setupSociodemographic(OnboardingFormState form) async {
+    try {
+      final payload = {
+        'city': form.city,
+        'district': form.district.trim(),
+        'address': form.address.trim(),
+        'health_facility': form.healthFacility.trim(),
+        'living_arrangement': form.livingArrangement ?? '',
+        'education_level': form.educationLevel ?? '',
+        'diabetes_duration': form.diabetesDuration ?? '',
+      };
+
+      final response = await _dio.post(
+        '/patient/profile/sociodemographic',
+        data: payload,
+      );
+
+      return response.data['data'] as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateSociodemographic({
+    required String district,
+    required String address,
+    required String healthFacility,
+    required String livingArrangement,
+    required String educationLevel,
+    required String diabetesDuration,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/patient/profile/sociodemographic',
+        data: {
+          'district': district.trim(),
+          'address': address.trim(),
+          'health_facility': healthFacility.trim(),
+          'living_arrangement': livingArrangement,
+          'education_level': educationLevel,
+          'diabetes_duration': diabetesDuration,
+        },
+      );
       return response.data['data'] as Map<String, dynamic>;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);

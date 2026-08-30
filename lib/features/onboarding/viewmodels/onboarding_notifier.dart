@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/facility_repository.dart';
+import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../models/onboarding_form_state.dart';
 
 
@@ -14,7 +16,7 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
 
   void nextStep() {
     if (!state.canProceedCurrentStep) return;
-    if (state.currentStep < 14) {
+    if (state.currentStep < 19) {
       state = state.copyWith(currentStep: state.currentStep + 1);
     }
   }
@@ -26,7 +28,7 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
   }
 
   void goToStep(int step) {
-    assert(step >= 1 && step <= 14, 'Step must be between 1 and 14');
+    assert(step >= 1 && step <= 19, 'Step must be between 1 and 19');
     state = state.copyWith(currentStep: step);
   }
 
@@ -123,12 +125,74 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
     state = state.copyWith(activityLevel: level);
   }
 
+  // ── Step 8: Residence ─────────────────────────────────────────────────────
+
+  void onDistrictChanged(String value) {
+    state = state.copyWith(district: value);
+  }
+
+  void onAddressChanged(String value) {
+    state = state.copyWith(address: value);
+  }
+
+  // ── Step 9: Health Facility ───────────────────────────────────────────────
+
+  void onHealthFacilityChanged(String value) {
+    state = state.copyWith(healthFacility: value);
+  }
+
+  Future<void> loadHealthFacilities() async {
+    if (state.isFacilityLoading || state.facilityLoaded) return;
+    state = state.copyWith(isFacilityLoading: true, facilityError: null);
+    try {
+      final facilities =
+          await ref.read(facilityRepositoryProvider).fetchHealthFacilities();
+      state = state.copyWith(
+        healthFacilities: facilities,
+        isFacilityLoading: false,
+        facilityLoaded: true,
+      );
+    } catch (_) {
+      state = state.copyWith(
+        isFacilityLoading: false,
+        facilityLoaded: true,
+        facilityError: 'Gagal memuat daftar puskesmas.',
+      );
+    }
+  }
+
+  // ── Step 10: Living Arrangement ───────────────────────────────────────────
+
+  void onLivingArrangementSelected(String value) {
+    state = state.copyWith(livingArrangement: value);
+  }
+
+  // ── Step 11: Education ────────────────────────────────────────────────────
+
+  void onEducationSelected(String value) {
+    state = state.copyWith(educationLevel: value);
+  }
+
+  // ── Step 12: Diabetes Duration ────────────────────────────────────────────
+
+  void onDiabetesDurationSelected(String value) {
+    state = state.copyWith(diabetesDuration: value);
+  }
+
   // ── Step 6: Submit Account Registration ──────────────────────────────────
 
   Future<bool> finishAccountRegistration() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await ref.read(authRepositoryProvider).register(state);
+
+      // Reset questionnaire state for the newly created account so the
+      // Pre-Test guard reflects THIS user (not a previous session's data).
+      ref.invalidate(preTestHistoryProvider);
+      ref.invalidate(allQuestionnaireHistoryProvider);
+      ref.invalidate(questionnaireListProvider);
+      ref.read(quizSubmissionProvider.notifier).reset();
+
       state = state.copyWith(isLoading: false);
       return true;
     } on ApiException catch (e) {
@@ -168,6 +232,29 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Gagal menyimpan profil kesehatan. Silakan coba lagi.',
+      );
+      return false;
+    }
+  }
+
+  // ── Step 12: Submit Sociodemographic Profile ──────────────────────────────
+
+  Future<bool> submitSociodemographic() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await ref.read(authRepositoryProvider).setupSociodemographic(state);
+      state = state.copyWith(isLoading: false);
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Gagal menyimpan data diri. Silakan coba lagi.',
       );
       return false;
     }

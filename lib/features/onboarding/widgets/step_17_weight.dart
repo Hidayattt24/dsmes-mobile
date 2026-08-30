@@ -9,8 +9,8 @@ import '../../../core/widgets/app_numeric_keypad.dart';
 import '../../../core/widgets/app_onboarding_question.dart';
 import '../viewmodels/onboarding_notifier.dart';
 
-class Step12Weight extends ConsumerWidget {
-  const Step12Weight({super.key});
+class Step17Weight extends ConsumerWidget {
+  const Step17Weight({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

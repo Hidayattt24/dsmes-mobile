@@ -75,7 +75,7 @@ class OnboardingNavButtons extends StatelessWidget {
                       currentStep == 6
                           ? "Buat Akun"
                           : isLastStep
-                              ? AppStrings.step13ButtonCreate
+                              ? 'Selesai'
                               : AppStrings.buttonNext,
                       style: AppTextStyles.poppinsButton,
                     ),

@@ -10,10 +10,10 @@ import '../models/quiz_attempt_model.dart';
 
 /// Loads the active Pre-Test questionnaire from backend.
 /// Used on Pre-Test intro screen and during navigation guard check.
-final activePreTestProvider =
-    AutoDisposeAsyncNotifierProvider<ActivePreTestNotifier, QuestionnaireDetailModel>(
-  ActivePreTestNotifier.new,
-);
+final activePreTestProvider = AutoDisposeAsyncNotifierProvider<
+  ActivePreTestNotifier,
+  QuestionnaireDetailModel
+>(ActivePreTestNotifier.new);
 
 class ActivePreTestNotifier
     extends AutoDisposeAsyncNotifier<QuestionnaireDetailModel> {
@@ -21,9 +21,7 @@ class ActivePreTestNotifier
   Future<QuestionnaireDetailModel> build() => _fetch();
 
   Future<QuestionnaireDetailModel> _fetch() {
-    return ref
-        .read(questionnaireRepositoryProvider)
-        .getActivePreTest();
+    return ref.read(questionnaireRepositoryProvider).getActivePreTest();
   }
 
   Future<void> refresh() async {
@@ -37,9 +35,10 @@ class ActivePreTestNotifier
 /// Loads a Post-Test for a given education material.
 /// Returns null (AsyncData(null)) if no Post-Test linked to the education.
 final postTestByEducationProvider = AutoDisposeAsyncNotifierProviderFamily<
-    PostTestByEducationNotifier,
-    QuestionnaireDetailModel?,
-    String>(PostTestByEducationNotifier.new);
+  PostTestByEducationNotifier,
+  QuestionnaireDetailModel?,
+  String
+>(PostTestByEducationNotifier.new);
 
 class PostTestByEducationNotifier
     extends AutoDisposeFamilyAsyncNotifier<QuestionnaireDetailModel?, String> {
@@ -60,26 +59,65 @@ class PostTestByEducationNotifier
 // ── Questionnaire by ID ───────────────────────────────────────────────────────
 
 final questionnaireDetailProvider = AutoDisposeAsyncNotifierProviderFamily<
-    QuestionnaireDetailNotifier,
-    QuestionnaireDetailModel,
-    String>(QuestionnaireDetailNotifier.new);
+  QuestionnaireDetailNotifier,
+  QuestionnaireDetailModel,
+  String
+>(QuestionnaireDetailNotifier.new);
 
 class QuestionnaireDetailNotifier
     extends AutoDisposeFamilyAsyncNotifier<QuestionnaireDetailModel, String> {
   @override
   Future<QuestionnaireDetailModel> build(String id) {
-    return ref
-        .read(questionnaireRepositoryProvider)
-        .getQuestionnaireById(id);
+    return ref.read(questionnaireRepositoryProvider).getQuestionnaireById(id);
   }
 }
 
 // ── Attempt Detail for Review ──────────────────────────────────────────────────
 
 final myAttemptDetailProvider = AutoDisposeAsyncNotifierProviderFamily<
-    MyAttemptDetailNotifier,
-    AttemptDetailModel,
-    String>(MyAttemptDetailNotifier.new);
+  MyAttemptDetailNotifier,
+  AttemptDetailModel,
+  String
+>(MyAttemptDetailNotifier.new);
+
+class AttemptDetailQuery {
+  const AttemptDetailQuery({
+    required this.questionnaireId,
+    required this.attemptId,
+  });
+
+  final String questionnaireId;
+  final String attemptId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is AttemptDetailQuery &&
+      other.questionnaireId == questionnaireId &&
+      other.attemptId == attemptId;
+
+  @override
+  int get hashCode => Object.hash(questionnaireId, attemptId);
+}
+
+final attemptDetailByIdProvider = AutoDisposeAsyncNotifierProviderFamily<
+  AttemptDetailByIdNotifier,
+  AttemptDetailModel,
+  AttemptDetailQuery
+>(AttemptDetailByIdNotifier.new);
+
+class AttemptDetailByIdNotifier
+    extends
+        AutoDisposeFamilyAsyncNotifier<AttemptDetailModel, AttemptDetailQuery> {
+  @override
+  Future<AttemptDetailModel> build(AttemptDetailQuery query) {
+    return ref
+        .read(questionnaireRepositoryProvider)
+        .getMyAttemptDetailById(
+          questionnaireId: query.questionnaireId,
+          attemptId: query.attemptId,
+        );
+  }
+}
 
 class MyAttemptDetailNotifier
     extends AutoDisposeFamilyAsyncNotifier<AttemptDetailModel, String> {
@@ -95,10 +133,10 @@ class MyAttemptDetailNotifier
 
 /// Loads all PRE_TEST attempts made by the current patient.
 /// Used in Questionnaire history section and navigation guard.
-final preTestHistoryProvider =
-    AutoDisposeAsyncNotifierProvider<PreTestHistoryNotifier, List<MyHistoryItemModel>>(
-  PreTestHistoryNotifier.new,
-);
+final preTestHistoryProvider = AutoDisposeAsyncNotifierProvider<
+  PreTestHistoryNotifier,
+  List<MyHistoryItemModel>
+>(PreTestHistoryNotifier.new);
 
 class PreTestHistoryNotifier
     extends AutoDisposeAsyncNotifier<List<MyHistoryItemModel>> {
@@ -119,7 +157,9 @@ class PreTestHistoryNotifier
 
 /// Returns true if the patient has already completed the Pre-Test.
 /// Flutter only reads this flag — never determines eligibility locally.
-final hasCompletedPreTestProvider = Provider.autoDispose<AsyncValue<bool>>((ref) {
+final hasCompletedPreTestProvider = Provider.autoDispose<AsyncValue<bool>>((
+  ref,
+) {
   final history = ref.watch(preTestHistoryProvider);
   return history.whenData((items) => items.isNotEmpty);
 });
@@ -127,12 +167,13 @@ final hasCompletedPreTestProvider = Provider.autoDispose<AsyncValue<bool>>((ref)
 // ── All History ───────────────────────────────────────────────────────────────
 
 /// Loads the full questionnaire attempt history for the current patient.
-final allQuestionnaireHistoryProvider =
-    AutoDisposeAsyncNotifierProvider<AllHistoryNotifier, List<MyHistoryItemModel>>(
-  AllHistoryNotifier.new,
-);
+final allQuestionnaireHistoryProvider = AutoDisposeAsyncNotifierProvider<
+  AllHistoryNotifier,
+  List<MyHistoryItemModel>
+>(AllHistoryNotifier.new);
 
-class AllHistoryNotifier extends AutoDisposeAsyncNotifier<List<MyHistoryItemModel>> {
+class AllHistoryNotifier
+    extends AutoDisposeAsyncNotifier<List<MyHistoryItemModel>> {
   @override
   Future<List<MyHistoryItemModel>> build() => _fetch();
 
@@ -157,8 +198,9 @@ class AllHistoryNotifier extends AutoDisposeAsyncNotifier<List<MyHistoryItemMode
 /// (publish / unpublish / edit availability) appear automatically without a
 /// manual refresh.
 final questionnaireListProvider = AutoDisposeAsyncNotifierProvider<
-    QuestionnaireListNotifier,
-    PaginatedQuestionnaireResult>(QuestionnaireListNotifier.new);
+  QuestionnaireListNotifier,
+  PaginatedQuestionnaireResult
+>(QuestionnaireListNotifier.new);
 
 class QuestionnaireListNotifier
     extends AutoDisposeAsyncNotifier<PaginatedQuestionnaireResult> {
@@ -264,11 +306,6 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
           );
       state = state.copyWith(isLoading: false, result: result);
 
-      // Refresh history after successful submission
-      ref.invalidate(preTestHistoryProvider);
-      ref.invalidate(allQuestionnaireHistoryProvider);
-      ref.invalidate(questionnaireListProvider);
-
       return result;
     } catch (e) {
       state = state.copyWith(
@@ -282,9 +319,21 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
   void reset() {
     state = const QuizSubmissionState();
   }
+
+  /// Refresh result sources after the result route has been presented.
+  ///
+  /// This must not run inside [submit]. The completion provider is also used
+  /// by the GoRouter guard, so invalidating it before navigation can trigger a
+  /// redirect while the result page is still being pushed.
+  void refreshAfterSubmission(String questionnaireId) {
+    ref.invalidate(preTestHistoryProvider);
+    ref.invalidate(allQuestionnaireHistoryProvider);
+    ref.invalidate(questionnaireListProvider);
+    ref.invalidate(myAttemptDetailProvider(questionnaireId));
+  }
 }
 
 final quizSubmissionProvider =
     NotifierProvider<QuizSubmissionNotifier, QuizSubmissionState>(
-  QuizSubmissionNotifier.new,
-);
+      QuizSubmissionNotifier.new,
+    );

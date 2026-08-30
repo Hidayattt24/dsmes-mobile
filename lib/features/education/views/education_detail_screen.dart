@@ -42,6 +42,7 @@ class _EducationDetailScreenState
   DateTime? _readStartTime;
   int _lastReportedScrollPct = 0;
   bool _hasMarkedComplete = false;
+  bool _hasScrolledToBottom = false;
 
   @override
   void initState() {
@@ -77,7 +78,13 @@ class _EducationDetailScreenState
   void _onScroll() {
     if (!mounted) return;
     final pos = _scrollController.position;
-    if (pos.maxScrollExtent <= 0) return;
+    if (pos.maxScrollExtent <= 0) {
+      // Article fits on screen without scrolling — treat as reached bottom.
+      if (!_hasScrolledToBottom) {
+        setState(() => _hasScrolledToBottom = true);
+      }
+      return;
+    }
 
     final pct = ((pos.pixels / pos.maxScrollExtent) * 100).round().clamp(
       0,
@@ -88,6 +95,12 @@ class _EducationDetailScreenState
     if (pct - _lastReportedScrollPct >= 10) {
       _lastReportedScrollPct = pct;
       _flushReadProgress(scrollPct: pct);
+    }
+
+    // Enable the "Tandai Sudah Membaca" button only once the user reaches
+    // the very bottom of the article.
+    if (!_hasScrolledToBottom && pos.pixels >= pos.maxScrollExtent - 1) {
+      setState(() => _hasScrolledToBottom = true);
     }
   }
 
@@ -411,6 +424,10 @@ class _EducationDetailScreenState
   Widget _buildContent(EducationArticle article) {
     final isBookmarked = article.isBookmarked;
     final isCompleted = article.isCompleted || _hasMarkedComplete;
+    final canMarkRead = !isCompleted && _hasScrolledToBottom;
+    final buttonContentColor = (canMarkRead || isCompleted)
+        ? Colors.white
+        : AppColors.onSurfaceVariant;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -724,25 +741,31 @@ class _EducationDetailScreenState
                     height: 52,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isCompleted
-                                ? AppColors.secondary
-                                : AppColors.primary,
+                        backgroundColor: AppColors.primary,
+                        disabledBackgroundColor: isCompleted
+                            ? AppColors.secondary
+                            : AppColors.outlineVariant,
                         foregroundColor: Colors.white,
+                        disabledForegroundColor: isCompleted
+                            ? Colors.white
+                            : AppColors.onSurfaceVariant,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      onPressed: isCompleted ? null : _markComplete,
+                      onPressed: canMarkRead ? _markComplete : null,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             isCompleted
                                 ? Icons.check_circle_rounded
-                                : Icons.check_circle_outline_rounded,
+                                : canMarkRead
+                                ? Icons.check_circle_outline_rounded
+                                : Icons.lock_outline_rounded,
                             size: 20,
+                            color: buttonContentColor,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -750,7 +773,7 @@ class _EducationDetailScreenState
                                 ? 'Sudah Membaca Artikel ✓'
                                 : 'Tandai Sudah Membaca Artikel',
                             style: AppTextStyles.poppinsButton.copyWith(
-                              color: Colors.white,
+                              color: buttonContentColor,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -758,6 +781,16 @@ class _EducationDetailScreenState
                       ),
                     ),
                   ),
+                  if (!isCompleted && !_hasScrolledToBottom) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Gulir artikel sampai bawah untuk mengaktifkan tombol.',
+                      style: AppTextStyles.bodyMd.copyWith(
+                        fontSize: 12,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Text(
                     '© 2026 DSMES Aceh',

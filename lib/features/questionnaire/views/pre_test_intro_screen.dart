@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -9,21 +11,31 @@ import '../viewmodels/questionnaire_notifier.dart';
 import 'questionnaire_questions_screen.dart';
 
 class PreTestIntroScreen extends ConsumerWidget {
-  const PreTestIntroScreen({super.key});
+  const PreTestIntroScreen({super.key, this.initialPreTest});
+
+  final QuestionnaireDetailModel? initialPreTest;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final preTestAsync = ref.watch(activePreTestProvider);
+    final preTestAsync =
+        initialPreTest != null
+            ? AsyncData(initialPreTest!)
+            : ref.watch(activePreTestProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: preTestAsync.when(
         loading: () => const _PreTestLoadingSkeleton(),
-        error: (err, _) => _PreTestErrorView(
-          message: err.toString().replaceFirst('Exception: ', ''),
-          onRetry: () => ref.read(activePreTestProvider.notifier).refresh(),
-        ),
-        data: (preTest) => _PreTestIntroContent(preTest: preTest),
+        error:
+            (err, _) => _PreTestErrorView(
+              message: err.toString().replaceFirst('Exception: ', ''),
+              onRetry: () => ref.read(activePreTestProvider.notifier).refresh(),
+            ),
+        data:
+            (preTest) => _PreTestIntroContent(
+              preTest: preTest,
+              useDirectNavigation: initialPreTest != null,
+            ),
       ),
     );
   }
@@ -32,9 +44,13 @@ class PreTestIntroScreen extends ConsumerWidget {
 // ── Content ──────────────────────────────────────────────────────────────────
 
 class _PreTestIntroContent extends StatelessWidget {
-  const _PreTestIntroContent({required this.preTest});
+  const _PreTestIntroContent({
+    required this.preTest,
+    this.useDirectNavigation = false,
+  });
 
   final QuestionnaireDetailModel preTest;
+  final bool useDirectNavigation;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +75,9 @@ class _PreTestIntroContent extends StatelessWidget {
                       width: 140,
                       height: 140,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryContainer.withValues(alpha: 0.15),
+                        color: AppColors.primaryContainer.withValues(
+                          alpha: 0.15,
+                        ),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -138,11 +156,13 @@ class _PreTestIntroContent extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         const _InstructionBulletItem(
-                          text: 'Mohon jawab sesuai kondisi dan keyakinan Anda saat ini.',
+                          text:
+                              'Mohon jawab sesuai kondisi dan keyakinan Anda saat ini.',
                         ),
                         const SizedBox(height: 8),
                         const _InstructionBulletItem(
-                          text: 'Semua jawaban bersifat rahasia dan hanya digunakan untuk evaluasi.',
+                          text:
+                              'Semua jawaban bersifat rahasia dan hanya digunakan untuk evaluasi.',
                         ),
                         const SizedBox(height: 12),
                         const _InstructionBulletItem(
@@ -160,15 +180,35 @@ class _PreTestIntroContent extends StatelessWidget {
                           ),
                           child: Column(
                             children: const [
-                              _ScaleLegendRow(emoji: '😟', number: '1.', text: 'Tidak Yakin Sama Sekali'),
+                              _ScaleLegendRow(
+                                emoji: '😟',
+                                number: '1.',
+                                text: 'Tidak Yakin Sama Sekali',
+                              ),
                               SizedBox(height: 6),
-                              _ScaleLegendRow(emoji: '🙁', number: '2.', text: 'Kurang Yakin'),
+                              _ScaleLegendRow(
+                                emoji: '🙁',
+                                number: '2.',
+                                text: 'Kurang Yakin',
+                              ),
                               SizedBox(height: 6),
-                              _ScaleLegendRow(emoji: '😐', number: '3.', text: 'Cukup Yakin'),
+                              _ScaleLegendRow(
+                                emoji: '😐',
+                                number: '3.',
+                                text: 'Cukup Yakin',
+                              ),
                               SizedBox(height: 6),
-                              _ScaleLegendRow(emoji: '🙂', number: '4.', text: 'Yakin'),
+                              _ScaleLegendRow(
+                                emoji: '🙂',
+                                number: '4.',
+                                text: 'Yakin',
+                              ),
                               SizedBox(height: 6),
-                              _ScaleLegendRow(emoji: '😊', number: '5.', text: 'Sangat Yakin'),
+                              _ScaleLegendRow(
+                                emoji: '😊',
+                                number: '5.',
+                                text: 'Sangat Yakin',
+                              ),
                             ],
                           ),
                         ),
@@ -230,20 +270,28 @@ class _PreTestIntroContent extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => QuestionnaireQuestionsScreen(
-                        questionnaire: preTest,
-                        isPreTest: true,
+                  if (useDirectNavigation) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder:
+                            (_) => QuestionnaireQuestionsScreen(
+                              questionnaire: preTest,
+                              isPreTest: true,
+                            ),
                       ),
-                    ),
-                  );
+                    );
+                  } else {
+                    context.push(RouteNames.preTestQuestions, extra: preTest);
+                  }
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.play_arrow_rounded,
-                        size: 24, color: Colors.white),
+                    const Icon(
+                      Icons.play_arrow_rounded,
+                      size: 24,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Mulai Kuesioner',
@@ -357,10 +405,7 @@ class _PreTestLoadingSkeleton extends StatelessWidget {
 // ── Error view ────────────────────────────────────────────────────────────────
 
 class _PreTestErrorView extends StatelessWidget {
-  const _PreTestErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _PreTestErrorView({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;

@@ -17,6 +17,17 @@ class OnboardingFormState {
     this.weightKg = '',
     this.activityLevel,
     this.calorieResult,
+    this.city = 'Banda Aceh',
+    this.district = '',
+    this.address = '',
+    this.healthFacility = '',
+    this.healthFacilities = const [],
+    this.isFacilityLoading = false,
+    this.facilityLoaded = false,
+    this.facilityError,
+    this.livingArrangement,
+    this.educationLevel,
+    this.diabetesDuration,
     this.isLoading = false,
     this.errorMessage,
   });
@@ -35,11 +46,22 @@ class OnboardingFormState {
   final String weightKg;
   final String? activityLevel;
   final Map<String, dynamic>? calorieResult;
+  final String city;
+  final String district;
+  final String address;
+  final String healthFacility;
+  final List<String> healthFacilities;
+  final bool isFacilityLoading;
+  final bool facilityLoaded;
+  final String? facilityError;
+  final String? livingArrangement;
+  final String? educationLevel;
+  final String? diabetesDuration;
   final bool isLoading;
   final String? errorMessage;
 
 
-  double get progressPercent => currentStep / 14;
+  double get progressPercent => currentStep / 19;
 
   int get age {
     if (birthDate == null) return 0;
@@ -90,13 +112,18 @@ class OnboardingFormState {
       5 => password.length >= 8,
       6 => confirmPassword.isNotEmpty && confirmPassword == password,
       7 => true,
-      8 => gender != null,
-      9 => birthDate != null,
-      10 => bloodType != null,
-      11 => heightValue > 50 && heightValue < 250,
-      12 => weightValue > 20 && weightValue < 300,
-      13 => activityLevel != null,
-      14 => true,
+      8 => district.trim().isNotEmpty && address.trim().isNotEmpty,
+      9 => healthFacility.trim().isNotEmpty,
+      10 => livingArrangement != null,
+      11 => educationLevel != null,
+      12 => diabetesDuration != null,
+      13 => gender != null,
+      14 => birthDate != null,
+      15 => bloodType != null,
+      16 => heightValue > 50 && heightValue < 250,
+      17 => weightValue > 20 && weightValue < 300,
+      18 => activityLevel != null,
+      19 => true,
       _ => false,
     };
   }
@@ -123,6 +150,17 @@ class OnboardingFormState {
     String? weightKg,
     String? activityLevel,
     Map<String, dynamic>? calorieResult,
+    String? city,
+    String? district,
+    String? address,
+    String? healthFacility,
+    List<String>? healthFacilities,
+    bool? isFacilityLoading,
+    bool? facilityLoaded,
+    String? facilityError,
+    String? livingArrangement,
+    String? educationLevel,
+    String? diabetesDuration,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
@@ -142,6 +180,17 @@ class OnboardingFormState {
       weightKg: weightKg ?? this.weightKg,
       activityLevel: activityLevel ?? this.activityLevel,
       calorieResult: calorieResult ?? this.calorieResult,
+      city: city ?? this.city,
+      district: district ?? this.district,
+      address: address ?? this.address,
+      healthFacility: healthFacility ?? this.healthFacility,
+      healthFacilities: healthFacilities ?? this.healthFacilities,
+      isFacilityLoading: isFacilityLoading ?? this.isFacilityLoading,
+      facilityLoaded: facilityLoaded ?? this.facilityLoaded,
+      facilityError: facilityError ?? this.facilityError,
+      livingArrangement: livingArrangement ?? this.livingArrangement,
+      educationLevel: educationLevel ?? this.educationLevel,
+      diabetesDuration: diabetesDuration ?? this.diabetesDuration,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
