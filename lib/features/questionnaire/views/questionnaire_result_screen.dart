@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../data/repositories/questionnaire_repository.dart';
 import '../models/quiz_attempt_model.dart';
+import '../models/questionnaire_detail_model.dart';
 import '../viewmodels/questionnaire_notifier.dart';
+import 'pre_test_intro_screen.dart';
 import 'questionnaire_questions_screen.dart';
 import 'questionnaire_review_screen.dart';
 
@@ -56,6 +56,18 @@ class QuestionnaireResultScreen extends ConsumerWidget {
         initialResult != null
             ? ref.watch(attemptDetailByIdProvider(attemptQuery!))
             : ref.watch(myAttemptDetailProvider(questionnaireId));
+    final questionnaireAsync = ref.watch(
+      questionnaireDetailProvider(questionnaireId),
+    );
+    final imageUrls = <String, String>{};
+    for (final question
+        in questionnaireAsync.valueOrNull?.allQuestions ??
+            const <QuestionModel>[]) {
+      final imageUrl = question.questionImageUrl;
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        imageUrls[question.id] = imageUrl;
+      }
+    }
 
     final appBar = AppBar(
       backgroundColor: AppColors.surface,
@@ -84,6 +96,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
                       questionnaireId: questionnaireId,
                       questionnaireTitle: questionnaireTitle,
                       isPreTest: isPreTest,
+                      imageUrls: imageUrls,
                     )
                     : const Center(
                       child: CircularProgressIndicator(
@@ -98,6 +111,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
                       questionnaireId: questionnaireId,
                       questionnaireTitle: questionnaireTitle,
                       isPreTest: isPreTest,
+                      imageUrls: imageUrls,
                     )
                     : _ResultErrorView(
                       message: err.toString().replaceFirst('Exception: ', ''),
@@ -114,6 +128,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
               questionnaireId: questionnaireId,
               questionnaireTitle: questionnaireTitle,
               isPreTest: isPreTest,
+              imageUrls: imageUrls,
             ),
       ),
     );
@@ -126,12 +141,14 @@ class _ResultBodyFromSubmit extends StatelessWidget {
     required this.questionnaireId,
     required this.questionnaireTitle,
     required this.isPreTest,
+    required this.imageUrls,
   });
 
   final QuizSubmitResultModel result;
   final String questionnaireId;
   final String questionnaireTitle;
   final bool isPreTest;
+  final Map<String, String> imageUrls;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +164,10 @@ class _ResultBodyFromSubmit extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           isPreTest
-              ? _PreTestSubmitResultContent(result: result)
+              ? _PreTestSubmitResultContent(
+                result: result,
+                imageUrls: imageUrls,
+              )
               : _PostTestResultContent(
                 score: result.score,
                 isPassed: result.passed,
@@ -262,12 +282,14 @@ class _ResultBody extends ConsumerWidget {
     required this.questionnaireId,
     required this.questionnaireTitle,
     required this.isPreTest,
+    required this.imageUrls,
   });
 
   final AttemptDetailModel detail;
   final String questionnaireId;
   final String questionnaireTitle;
   final bool isPreTest;
+  final Map<String, String> imageUrls;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -293,7 +315,7 @@ class _ResultBody extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           isPreTest
-              ? _PreTestResultContent(detail: detail)
+              ? _PreTestResultContent(detail: detail, imageUrls: imageUrls)
               : _PostTestResultContent(
                 score: score,
                 isPassed: isPassed,
@@ -344,7 +366,11 @@ class _ResultBottomActions extends ConsumerWidget {
         .getQuestionnaireById(questionnaireId);
     if (!context.mounted) return;
     if (isPreTest) {
-      context.pushReplacement(RouteNames.preTestQuestions, extra: detail);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => PreTestIntroScreen(initialPreTest: detail),
+        ),
+      );
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -358,13 +384,6 @@ class _ResultBottomActions extends ConsumerWidget {
     }
   }
 
-  void _goHome(BuildContext context, WidgetRef ref) {
-    ref.invalidate(preTestHistoryProvider);
-    ref.invalidate(allQuestionnaireHistoryProvider);
-    ref.invalidate(questionnaireListProvider);
-    context.go(RouteNames.home);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
@@ -372,31 +391,32 @@ class _ResultBottomActions extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Secondary: Lihat Jawaban / Lihat Pembahasan
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+          if (!isPreTest) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-              ),
-              onPressed: () => _openReview(context),
-              icon: const Icon(Icons.visibility_outlined, size: 18),
-              label: Text(
-                isPreTest ? 'Lihat Jawaban' : 'Lihat Pembahasan Jawaban',
-                style: AppTextStyles.poppinsButton.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppColors.primary,
+                onPressed: () => _openReview(context),
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: Text(
+                  'Lihat Pembahasan Jawaban',
+                  style: AppTextStyles.poppinsButton.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
+          ],
 
           // Secondary: Kerjakan Ulang
           SizedBox(
@@ -442,17 +462,14 @@ class _ResultBottomActions extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed:
-                  isPreTest
-                      ? () => _goHome(context, ref)
-                      : () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pop(),
               icon: Icon(
-                isPreTest ? Icons.home_rounded : Icons.arrow_back_rounded,
+                Icons.arrow_back_rounded,
                 color: Colors.white,
                 size: 20,
               ),
               label: Text(
-                isPreTest ? 'Lanjutkan ke Beranda' : 'Kembali',
+                'Kembali',
                 style: AppTextStyles.poppinsButton.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -661,18 +678,20 @@ class _PostTestResultContent extends StatelessWidget {
 // ── Pre-Test result content ──────────────────────────────────────────────────
 
 class _PreTestResultContent extends StatelessWidget {
-  const _PreTestResultContent({required this.detail})
+  const _PreTestResultContent({required this.detail, required this.imageUrls})
     : score = null,
       selfEfficacyCategory = null;
 
   const _PreTestResultContent.fromSubmit({
     required this.score,
     required this.selfEfficacyCategory,
+    required this.imageUrls,
   }) : detail = null;
 
   final AttemptDetailModel? detail;
   final int? score;
   final String? selfEfficacyCategory;
+  final Map<String, String> imageUrls;
 
   @override
   Widget build(BuildContext context) {
@@ -784,7 +803,10 @@ class _PreTestResultContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           for (final item in detail!.questionAnalysis) ...[
-            _PreTestQuestionAnswerCard(item: item),
+            _PreTestQuestionAnswerCard(
+              item: item,
+              imageUrl: imageUrls[item.id],
+            ),
             const SizedBox(height: AppSpacing.md),
           ],
         ] else ...[
@@ -796,15 +818,20 @@ class _PreTestResultContent extends StatelessWidget {
 }
 
 class _PreTestSubmitResultContent extends StatelessWidget {
-  const _PreTestSubmitResultContent({required this.result});
+  const _PreTestSubmitResultContent({
+    required this.result,
+    required this.imageUrls,
+  });
 
   final QuizSubmitResultModel result;
+  final Map<String, String> imageUrls;
 
   @override
   Widget build(BuildContext context) {
     return _PreTestResultContent.fromSubmit(
       score: result.score,
       selfEfficacyCategory: result.selfEfficacyCategory,
+      imageUrls: imageUrls,
     );
   }
 }
@@ -840,9 +867,10 @@ class _AnswerLoadingCard extends StatelessWidget {
 }
 
 class _PreTestQuestionAnswerCard extends StatelessWidget {
-  const _PreTestQuestionAnswerCard({required this.item});
+  const _PreTestQuestionAnswerCard({required this.item, this.imageUrl});
 
   final QuestionAnalysisModel item;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -875,6 +903,19 @@ class _PreTestQuestionAnswerCard extends StatelessWidget {
               color: AppColors.onSurface,
             ),
           ),
+          if (imageUrl != null && imageUrl!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl!,
+                width: double.infinity,
+                height: 180,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
