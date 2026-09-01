@@ -45,25 +45,36 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               color: AppColors.onSurface,
             ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Tuliskan saran atau kendala yang Anda alami untuk perbaikan aplikasi DSMES Aceh.',
-                style: AppTextStyles.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: (MediaQuery.sizeOf(context).height -
+                      MediaQuery.viewInsetsOf(context).bottom -
+                      220)
+                  .clamp(160.0, 520.0),
+            ),
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Tuliskan saran atau kendala yang Anda alami untuk perbaikan aplikasi DSMES Aceh.',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    controller: _feedbackController,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: 'Tuliskan pesan Anda di sini...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _feedbackController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: 'Tuliskan pesan Anda di sini...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
@@ -91,11 +102,12 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredFaqs = SettingsMockData.faqList.where((faq) {
-      final (q, a) = faq;
-      return q.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          a.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+    final filteredFaqs =
+        SettingsMockData.faqList.where((faq) {
+          final (q, a) = faq;
+          return q.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              a.toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -104,8 +116,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.onSurface),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.onSurface,
+          ),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -129,12 +143,16 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 onChanged: (val) => setState(() => _searchQuery = val),
                 decoration: InputDecoration(
                   hintText: 'Cari pertanyaan atau bantuan...',
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: AppColors.primary),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.primary,
+                  ),
                   filled: true,
                   fillColor: AppColors.surfaceContainerLowest,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     borderSide: BorderSide(
@@ -217,14 +235,16 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                     else
                       for (int i = 0; i < filteredFaqs.length; i++) ...[
                         Theme(
-                          data: Theme.of(context).copyWith(
-                            dividerColor: Colors.transparent,
-                          ),
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.transparent),
                           child: ExpansionTile(
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.08),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.08,
+                                ),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -243,7 +263,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                             children: [
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
-                                    16, 0, 16, 16),
+                                  16,
+                                  0,
+                                  16,
+                                  16,
+                                ),
                                 child: Text(
                                   filteredFaqs[i].$2,
                                   style: AppTextStyles.bodyMd.copyWith(
@@ -275,10 +299,14 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   boxShadow: AppShadows.soft,
                 ),
                 child: ListTile(
-                  leading: const Icon(Icons.info_outline_rounded,
-                      color: AppColors.primary),
+                  leading: const Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.primary,
+                  ),
                   title: const Text('Tentang Aplikasi DSMES Aceh'),
-                  subtitle: const Text('Versi, pengembang, & informasi lisensi'),
+                  subtitle: const Text(
+                    'Versi, pengembang, & informasi lisensi',
+                  ),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => context.push(RouteNames.about),
                 ),

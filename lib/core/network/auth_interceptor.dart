@@ -10,6 +10,7 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
 
 class AuthInterceptor extends Interceptor {
   final Ref _ref;
+  Future<String?>? _refreshFuture;
 
   AuthInterceptor(this._ref);
 
@@ -19,7 +20,8 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     final path = options.path;
-    final isPublicAuth = path.contains('/auth/login') ||
+    final isPublicAuth =
+        path.contains('/auth/login') ||
         path.contains('/auth/register') ||
         path.contains('/auth/forgot-password') ||
         path.contains('/auth/verify-otp') ||
@@ -37,63 +39,87 @@ class AuthInterceptor extends Interceptor {
     handler.next(options);
   }
 
-
   @override
-  void onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401 &&
         !err.requestOptions.path.contains('/auth/login') &&
         !err.requestOptions.path.contains('/auth/register') &&
         !err.requestOptions.path.contains('/auth/refresh')) {
       // Attempt token refresh
       final storage = _ref.read(secureStorageProvider);
-      final refreshToken = await storage.read(key: AppConstants.keyRefreshToken);
+      final refreshToken = await storage.read(
+        key: AppConstants.keyRefreshToken,
+      );
 
       if (refreshToken != null && refreshToken.isNotEmpty) {
         try {
-          final dio = Dio(BaseOptions(
-            baseUrl: AppConstants.baseUrl,
-            connectTimeout: AppConstants.connectTimeout,
-            receiveTimeout: AppConstants.receiveTimeout,
-            headers: {'Content-Type': 'application/json'},
-          ));
+          final refreshFuture = _refreshFuture ??= _refresh(refreshToken);
+          final newAccessToken = await refreshFuture;
+          if (identical(_refreshFuture, refreshFuture)) {
+            _refreshFuture = null;
+          }
 
-          final response = await dio.post(
-            '/auth/refresh',
-            data: {'refresh_token': refreshToken},
-          );
-
-          if (response.statusCode == 200 && response.data != null) {
-            final data = response.data['data'];
-            final tokens = data['tokens'];
-            final newAccessToken = tokens['access_token'] as String;
-            final newRefreshToken = tokens['refresh_token'] as String;
-
-            await storage.write(
-              key: AppConstants.keyAuthToken,
-              value: newAccessToken,
-            );
-            await storage.write(
-              key: AppConstants.keyRefreshToken,
-              value: newRefreshToken,
-            );
-
-            // Retry original request with new token
+          if (newAccessToken != null) {
             final options = err.requestOptions;
             options.headers['Authorization'] = 'Bearer $newAccessToken';
+            final dio = Dio(
+              BaseOptions(
+                baseUrl: AppConstants.baseUrl,
+                connectTimeout: AppConstants.connectTimeout,
+                receiveTimeout: AppConstants.receiveTimeout,
+                headers: {'Content-Type': 'application/json'},
+              ),
+            );
             final retryResponse = await dio.fetch(options);
             return handler.resolve(retryResponse);
           }
         } catch (_) {
-          // Refresh failed — clear stored tokens
-          await storage.delete(key: AppConstants.keyAuthToken);
-          await storage.delete(key: AppConstants.keyRefreshToken);
+          // Preserve tokens for temporary network/server failures.
+          if (_refreshFuture != null) _refreshFuture = null;
         }
       }
     }
 
     handler.next(err);
+  }
+
+  Future<String?> _refresh(String refreshToken) async {
+    final storage = _ref.read(secureStorageProvider);
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        connectTimeout: AppConstants.connectTimeout,
+        receiveTimeout: AppConstants.receiveTimeout,
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+
+    try {
+      final response = await dio.post(
+        '/auth/refresh',
+        data: {'refresh_token': refreshToken},
+      );
+      final data = response.data['data'] as Map<String, dynamic>;
+      final tokens = data['tokens'] as Map<String, dynamic>;
+      final newAccessToken = tokens['access_token'] as String;
+      final newRefreshToken = tokens['refresh_token'] as String;
+
+      await storage.write(
+        key: AppConstants.keyAuthToken,
+        value: newAccessToken,
+      );
+      await storage.write(
+        key: AppConstants.keyRefreshToken,
+        value: newRefreshToken,
+      );
+      return newAccessToken;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        await storage.delete(key: AppConstants.keyAuthToken);
+        await storage.delete(key: AppConstants.keyRefreshToken);
+        return null;
+      }
+      rethrow;
+    }
   }
 }

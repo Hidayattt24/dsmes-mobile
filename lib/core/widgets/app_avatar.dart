@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -23,22 +25,37 @@ class AppAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? imageProvider;
+    final source = imageUrl?.trim() ?? '';
+    if (source.isNotEmpty) {
+      try {
+        if (source.startsWith('data:image/')) {
+          imageProvider = MemoryImage(
+            base64Decode(source.substring(source.indexOf(',') + 1)),
+          );
+        } else {
+          imageProvider = NetworkImage(source);
+        }
+      } on FormatException {
+        imageProvider = null;
+      }
+    }
+
     Widget avatar = CircleAvatar(
       radius: radius,
       backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.1),
-      backgroundImage: imageUrl != null && imageUrl!.isNotEmpty
-          ? NetworkImage(imageUrl!)
-          : null,
-      child: imageUrl == null || imageUrl!.isEmpty
-          ? Text(
-              initials ?? '?',
-              style: AppTextStyles.labelLg.copyWith(
-                color: AppColors.primaryContainer,
-                fontWeight: FontWeight.bold,
-                fontSize: radius * 0.8,
-              ),
-            )
-          : null,
+      backgroundImage: imageProvider,
+      child:
+          imageProvider == null
+              ? Text(
+                initials ?? '?',
+                style: AppTextStyles.labelLg.copyWith(
+                  color: AppColors.primaryContainer,
+                  fontWeight: FontWeight.bold,
+                  fontSize: radius * 0.8,
+                ),
+              )
+              : null,
     );
 
     if (hasBorder) {
@@ -54,7 +71,7 @@ class AppAvatar extends StatelessWidget {
               color: Colors.black12,
               blurRadius: 2,
               offset: Offset(0, 1),
-            )
+            ),
           ],
         ),
         child: avatar,
@@ -64,10 +81,7 @@ class AppAvatar extends StatelessWidget {
     if (onTap != null) {
       return GestureDetector(
         onTap: onTap,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: avatar,
-        ),
+        child: MouseRegion(cursor: SystemMouseCursors.click, child: avatar),
       );
     }
 

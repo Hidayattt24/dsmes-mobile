@@ -17,7 +17,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -46,13 +47,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).checkPhoneNumber(
-            phoneNumber: _phoneController.text.trim(),
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .checkPhoneNumber(phoneNumber: _phoneController.text.trim());
       if (mounted) {
         setState(() => _isLoading = false);
-        await context.push(RouteNames.resetPassword,
-            extra: _phoneController.text.trim());
+        await context.push(
+          RouteNames.resetPassword,
+          extra: _phoneController.text.trim(),
+        );
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -66,7 +69,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -84,45 +86,66 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       body: GestureDetector(
         onTap: FocusScope.of(context).unfocus,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.page),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ForgotPasswordHeader(),
-                const SizedBox(height: AppSpacing.xl),
-                Form(
-                  key: _formKey,
-                  child: AppTextField(
-                    label: AppStrings.forgotPasswordPhone,
-                    hint: AppStrings.forgotPasswordPhoneHint,
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.phone_outlined,
-                    semanticLabel: 'Kolom nomor handphone',
-                    validator: _validatePhone,
-                  ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+              return SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.page,
+                  AppSpacing.page,
+                  AppSpacing.page,
+                  AppSpacing.page + bottomInset,
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                AppButton(
-                  label: AppStrings.forgotPasswordButton,
-                  isLoading: _isLoading,
-                  onPressed: _submit,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Center(
-                  child: TextButton(
-                    onPressed: () => context.go(RouteNames.login),
-                    child: Text(
-                      AppStrings.forgotPasswordBackToLogin,
-                      style: AppTextStyles.labelMd
-                          .copyWith(color: AppColors.primary),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: (constraints.maxHeight - bottomInset).clamp(
+                      0.0,
+                      double.infinity,
                     ),
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ForgotPasswordHeader(),
+                      const SizedBox(height: AppSpacing.xl),
+                      Form(
+                        key: _formKey,
+                        child: AppTextField(
+                          label: AppStrings.forgotPasswordPhone,
+                          hint: AppStrings.forgotPasswordPhoneHint,
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          textInputAction: TextInputAction.done,
+                          prefixIcon: Icons.phone_outlined,
+                          semanticLabel: 'Kolom nomor handphone',
+                          validator: _validatePhone,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      AppButton(
+                        label: AppStrings.forgotPasswordButton,
+                        isLoading: _isLoading,
+                        onPressed: _submit,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => context.go(RouteNames.login),
+                          child: Text(
+                            AppStrings.forgotPasswordBackToLogin,
+                            style: AppTextStyles.labelMd.copyWith(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -156,8 +179,9 @@ class _ForgotPasswordHeader extends StatelessWidget {
         const SizedBox(height: AppSpacing.xxs),
         Text(
           AppStrings.forgotPasswordSubtitle,
-          style: AppTextStyles.bodyMd
-              .copyWith(color: AppColors.onSurfaceVariant),
+          style: AppTextStyles.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
         ),
       ],
     );

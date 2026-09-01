@@ -26,26 +26,19 @@ class Step8Residence extends ConsumerWidget {
           iconBackgroundColor: AppColors.secondaryContainer,
         ),
         const SizedBox(height: AppSpacing.lg),
-        _StaticField(
-          label: AppStrings.residenceCityLabel,
-          value: city,
-        ),
+        _StaticField(label: AppStrings.residenceCityLabel, value: city),
         const SizedBox(height: AppSpacing.md),
         _TextField(
           label: AppStrings.residenceDistrictLabel,
           hint: AppStrings.residenceDistrictHint,
-          initialValue: ref.watch(
-            onboardingProvider.select((s) => s.district),
-          ),
+          initialValue: ref.watch(onboardingProvider.select((s) => s.district)),
           onChanged: notifier.onDistrictChanged,
         ),
         const SizedBox(height: AppSpacing.md),
         _TextField(
           label: AppStrings.residenceAddressLabel,
           hint: AppStrings.residenceAddressHint,
-          initialValue: ref.watch(
-            onboardingProvider.select((s) => s.address),
-          ),
+          initialValue: ref.watch(onboardingProvider.select((s) => s.address)),
           onChanged: notifier.onAddressChanged,
           maxLines: 3,
           keyboardType: TextInputType.streetAddress,
@@ -128,76 +121,76 @@ class _TextField extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Container(
           height: isMultiline ? null : 56,
-          constraints: isMultiline
-              ? const BoxConstraints(minHeight: 56)
-              : null,
+          constraints: isMultiline ? const BoxConstraints(minHeight: 56) : null,
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.outlineVariant),
             borderRadius: BorderRadius.circular(12),
             color: AppColors.surfaceContainerLowest,
           ),
-          child: isMultiline
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
-                  child: TextFormField(
-                    initialValue: initialValue,
-                    onChanged: onChanged,
-                    maxLines: maxLines,
-                    keyboardType: keyboardType,
-                    textInputAction: TextInputAction.newline,
-                    style: AppTextStyles.bodyLg.copyWith(
-                      color: AppColors.onSurface,
+          child:
+              isMultiline
+                  ? Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
                     ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      hintText: hint,
-                      hintStyle: AppTextStyles.bodyLg.copyWith(
-                        color: AppColors.outline,
+                    child: TextFormField(
+                      initialValue: initialValue,
+                      onChanged: onChanged,
+                      maxLines: maxLines,
+                      keyboardType: keyboardType,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
+                      style: AppTextStyles.bodyLg.copyWith(
+                        color: AppColors.onSurface,
                       ),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                )
-              : Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        hintText: hint,
+                        hintStyle: AppTextStyles.bodyLg.copyWith(
+                          color: AppColors.outline,
                         ),
-                        child: TextFormField(
-                          initialValue: initialValue,
-                          onChanged: onChanged,
-                          keyboardType: keyboardType,
-                          textInputAction: TextInputAction.next,
-                          style: AppTextStyles.bodyLg.copyWith(
-                            color: AppColors.onSurface,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  )
+                  : Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
                           ),
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            hintText: hint,
-                            hintStyle: AppTextStyles.bodyLg.copyWith(
-                              color: AppColors.outline,
+                          child: TextFormField(
+                            initialValue: initialValue,
+                            onChanged: onChanged,
+                            keyboardType: keyboardType,
+                            textInputAction: TextInputAction.next,
+                            style: AppTextStyles.bodyLg.copyWith(
+                              color: AppColors.onSurface,
                             ),
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              hintText: hint,
+                              hintStyle: AppTextStyles.bodyLg.copyWith(
+                                color: AppColors.outline,
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
         ),
       ],
     );

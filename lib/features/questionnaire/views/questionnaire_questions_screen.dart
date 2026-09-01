@@ -131,6 +131,7 @@ class _QuestionnaireQuestionsScreenState
                   questionnaireId: widget.questionnaire.id,
                   questionnaireTitle: widget.questionnaire.title,
                   isPreTest: true,
+                  returnToHome: true,
                   initialResult: result,
                 ),
           ),

@@ -27,8 +27,7 @@ class EducationDetailScreen extends ConsumerStatefulWidget {
       _EducationDetailScreenState();
 }
 
-class _EducationDetailScreenState
-    extends ConsumerState<EducationDetailScreen> {
+class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   final ScrollController _scrollController = ScrollController();
 
   // ──────────────────────────────────────────────────────────────
@@ -55,7 +54,9 @@ class _EducationDetailScreenState
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Cache the notifier instance safely while mounted
-    _cachedNotifier = ref.read(educationDetailProvider(widget.articleId).notifier);
+    _cachedNotifier = ref.read(
+      educationDetailProvider(widget.articleId).notifier,
+    );
   }
 
   @override
@@ -146,8 +147,7 @@ class _EducationDetailScreenState
 
       if (!mounted) return;
 
-      final article =
-          ref.read(educationDetailProvider(widget.articleId)).value;
+      final article = ref.read(educationDetailProvider(widget.articleId)).value;
       final articleTitle = article?.title ?? 'Artikel Edukasi';
 
       final result = await EducationReviewDialog.show(
@@ -309,7 +309,9 @@ class _EducationDetailScreenState
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Tautan artikel berhasil disalin'),
+                                content: Text(
+                                  'Tautan artikel berhasil disalin',
+                                ),
                                 duration: Duration(seconds: 2),
                               ),
                             );
@@ -425,9 +427,10 @@ class _EducationDetailScreenState
     final isBookmarked = article.isBookmarked;
     final isCompleted = article.isCompleted || _hasMarkedComplete;
     final canMarkRead = !isCompleted && _hasScrolledToBottom;
-    final buttonContentColor = (canMarkRead || isCompleted)
-        ? Colors.white
-        : AppColors.onSurfaceVariant;
+    final buttonContentColor =
+        (canMarkRead || isCompleted)
+            ? Colors.white
+            : AppColors.onSurfaceVariant;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -490,9 +493,7 @@ class _EducationDetailScreenState
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
               color:
-                  isBookmarked
-                      ? AppColors.primary
-                      : AppColors.onSurfaceVariant,
+                  isBookmarked ? AppColors.primary : AppColors.onSurfaceVariant,
             ),
             onPressed: _toggleBookmark,
           ),
@@ -742,13 +743,15 @@ class _EducationDetailScreenState
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        disabledBackgroundColor: isCompleted
-                            ? AppColors.secondary
-                            : AppColors.outlineVariant,
+                        disabledBackgroundColor:
+                            isCompleted
+                                ? AppColors.secondary
+                                : AppColors.outlineVariant,
                         foregroundColor: Colors.white,
-                        disabledForegroundColor: isCompleted
-                            ? Colors.white
-                            : AppColors.onSurfaceVariant,
+                        disabledForegroundColor:
+                            isCompleted
+                                ? Colors.white
+                                : AppColors.onSurfaceVariant,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -768,13 +771,17 @@ class _EducationDetailScreenState
                             color: buttonContentColor,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            isCompleted
-                                ? 'Sudah Membaca Artikel ✓'
-                                : 'Tandai Sudah Membaca Artikel',
-                            style: AppTextStyles.poppinsButton.copyWith(
-                              color: buttonContentColor,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              isCompleted
+                                  ? 'Sudah Membaca Artikel ✓'
+                                  : 'Tandai Sudah Membaca Artikel',
+                              textAlign: TextAlign.center,
+                              softWrap: true,
+                              style: AppTextStyles.poppinsButton.copyWith(
+                                color: buttonContentColor,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
