@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -88,7 +89,8 @@ class _PersonalInformationScreenState
         _heightCm = (profile['height_cm'] as num?)?.toDouble() ?? 0;
         _weightKg = (profile['weight_kg'] as num?)?.toDouble() ?? 0;
         _activityLevel =
-            (profile['physical_activity_level'] as String?) ?? 'Aktivitas Ringan';
+            (profile['physical_activity_level'] as String?) ??
+            'Aktivitas Ringan';
         setState(() => _isLoading = false);
       }
     } catch (e) {
@@ -164,31 +166,35 @@ class _PersonalInformationScreenState
     setState(() => _isSaving = true);
     try {
       final authRepo = ref.read(authRepositoryProvider);
+      String? profilePhotoUrl;
+      if (_localPhotoFile != null) {
+        final extension = _localPhotoFile!.path.split('.').last.toLowerCase();
+        final mimeType = extension == 'png' ? 'png' : 'jpeg';
+        final encoded = base64Encode(await _localPhotoFile!.readAsBytes());
+        profilePhotoUrl = 'data:image/$mimeType;base64,$encoded';
+      }
       await authRepo.updatePatientProfile(
         fullName: _nameController.text.trim(),
         nickname: _nicknameController.text.trim(),
         whatsappNumber: _phoneController.text.trim(),
         heightCm: _heightCm > 0 ? _heightCm : 170,
         weightKg: _weightKg > 0 ? _weightKg : 65,
-        activityLevel: _activityLevel.isNotEmpty ? _activityLevel : 'Aktivitas Ringan',
+        activityLevel:
+            _activityLevel.isNotEmpty ? _activityLevel : 'Aktivitas Ringan',
         gender: _mapGenderToApi(_selectedGender),
         dateOfBirth: DateFormat('yyyy-MM-dd').format(_selectedBirthDate),
         bloodType: _selectedBloodType,
+        profilePhotoUrl: profilePhotoUrl,
       );
-
-      if (_localPhotoFile != null) {
-        AppSnackbar.showInfo(
-          context,
-          'Foto profil akan diupload nanti. Data lainnya tersimpan.',
-        );
-      }
 
       await _fetchProfile();
       ref.invalidate(homeDashboardProvider);
 
       if (mounted) {
         AppSnackbar.showSuccess(
-            context, 'Informasi pribadi berhasil diperbarui.');
+          context,
+          'Informasi pribadi berhasil diperbarui.',
+        );
         context.pop();
       }
     } catch (e) {
@@ -202,16 +208,19 @@ class _PersonalInformationScreenState
 
   @override
   Widget build(BuildContext context) {
-    final formattedBirthDate =
-        DateFormat('dd MMMM yyyy', 'id_ID').format(_selectedBirthDate);
-    final initials = _nameController.text.isNotEmpty
-        ? _nameController.text
-            .split(' ')
-            .map((e) => e.isNotEmpty ? e[0] : '')
-            .take(2)
-            .join()
-            .toUpperCase()
-        : 'U';
+    final formattedBirthDate = DateFormat(
+      'dd MMMM yyyy',
+      'id_ID',
+    ).format(_selectedBirthDate);
+    final initials =
+        _nameController.text.isNotEmpty
+            ? _nameController.text
+                .split(' ')
+                .map((e) => e.isNotEmpty ? e[0] : '')
+                .take(2)
+                .join()
+                .toUpperCase()
+            : 'U';
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -220,8 +229,10 @@ class _PersonalInformationScreenState
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.onSurface),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.onSurface,
+          ),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -234,337 +245,367 @@ class _PersonalInformationScreenState
         centerTitle: true,
       ),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.all(AppSpacing.page),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Center(
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: 108,
-                                    height: 108,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.1),
-                                        width: 4,
-                                      ),
-                                    ),
-                                    child: _localPhotoFile != null
-                                        ? ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(54),
-                                            child: Image.file(
-                                              _localPhotoFile!,
-                                              width: 108,
-                                              height: 108,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        : AppAvatar(
-                                            imageUrl: _profilePhotoUrl ?? '',
-                                            radius: 48,
-                                            initials: initials,
-                                            hasBorder: false,
-                                          ),
-                                  ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: Material(
-                                      color: AppColors.primary,
-                                      shape: const CircleBorder(),
-                                      elevation: 3,
-                                      child: InkWell(
-                                        customBorder: const CircleBorder(),
-                                        onTap: _pickPhoto,
-                                        child: const Padding(
-                                          padding: EdgeInsets.all(8.0),
-                                          child: Icon(
-                                            Icons.camera_alt_rounded,
-                                            color: AppColors.onPrimary,
-                                            size: 16,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceContainerLowest,
-                                borderRadius: AppRadius.card,
-                                border: Border.all(
-                                  color: AppColors.outlineVariant
-                                      .withValues(alpha: 0.3),
-                                ),
-                                boxShadow: AppShadows.soft,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Data Diri',
-                                    style: AppTextStyles.labelLg.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _FormFieldLabel(label: 'Nama Lengkap'),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: _nameController,
-                                    style: AppTextStyles.bodyLg.copyWith(
-                                      color: AppColors.onSurface,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    decoration: _inputDecoration(
-                                      hint: 'Masukkan nama lengkap',
-                                      icon: Icons.person_outline_rounded,
-                                    ),
-                                    validator: (val) =>
-                                        val == null || val.trim().isEmpty
-                                            ? 'Nama wajib diisi'
-                                            : null,
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _FormFieldLabel(label: 'Nama Panggilan'),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: _nicknameController,
-                                    style: AppTextStyles.bodyLg.copyWith(
-                                      color: AppColors.onSurface,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    decoration: _inputDecoration(
-                                      hint: 'Masukkan nama panggilan',
-                                      icon: Icons.face_rounded,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _FormFieldLabel(label: 'Alamat Email'),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    enabled: false,
-                                    style: AppTextStyles.bodyLg.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    decoration: _inputDecoration(
-                                      hint: 'nama@email.com',
-                                      icon: Icons.mail_outline_rounded,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _FormFieldLabel(label: 'Nomor WhatsApp'),
-                                  const SizedBox(height: 6),
-                                  TextFormField(
-                                    controller: _phoneController,
-                                    keyboardType: TextInputType.phone,
-                                    style: AppTextStyles.bodyLg.copyWith(
-                                      color: AppColors.onSurface,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    decoration: _inputDecoration(
-                                      hint: '+62 8xx-xxxx-xxxx',
-                                      icon: Icons.phone_outlined,
-                                    ),
-                                    validator: (val) =>
-                                        val == null || val.trim().isEmpty
-                                            ? 'Nomor telepon wajib diisi'
-                                            : null,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.lg),
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceContainerLowest,
-                                borderRadius: AppRadius.card,
-                                border: Border.all(
-                                  color: AppColors.outlineVariant
-                                      .withValues(alpha: 0.3),
-                                ),
-                                boxShadow: AppShadows.soft,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Data Medis & Demografi',
-                                    style: AppTextStyles.labelLg.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _FormFieldLabel(label: 'Jenis Kelamin'),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _ChoiceChipOption(
-                                          label: 'Laki-laki',
-                                          icon: Icons.male_rounded,
-                                          isSelected:
-                                              _selectedGender == 'Laki-laki',
-                                          onTap: () => setState(
-                                              () => _selectedGender =
-                                                  'Laki-laki'),
-                                        ),
-                                      ),
-                                      const SizedBox(width: AppSpacing.md),
-                                      Expanded(
-                                        child: _ChoiceChipOption(
-                                          label: 'Perempuan',
-                                          icon: Icons.female_rounded,
-                                          isSelected:
-                                              _selectedGender == 'Perempuan',
-                                          onTap: () => setState(
-                                              () => _selectedGender =
-                                                  'Perempuan'),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _FormFieldLabel(label: 'Tanggal Lahir'),
-                                  const SizedBox(height: 6),
-                                  InkWell(
-                                    onTap: _selectBirthDate,
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.lg),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 14,
-                                      ),
+        child:
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.all(AppSpacing.page),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 108,
+                                      height: 108,
                                       decoration: BoxDecoration(
-                                        color: AppColors.surfaceContainerLow,
-                                        borderRadius: BorderRadius.circular(
-                                            AppRadius.lg),
+                                        shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: AppColors.outlineVariant
-                                              .withValues(alpha: 0.3),
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          width: 4,
                                         ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_today_rounded,
-                                            color: AppColors.primary,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            formattedBirthDate,
-                                            style: AppTextStyles.bodyLg.copyWith(
-                                              color: AppColors.onSurface,
-                                              fontWeight: FontWeight.w500,
+                                      child:
+                                          _localPhotoFile != null
+                                              ? ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(54),
+                                                child: Image.file(
+                                                  _localPhotoFile!,
+                                                  width: 108,
+                                                  height: 108,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              )
+                                              : AppAvatar(
+                                                imageUrl:
+                                                    _profilePhotoUrl ?? '',
+                                                radius: 48,
+                                                initials: initials,
+                                                hasBorder: false,
+                                              ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Material(
+                                        color: AppColors.primary,
+                                        shape: const CircleBorder(),
+                                        elevation: 3,
+                                        child: InkWell(
+                                          customBorder: const CircleBorder(),
+                                          onTap: _pickPhoto,
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(8.0),
+                                            child: Icon(
+                                              Icons.camera_alt_rounded,
+                                              color: AppColors.onPrimary,
+                                              size: 16,
                                             ),
                                           ),
-                                          const Spacer(),
-                                          const Icon(
-                                            Icons.edit_calendar_rounded,
-                                            color: AppColors.outline,
-                                            size: 18,
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceContainerLowest,
+                                  borderRadius: AppRadius.card,
+                                  border: Border.all(
+                                    color: AppColors.outlineVariant.withValues(
+                                      alpha: 0.3,
+                                    ),
                                   ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _FormFieldLabel(label: 'Golongan Darah'),
-                                  const SizedBox(height: 6),
-                                  Wrap(
-                                    spacing: 10,
-                                    runSpacing: 10,
-                                    children: [
-                                      'A',
-                                      'B',
-                                      'AB',
-                                      'O',
-                                      'Tidak Tahu'
-                                    ].map((type) {
-                                      final isSel = _selectedBloodType == type;
-                                      return ChoiceChip(
-                                        label: Text(
-                                          type,
-                                          style: AppTextStyles.labelLg.copyWith(
-                                            color: isSel
-                                                ? Colors.white
-                                                : AppColors.onSurface,
-                                            fontWeight: FontWeight.bold,
+                                  boxShadow: AppShadows.soft,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Data Diri',
+                                      style: AppTextStyles.labelLg.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    _FormFieldLabel(label: 'Nama Lengkap'),
+                                    const SizedBox(height: 6),
+                                    TextFormField(
+                                      controller: _nameController,
+                                      style: AppTextStyles.bodyLg.copyWith(
+                                        color: AppColors.onSurface,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      decoration: _inputDecoration(
+                                        hint: 'Masukkan nama lengkap',
+                                        icon: Icons.person_outline_rounded,
+                                      ),
+                                      validator:
+                                          (val) =>
+                                              val == null || val.trim().isEmpty
+                                                  ? 'Nama wajib diisi'
+                                                  : null,
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    _FormFieldLabel(label: 'Nama Panggilan'),
+                                    const SizedBox(height: 6),
+                                    TextFormField(
+                                      controller: _nicknameController,
+                                      style: AppTextStyles.bodyLg.copyWith(
+                                        color: AppColors.onSurface,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      decoration: _inputDecoration(
+                                        hint: 'Masukkan nama panggilan',
+                                        icon: Icons.face_rounded,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    _FormFieldLabel(label: 'Alamat Email'),
+                                    const SizedBox(height: 6),
+                                    TextFormField(
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      enabled: false,
+                                      style: AppTextStyles.bodyLg.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      decoration: _inputDecoration(
+                                        hint: 'nama@email.com',
+                                        icon: Icons.mail_outline_rounded,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    _FormFieldLabel(label: 'Nomor WhatsApp'),
+                                    const SizedBox(height: 6),
+                                    TextFormField(
+                                      controller: _phoneController,
+                                      keyboardType: TextInputType.phone,
+                                      style: AppTextStyles.bodyLg.copyWith(
+                                        color: AppColors.onSurface,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      decoration: _inputDecoration(
+                                        hint: '+62 8xx-xxxx-xxxx',
+                                        icon: Icons.phone_outlined,
+                                      ),
+                                      validator:
+                                          (val) =>
+                                              val == null || val.trim().isEmpty
+                                                  ? 'Nomor telepon wajib diisi'
+                                                  : null,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              Container(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceContainerLowest,
+                                  borderRadius: AppRadius.card,
+                                  border: Border.all(
+                                    color: AppColors.outlineVariant.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
+                                  boxShadow: AppShadows.soft,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Data Medis & Demografi',
+                                      style: AppTextStyles.labelLg.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    _FormFieldLabel(label: 'Jenis Kelamin'),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _ChoiceChipOption(
+                                            label: 'Laki-laki',
+                                            icon: Icons.male_rounded,
+                                            isSelected:
+                                                _selectedGender == 'Laki-laki',
+                                            onTap:
+                                                () => setState(
+                                                  () =>
+                                                      _selectedGender =
+                                                          'Laki-laki',
+                                                ),
                                           ),
                                         ),
-                                        selected: isSel,
-                                        onSelected: (_) {
-                                          setState(
-                                              () => _selectedBloodType = type);
-                                        },
-                                        selectedColor: AppColors.primary,
-                                        backgroundColor:
-                                            AppColors.surfaceContainerLow,
-                                        labelStyle:
-                                            AppTextStyles.labelLg.copyWith(
-                                          color: isSel
-                                              ? Colors.white
-                                              : AppColors.onSurface,
-                                          fontWeight: FontWeight.bold,
+                                        const SizedBox(width: AppSpacing.md),
+                                        Expanded(
+                                          child: _ChoiceChipOption(
+                                            label: 'Perempuan',
+                                            icon: Icons.female_rounded,
+                                            isSelected:
+                                                _selectedGender == 'Perempuan',
+                                            onTap:
+                                                () => setState(
+                                                  () =>
+                                                      _selectedGender =
+                                                          'Perempuan',
+                                                ),
+                                          ),
                                         ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    _FormFieldLabel(label: 'Tanggal Lahir'),
+                                    const SizedBox(height: 6),
+                                    InkWell(
+                                      onTap: _selectBirthDate,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.lg,
+                                      ),
+                                      child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 14,
-                                          vertical: 8,
+                                          vertical: 14,
                                         ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ],
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surfaceContainerLow,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.lg,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.outlineVariant
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.calendar_today_rounded,
+                                              color: AppColors.primary,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              formattedBirthDate,
+                                              style: AppTextStyles.bodyLg
+                                                  .copyWith(
+                                                    color: AppColors.onSurface,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                            ),
+                                            const Spacer(),
+                                            const Icon(
+                                              Icons.edit_calendar_rounded,
+                                              color: AppColors.outline,
+                                              size: 18,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    _FormFieldLabel(label: 'Golongan Darah'),
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 10,
+                                      runSpacing: 10,
+                                      children:
+                                          [
+                                            'A',
+                                            'B',
+                                            'AB',
+                                            'O',
+                                            'Tidak Tahu',
+                                          ].map((type) {
+                                            final isSel =
+                                                _selectedBloodType == type;
+                                            return ChoiceChip(
+                                              label: Text(
+                                                type,
+                                                style: AppTextStyles.labelLg
+                                                    .copyWith(
+                                                      color:
+                                                          isSel
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                  .onSurface,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                              ),
+                                              selected: isSel,
+                                              onSelected: (_) {
+                                                setState(
+                                                  () =>
+                                                      _selectedBloodType = type,
+                                                );
+                                              },
+                                              selectedColor: AppColors.primary,
+                                              backgroundColor:
+                                                  AppColors.surfaceContainerLow,
+                                              labelStyle: AppTextStyles.labelLg
+                                                  .copyWith(
+                                                    color:
+                                                        isSel
+                                                            ? Colors.white
+                                                            : AppColors
+                                                                .onSurface,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 14,
+                                                    vertical: 8,
+                                                  ),
+                                            );
+                                          }).toList(),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                          ],
+                              const SizedBox(height: AppSpacing.xl),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.page),
-                      child: AppButton(
-                        label: 'Simpan Perubahan',
-                        onPressed: _isSaving ? null : _onSave,
-                        icon: Icons.check_circle_rounded,
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.page),
+                        child: AppButton(
+                          label: 'Simpan Perubahan',
+                          onPressed: _isSaving ? null : _onSave,
+                          icon: Icons.check_circle_rounded,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
       ),
     );
   }
 
-  InputDecoration _inputDecoration(
-      {required String hint, required IconData icon}) {
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+  }) {
     return InputDecoration(
       hintText: hint,
       prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
@@ -627,9 +668,10 @@ class _ChoiceChipOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primaryContainer
-              : AppColors.surfaceContainerLow,
+          color:
+              isSelected
+                  ? AppColors.primaryContainer
+                  : AppColors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.outlineVariant,
@@ -641,9 +683,8 @@ class _ChoiceChipOption extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected
-                  ? AppColors.onPrimary
-                  : AppColors.onSurfaceVariant,
+              color:
+                  isSelected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
               size: 20,
             ),
             const SizedBox(width: 6),
@@ -651,9 +692,7 @@ class _ChoiceChipOption extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTextStyles.labelLg.copyWith(
-                  color: isSelected
-                      ? AppColors.onPrimary
-                      : AppColors.onSurface,
+                  color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
                 maxLines: 1,

@@ -17,10 +17,7 @@ import '../../../data/repositories/auth_repository.dart';
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   final String phoneNumber;
 
-  const ResetPasswordScreen({
-    super.key,
-    required this.phoneNumber,
-  });
+  const ResetPasswordScreen({super.key, required this.phoneNumber});
 
   @override
   ConsumerState<ResetPasswordScreen> createState() =>
@@ -32,7 +29,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _isLoading = false;
-
 
   @override
   void dispose() {
@@ -65,17 +61,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await ref.read(authRepositoryProvider).resetPasswordByPhone(
+      await ref
+          .read(authRepositoryProvider)
+          .resetPasswordByPhone(
             phoneNumber: widget.phoneNumber,
             newPassword: _passwordController.text.trim(),
             confirmPassword: _confirmController.text.trim(),
           );
       if (mounted) {
         setState(() => _isLoading = false);
-        AppSnackbar.showSuccess(
-          context,
-          AppStrings.resetPasswordSuccess,
-        );
+        AppSnackbar.showSuccess(context, AppStrings.resetPasswordSuccess);
         context.go(RouteNames.login);
       }
     } on ApiException catch (e) {
@@ -107,49 +102,69 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       body: GestureDetector(
         onTap: FocusScope.of(context).unfocus,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.page),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ResetPasswordHeader(),
-                const SizedBox(height: AppSpacing.xl),
-                Form(
-                  key: _formKey,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+              return SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.page,
+                  AppSpacing.page,
+                  AppSpacing.page,
+                  AppSpacing.page + bottomInset,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: (constraints.maxHeight - bottomInset).clamp(
+                      0.0,
+                      double.infinity,
+                    ),
+                  ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppTextField(
-                        label: AppStrings.resetPasswordNewLabel,
-                        hint: AppStrings.resetPasswordNewHint,
-                        controller: _passwordController,
-                        isPassword: true,
-                        textInputAction: TextInputAction.next,
-                        prefixIcon: Icons.lock_outline,
-                        semanticLabel: 'Kata sandi baru',
-                        validator: _validatePassword,
+                      _ResetPasswordHeader(),
+                      const SizedBox(height: AppSpacing.xl),
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            AppTextField(
+                              label: AppStrings.resetPasswordNewLabel,
+                              hint: AppStrings.resetPasswordNewHint,
+                              controller: _passwordController,
+                              isPassword: true,
+                              textInputAction: TextInputAction.next,
+                              prefixIcon: Icons.lock_outline,
+                              semanticLabel: 'Kata sandi baru',
+                              validator: _validatePassword,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            AppTextField(
+                              label: AppStrings.resetPasswordConfirmLabel,
+                              hint: AppStrings.resetPasswordConfirmHint,
+                              controller: _confirmController,
+                              isPassword: true,
+                              textInputAction: TextInputAction.done,
+                              prefixIcon: Icons.lock_outline,
+                              semanticLabel: 'Konfirmasi kata sandi',
+                              validator: _validateConfirm,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      AppTextField(
-                        label: AppStrings.resetPasswordConfirmLabel,
-                        hint: AppStrings.resetPasswordConfirmHint,
-                        controller: _confirmController,
-                        isPassword: true,
-                        textInputAction: TextInputAction.done,
-                        prefixIcon: Icons.lock_outline,
-                        semanticLabel: 'Konfirmasi kata sandi',
-                        validator: _validateConfirm,
+                      const SizedBox(height: AppSpacing.xl),
+                      AppButton(
+                        label: AppStrings.resetPasswordButton,
+                        isLoading: _isLoading,
+                        onPressed: _submit,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                AppButton(
-                  label: AppStrings.resetPasswordButton,
-                  isLoading: _isLoading,
-                  onPressed: _submit,
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -183,8 +198,9 @@ class _ResetPasswordHeader extends StatelessWidget {
         const SizedBox(height: AppSpacing.xxs),
         Text(
           AppStrings.resetPasswordSubtitle,
-          style: AppTextStyles.bodyMd
-              .copyWith(color: AppColors.onSurfaceVariant),
+          style: AppTextStyles.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
         ),
       ],
     );

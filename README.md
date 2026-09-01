@@ -43,3 +43,40 @@ dart run build_runner build --delete-conflicting-outputs
 # Run app
 flutter run
 ```
+
+## Environment Development dan Production
+
+Gunakan script PowerShell berikut supaya URL backend tidak perlu ditulis manual:
+
+```powershell
+# Android emulator -> backend local di komputer host
+.\tool\run-local.ps1
+
+# Gunakan device lain
+.\tool\run-local.ps1 -DeviceId <device-id>
+
+# Physical device melalui IP LAN komputer
+.\tool\run-local.ps1 -DeviceId <device-id> `
+    -ApiBaseUrl http://192.168.1.10:8080/api/v1
+
+# Backend staging
+.\tool\run-staging.ps1
+
+# Build APK production
+.\tool\build-production.ps1
+```
+
+Local backend menggunakan `http://localhost:8080/api/v1`. Saat targetnya Android
+emulator, script otomatis menerjemahkannya menjadi `10.0.2.2` agar emulator dapat
+mengakses komputer host. Untuk physical device, kirim `-ApiBaseUrl` dengan IP LAN
+komputer.
+
+## Build APK Produksi
+
+API produksi di-inject saat compile dari file `.env.production.local`:
+
+```bash
+flutter build apk --release --dart-define-from-file=.env.production.local
+```
+
+`/api/health` digunakan untuk health check. Base URL aplikasi tetap menggunakan `/api/v1`.

@@ -139,7 +139,9 @@ class QuestionnaireListCard extends ConsumerWidget {
               ),
               if (isCompleted && item.score != null) ...[
                 const SizedBox(width: 8),
-                _ScoreBadge(score: item.score!, accent: accent),
+                Flexible(
+                  child: _ScoreBadge(score: item.score!, accent: accent),
+                ),
               ],
             ],
           ),

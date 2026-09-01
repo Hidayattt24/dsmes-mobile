@@ -58,7 +58,7 @@ const _publicRoutes = <String>{
 /// pre-test state changes.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
-    initialLocation: RouteNames.welcome,
+    initialLocation: RouteNames.splash,
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final location = state.matchedLocation;

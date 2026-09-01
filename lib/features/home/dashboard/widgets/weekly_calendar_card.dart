@@ -4,12 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
-enum WeeklyDayState {
-  today,
-  completed,
-  inProgress,
-  noRecord,
-}
+enum WeeklyDayState { today, completed, inProgress, noRecord }
 
 class WeeklyCalendarCard extends StatelessWidget {
   const WeeklyCalendarCard({
@@ -32,7 +27,10 @@ class WeeklyCalendarCard extends StatelessWidget {
     // Generate dates for the current week (Monday to Sunday)
     final now = DateTime.now();
     final firstDayOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final weekDates = List.generate(7, (index) => firstDayOfWeek.add(Duration(days: index)));
+    final weekDates = List.generate(
+      7,
+      (index) => firstDayOfWeek.add(Duration(days: index)),
+    );
 
     final dayLabels = ['S', 'S', 'R', 'K', 'J', 'S', 'M'];
 
@@ -55,7 +53,10 @@ class WeeklyCalendarCard extends StatelessWidget {
                 onTap: onHistoryPressed,
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     children: [
                       Text(
@@ -80,24 +81,31 @@ class WeeklyCalendarCard extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(7, (index) {
             final date = weekDates[index];
             final label = dayLabels[index];
-            
-            final isToday = date.day == now.day && date.month == now.month && date.year == now.year;
-            final isSelected = date.day == selectedDate.day && date.month == selectedDate.month && date.year == selectedDate.year;
+
+            final isToday =
+                date.day == now.day &&
+                date.month == now.month &&
+                date.year == now.year;
+            final isSelected =
+                date.day == selectedDate.day &&
+                date.month == selectedDate.month &&
+                date.year == selectedDate.year;
             final state = getDayState(date);
             final progress = getDayProgress?.call(date) ?? 0.5;
 
-            return WeeklyCalendarDay(
-              label: label,
-              date: date,
-              isToday: isToday,
-              isSelected: isSelected,
-              state: state,
-              progress: progress,
-              onTap: () => onDateSelected?.call(date),
+            return Expanded(
+              child: WeeklyCalendarDay(
+                label: label,
+                date: date,
+                isToday: isToday,
+                isSelected: isSelected,
+                state: state,
+                progress: progress,
+                onTap: () => onDateSelected?.call(date),
+              ),
             );
           }),
         ),
@@ -132,7 +140,8 @@ class WeeklyCalendarDay extends StatelessWidget {
     final Widget indicator = switch (state) {
       WeeklyDayState.completed => const CompletedDayIndicator(),
       WeeklyDayState.inProgress => InProgressDayIndicator(value: progress),
-      WeeklyDayState.noRecord || WeeklyDayState.today => const EmptyDayIndicator(),
+      WeeklyDayState.noRecord ||
+      WeeklyDayState.today => const EmptyDayIndicator(),
     };
 
     // If it is today, wrap it in a distinct highlight ring (M3 Today Highlight)
@@ -142,54 +151,68 @@ class WeeklyCalendarDay extends StatelessWidget {
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(
-            color: AppColors.primary,
-            width: 1.5,
-          ),
+          border: Border.all(color: AppColors.primary, width: 1.5),
         ),
         child: indicator,
       );
     }
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: isSelected
-              ? Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.25),
-                  width: 1,
-                )
-              : Border.all(color: Colors.transparent, width: 1),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            dayCell,
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: AppTextStyles.labelMd.copyWith(
-                color: isToday
-                    ? AppColors.primary
-                    : isSelected
-                        ? AppColors.primary
-                        : AppColors.onSurfaceVariant,
-                fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontalPadding = ((constraints.maxWidth - 36) / 2).clamp(
+          0.0,
+          8.0,
+        );
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 8,
             ),
-          ],
-        ),
-      ),
+            decoration: BoxDecoration(
+              color:
+                  isSelected
+                      ? AppColors.primary.withValues(alpha: 0.08)
+                      : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              border:
+                  isSelected
+                      ? Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        width: 1,
+                      )
+                      : Border.all(color: Colors.transparent, width: 1),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(fit: BoxFit.scaleDown, child: dayCell),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: AppTextStyles.labelMd.copyWith(
+                    color:
+                        isToday
+                            ? AppColors.primary
+                            : isSelected
+                            ? AppColors.primary
+                            : AppColors.onSurfaceVariant,
+                    fontWeight:
+                        isToday || isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -206,20 +229,13 @@ class CompletedDayIndicator extends StatelessWidget {
         color: AppColors.secondary, // Green
         shape: BoxShape.circle,
       ),
-      child: const Icon(
-        Icons.check,
-        color: AppColors.onSecondary,
-        size: 16,
-      ),
+      child: const Icon(Icons.check, color: AppColors.onSecondary, size: 16),
     );
   }
 }
 
 class InProgressDayIndicator extends StatelessWidget {
-  const InProgressDayIndicator({
-    super.key,
-    this.value = 0.5,
-  });
+  const InProgressDayIndicator({super.key, this.value = 0.5});
 
   final double value;
 
@@ -293,10 +309,11 @@ class _DashedCirclePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
 
     final double radius = size.width / 2;
     final Offset center = Offset(radius, radius);

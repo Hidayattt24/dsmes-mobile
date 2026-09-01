@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -35,12 +37,14 @@ class QuestionnaireResultScreen extends ConsumerWidget {
     required this.questionnaireId,
     required this.questionnaireTitle,
     this.isPreTest = false,
+    this.returnToHome = false,
     this.initialResult,
   });
 
   final String questionnaireId;
   final String questionnaireTitle;
   final bool isPreTest;
+  final bool returnToHome;
   final QuizSubmitResultModel? initialResult;
 
   @override
@@ -96,6 +100,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
                       questionnaireId: questionnaireId,
                       questionnaireTitle: questionnaireTitle,
                       isPreTest: isPreTest,
+                      returnToHome: returnToHome,
                       imageUrls: imageUrls,
                     )
                     : const Center(
@@ -111,6 +116,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
                       questionnaireId: questionnaireId,
                       questionnaireTitle: questionnaireTitle,
                       isPreTest: isPreTest,
+                      returnToHome: returnToHome,
                       imageUrls: imageUrls,
                     )
                     : _ResultErrorView(
@@ -128,6 +134,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
               questionnaireId: questionnaireId,
               questionnaireTitle: questionnaireTitle,
               isPreTest: isPreTest,
+              returnToHome: returnToHome,
               imageUrls: imageUrls,
             ),
       ),
@@ -141,6 +148,7 @@ class _ResultBodyFromSubmit extends StatelessWidget {
     required this.questionnaireId,
     required this.questionnaireTitle,
     required this.isPreTest,
+    required this.returnToHome,
     required this.imageUrls,
   });
 
@@ -148,6 +156,7 @@ class _ResultBodyFromSubmit extends StatelessWidget {
   final String questionnaireId;
   final String questionnaireTitle;
   final bool isPreTest;
+  final bool returnToHome;
   final Map<String, String> imageUrls;
 
   @override
@@ -180,6 +189,7 @@ class _ResultBodyFromSubmit extends StatelessWidget {
             questionnaireId: questionnaireId,
             questionnaireTitle: questionnaireTitle,
             isPreTest: isPreTest,
+            returnToHome: returnToHome,
           ),
         ],
       ),
@@ -205,6 +215,7 @@ class PreTestResultScreen extends ConsumerWidget {
       questionnaireId: questionnaireId,
       questionnaireTitle: '',
       isPreTest: true,
+      returnToHome: true,
       initialResult: initialResult,
     );
   }
@@ -282,6 +293,7 @@ class _ResultBody extends ConsumerWidget {
     required this.questionnaireId,
     required this.questionnaireTitle,
     required this.isPreTest,
+    required this.returnToHome,
     required this.imageUrls,
   });
 
@@ -289,6 +301,7 @@ class _ResultBody extends ConsumerWidget {
   final String questionnaireId;
   final String questionnaireTitle;
   final bool isPreTest;
+  final bool returnToHome;
   final Map<String, String> imageUrls;
 
   @override
@@ -328,6 +341,7 @@ class _ResultBody extends ConsumerWidget {
             questionnaireId: questionnaireId,
             questionnaireTitle: questionnaireTitle,
             isPreTest: isPreTest,
+            returnToHome: returnToHome,
           ),
         ],
       ),
@@ -342,11 +356,13 @@ class _ResultBottomActions extends ConsumerWidget {
     required this.questionnaireId,
     required this.questionnaireTitle,
     required this.isPreTest,
+    required this.returnToHome,
   });
 
   final String questionnaireId;
   final String questionnaireTitle;
   final bool isPreTest;
+  final bool returnToHome;
 
   void _openReview(BuildContext context) {
     Navigator.of(context).push(
@@ -462,14 +478,20 @@ class _ResultBottomActions extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                if (returnToHome) {
+                  context.go(RouteNames.home);
+                } else {
+                  Navigator.of(context).pop();
+                }
+              },
               icon: Icon(
-                Icons.arrow_back_rounded,
+                returnToHome ? Icons.home_rounded : Icons.arrow_back_rounded,
                 color: Colors.white,
                 size: 20,
               ),
               label: Text(
-                'Kembali',
+                returnToHome ? 'Ke Beranda' : 'Kembali',
                 style: AppTextStyles.poppinsButton.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -564,8 +586,10 @@ class _PostTestResultContent extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 4,
                 children: [
                   const Icon(
                     Icons.percent_rounded,
@@ -580,7 +604,6 @@ class _PostTestResultContent extends StatelessWidget {
                       color: AppColors.outline,
                     ),
                   ),
-                  const SizedBox(width: 16),
                   const Icon(
                     Icons.quiz_rounded,
                     size: 14,

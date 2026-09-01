@@ -43,54 +43,79 @@ class _RecordViewState extends ConsumerState<RecordView> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CalendarHistoryBottomSheet(
-        initialDate: state.selectedDate ?? DateTime.now(),
-        onDateSelected: (date) {
-          ref.read(recordProvider.notifier).setSelectedDate(date);
-        },
-      ),
+      builder:
+          (context) => CalendarHistoryBottomSheet(
+            initialDate: state.selectedDate ?? DateTime.now(),
+            onDateSelected: (date) {
+              ref.read(recordProvider.notifier).setSelectedDate(date);
+            },
+          ),
     );
   }
 
-  void _onActivitySaved(String activityName, int duration, String intensity, [bool isCompleted = true]) {
-    ref.read(recordProvider.notifier).submitActivity(
-      activityName: activityName,
-      duration: duration,
-      intensity: intensity,
-    );
-    ref.read(notificationsProvider.notifier).addNotification(
-      title: 'Aktivitas Fisik: $activityName',
-      description: '$activityName selama $duration menit ($intensity) telah dicatat.',
-      type: NotificationType.targetAchieved,
-    );
+  void _onActivitySaved(
+    String activityName,
+    int duration,
+    String intensity, [
+    bool isCompleted = true,
+  ]) {
+    ref
+        .read(recordProvider.notifier)
+        .submitActivity(
+          activityName: activityName,
+          duration: duration,
+          intensity: intensity,
+        );
+    ref
+        .read(notificationsProvider.notifier)
+        .addNotification(
+          title: 'Aktivitas Fisik: $activityName',
+          description:
+              '$activityName selama $duration menit ($intensity) telah dicatat.',
+          type: NotificationType.targetAchieved,
+        );
   }
 
-  void _onMedicationSaved(String medicationName, String dosage, String schedule, bool isTaken) async {
+  void _onMedicationSaved(
+    String medicationName,
+    String dosage,
+    String schedule,
+    bool isTaken,
+  ) async {
     // 1. Submit medication log to record provider
-    await ref.read(recordProvider.notifier).submitMedication(
-      medicationName: medicationName,
-      dosage: dosage,
-      schedule: schedule,
-      isTaken: isTaken,
-    );
+    await ref
+        .read(recordProvider.notifier)
+        .submitMedication(
+          medicationName: medicationName,
+          dosage: dosage,
+          schedule: schedule,
+          isTaken: isTaken,
+        );
 
     // Add to real notifications inbox list
     if (isTaken) {
-      ref.read(notificationsProvider.notifier).addNotification(
-        title: 'Catatan Obat: $medicationName',
-        description: 'Konsumsi $medicationName ($dosage) jam $schedule WIB telah dicatat.',
-        type: NotificationType.medication,
-      );
+      ref
+          .read(notificationsProvider.notifier)
+          .addNotification(
+            title: 'Catatan Obat: $medicationName',
+            description:
+                'Konsumsi $medicationName ($dosage) jam $schedule WIB telah dicatat.',
+            type: NotificationType.medication,
+          );
     } else {
-      final formattedSched = schedule.contains(':')
-          ? (schedule.split(':').length == 2 ? '$schedule:00' : schedule)
-          : '$schedule:00';
-      ref.read(notificationsProvider.notifier).scheduleReminderNotification(
-        title: 'Waktunya Minum Obat: $medicationName',
-        description: 'Jadwal minum obat $medicationName ($dosage) Anda jam $schedule WIB.',
-        scheduledTimeStr: formattedSched,
-        type: NotificationType.medication,
-      );
+      final formattedSched =
+          schedule.contains(':')
+              ? (schedule.split(':').length == 2 ? '$schedule:00' : schedule)
+              : '$schedule:00';
+      ref
+          .read(notificationsProvider.notifier)
+          .scheduleReminderNotification(
+            title: 'Waktunya Minum Obat: $medicationName',
+            description:
+                'Jadwal minum obat $medicationName ($dosage) Anda jam $schedule WIB.',
+            scheduledTimeStr: formattedSched,
+            type: NotificationType.medication,
+          );
     }
 
     // 2. Sync the reminder list — submitMedication() already created/updated
@@ -115,7 +140,8 @@ class _RecordViewState extends ConsumerState<RecordView> {
         await LocalNotificationService.instance.showNotification(
           id: notifId,
           title: 'Pengingat Minum Obat Diaktifkan ⏰',
-          body: 'Pengingat untuk $medicationName ($dosage) jam $schedule WIB telah aktif!',
+          body:
+              'Pengingat untuk $medicationName ($dosage) jam $schedule WIB telah aktif!',
         );
 
         await LocalNotificationService.instance.scheduleDailyNotification(
@@ -131,7 +157,13 @@ class _RecordViewState extends ConsumerState<RecordView> {
 
       // 4. Show the medication reminder dialog only when activating a reminder.
       if (mounted) {
-        _showMedicationReminderPopup(context, medicationName, dosage, schedule, isTaken);
+        _showMedicationReminderPopup(
+          context,
+          medicationName,
+          dosage,
+          schedule,
+          isTaken,
+        );
       }
     }
   }
@@ -145,12 +177,13 @@ class _RecordViewState extends ConsumerState<RecordView> {
   ) {
     showDialog(
       context: context,
-      builder: (dialogContext) => _MedicationReminderDialog(
-        medicationName: medicationName,
-        dosage: dosage,
-        schedule: schedule,
-        isTaken: isTaken,
-      ),
+      builder:
+          (dialogContext) => _MedicationReminderDialog(
+            medicationName: medicationName,
+            dosage: dosage,
+            schedule: schedule,
+            isTaken: isTaken,
+          ),
     );
   }
 
@@ -165,12 +198,14 @@ class _RecordViewState extends ConsumerState<RecordView> {
           initialTime: item.time,
           initialStatus: item.badgeText ?? 'Normal',
           onSaved: (val, moment, time, status) {
-            ref.read(recordProvider.notifier).updateBloodSugar(
-              id: item.id,
-              glucoseValue: int.tryParse(val) ?? 0,
-              measurementType: _mapMomentToType(moment),
-              measuredAt: _parseDateTime(time),
-            );
+            ref
+                .read(recordProvider.notifier)
+                .updateBloodSugar(
+                  id: item.id,
+                  glucoseValue: int.tryParse(val) ?? 0,
+                  measurementType: _mapMomentToType(moment),
+                  measuredAt: _parseDateTime(time),
+                );
           },
         );
         break;
@@ -189,13 +224,15 @@ class _RecordViewState extends ConsumerState<RecordView> {
 
       case RecordType.activity:
         final durationMatch = RegExp(r'(\d+)').firstMatch(item.subtitle);
-        final dur = durationMatch != null ? int.parse(durationMatch.group(1)!) : 30;
+        final dur =
+            durationMatch != null ? int.parse(durationMatch.group(1)!) : 30;
         final isCompleted = item.badgeText != 'Belum Melakukan';
         showActivityEntrySheet(
           context,
           initialActivityName: item.title,
           initialDuration: dur,
-          initialIntensity: isCompleted ? (item.badgeText ?? 'Ringan') : 'Ringan',
+          initialIntensity:
+              isCompleted ? (item.badgeText ?? 'Ringan') : 'Ringan',
           initialIsCompleted: isCompleted,
           onSaved: (name, duration, intensity, isCompleted) {
             _onActivitySaved(name, duration, intensity, isCompleted);
@@ -206,10 +243,17 @@ class _RecordViewState extends ConsumerState<RecordView> {
       case RecordType.medication:
         final medName = item.title.isNotEmpty ? item.title : 'Metformin';
         final rawDosage = item.subtitle;
-        final dosage = (rawDosage == 'selesai' || rawDosage == 'pending' || rawDosage == 'terlewat' || rawDosage.isEmpty)
-            ? '500 mg'
-            : rawDosage;
-        final isTaken = item.badgeText == 'Sudah Minum' || item.badgeText == 'Tepat Waktu' || item.badgeText == 'selesai';
+        final dosage =
+            (rawDosage == 'selesai' ||
+                    rawDosage == 'pending' ||
+                    rawDosage == 'terlewat' ||
+                    rawDosage.isEmpty)
+                ? '500 mg'
+                : rawDosage;
+        final isTaken =
+            item.badgeText == 'Sudah Minum' ||
+            item.badgeText == 'Tepat Waktu' ||
+            item.badgeText == 'selesai';
         showMedicationEntrySheet(
           context,
           initialMedicationName: medName,
@@ -247,122 +291,133 @@ class _RecordViewState extends ConsumerState<RecordView> {
     final parts = time.split(':');
     final hour = int.tryParse(parts[0]) ?? 0;
     final minute = int.tryParse(parts[1]) ?? 0;
-    return DateTime(now.year, now.month, now.day, hour, minute).toUtc().toIso8601String();
+    return DateTime(
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    ).toUtc().toIso8601String();
   }
 
   Future<void> _handleDeleteItem(TimelineRecordItem item) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        backgroundColor: AppColors.surfaceContainerLowest,
-        elevation: 6,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: const BoxDecoration(
-                  color: AppColors.errorContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.delete_forever_rounded,
-                  color: AppColors.error,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'Hapus Catatan Kesehatan?',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.headlineLg.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Apakah Anda yakin ingin menghapus catatan "${item.title}"? Catatan yang dihapus tidak dapat dikembalikan.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontSize: 13,
-                  color: AppColors.onSurfaceVariant,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Row(
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            backgroundColor: AppColors.surfaceContainerLowest,
+            elevation: 6,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 46,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          side: BorderSide(
-                            color: AppColors.outlineVariant.withValues(alpha: 0.6),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: Center(
-                          child: Text(
-                            'Batal',
-                            style: AppTextStyles.labelLg.copyWith(
-                              color: AppColors.onSurface,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: const BoxDecoration(
+                      color: AppColors.errorContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.delete_forever_rounded,
+                      color: AppColors.error,
+                      size: 28,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: 46,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          backgroundColor: AppColors.error,
-                          foregroundColor: AppColors.onError,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: Center(
-                          child: Text(
-                            'Hapus',
-                            style: AppTextStyles.labelLg.copyWith(
-                              color: AppColors.onError,
-                              fontWeight: FontWeight.bold,
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Hapus Catatan Kesehatan?',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.headlineLg.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Apakah Anda yakin ingin menghapus catatan "${item.title}"? Catatan yang dihapus tidak dapat dikembalikan.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMd.copyWith(
+                      fontSize: 13,
+                      color: AppColors.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 46,
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              side: BorderSide(
+                                color: AppColors.outlineVariant.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: Center(
+                              child: Text(
+                                'Batal',
+                                style: AppTextStyles.labelLg.copyWith(
+                                  color: AppColors.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 46,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              backgroundColor: AppColors.error,
+                              foregroundColor: AppColors.onError,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: Center(
+                              child: Text(
+                                'Hapus',
+                                style: AppTextStyles.labelLg.copyWith(
+                                  color: AppColors.onError,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
 
     if (confirm == true) {
-      await ref.read(recordProvider.notifier).deleteHistoryItem(item.type, item.id);
+      await ref
+          .read(recordProvider.notifier)
+          .deleteHistoryItem(item.type, item.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -381,7 +436,8 @@ class _RecordViewState extends ConsumerState<RecordView> {
 
     // Show error as SnackBar
     ref.listen<RecordPageState>(recordProvider, (prev, next) {
-      if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
+      if (next.errorMessage != null &&
+          next.errorMessage != prev?.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
@@ -403,123 +459,150 @@ class _RecordViewState extends ConsumerState<RecordView> {
         onRefresh: () => ref.read(recordProvider.notifier).loadData(),
         color: AppColors.primary,
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Catatan Harian',
-                  style: AppTextStyles.headlineLg.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.onSurface,
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Catatan Harian',
+                style: AppTextStyles.headlineLg.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.onSurface,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Pantau seluruh aktivitas harian Anda.',
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Pantau seluruh aktivitas harian Anda.',
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
                 ),
-                const SizedBox(height: AppSpacing.lg),
+              ),
+              const SizedBox(height: AppSpacing.lg),
 
-
-
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: AppSpacing.sm,
-                  crossAxisSpacing: AppSpacing.sm,
-                  childAspectRatio: 0.65,
-                  children: [
-                    RecordActionCard(
-                      title: 'Gula Darah',
-                      valueText: pageState.bloodSugarValue,
-                      unitText: pageState.bloodSugarValue == '-' ? null : 'mg/dL',
-                      subtitle: pageState.bloodSugarSubtitle,
-                      buttonText: 'Catat',
-                      icon: Icons.water_drop,
-                      iconBgColor: AppColors.errorContainer,
-                      iconColor: AppColors.onErrorContainer,
-                      onTap: () => context.push(RouteNames.bloodSugarEntry),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cardWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
+                  final cardHeight =
+                      cardWidth / 0.65 < 220 ? 220.0 : cardWidth / 0.65;
+                  return GridView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: AppSpacing.sm,
+                      crossAxisSpacing: AppSpacing.sm,
+                      mainAxisExtent: cardHeight,
                     ),
-                    RecordActionCard(
-                      title: 'Makanan',
-                      valueText: pageState.foodValue,
-                      unitText: 'kcal',
-                      subtitle: pageState.foodSubtitle,
-                      buttonText: 'Tambah',
-                      icon: Icons.restaurant,
-                      iconBgColor: AppColors.tertiaryFixed,
-                      iconColor: AppColors.onTertiaryFixedVariant,
-                      isPrimaryButton: true,
-                      onTap: () => context.push(RouteNames.mealEntry),
-                    ),
-                    RecordActionCard(
-                      title: 'Aktivitas',
-                      valueText: '${pageState.activityDuration}',
-                      unitText: 'menit',
-                      subtitle: pageState.activityName,
-                      buttonText: 'Catat',
-                      icon: Icons.directions_walk,
-                      iconBgColor: AppColors.secondaryFixed,
-                      iconColor: AppColors.onSecondaryFixedVariant,
-                      onTap: () => showActivityEntrySheet(
-                        context,
-                        initialActivityName: pageState.activityName,
-                        initialDuration: pageState.activityDuration == 0 ? 30 : pageState.activityDuration,
-                        initialIntensity: pageState.activityIntensity,
-                        onSaved: _onActivitySaved,
+                    children: [
+                      RecordActionCard(
+                        title: 'Gula Darah',
+                        valueText: pageState.bloodSugarValue,
+                        unitText:
+                            pageState.bloodSugarValue == '-' ? null : 'mg/dL',
+                        subtitle: pageState.bloodSugarSubtitle,
+                        buttonText: 'Catat',
+                        icon: Icons.water_drop,
+                        iconBgColor: AppColors.errorContainer,
+                        iconColor: AppColors.onErrorContainer,
+                        onTap: () => context.push(RouteNames.bloodSugarEntry),
                       ),
-                    ),
-                    RecordActionCard(
-                      title: 'Minum Obat',
-                      valueText: pageState.medicationName,
-                      unitText: pageState.medicationDosage,
-                      subtitle: 'Jadwal ${pageState.medicationSchedule}',
-                      buttonText: (pageState.medicationName != '-' && pageState.medicationName.trim().isNotEmpty)
-                          ? 'Perbarui'
-                          : 'Catat Obat',
-                      icon: Icons.medication,
-                      iconBgColor: AppColors.surfaceContainerHighest,
-                      iconColor: AppColors.onSurface,
-                      badgeText: pageState.isMedicationTaken ? 'Sudah minum' : 'Belum minum',
-                      badgeBgColor: pageState.isMedicationTaken
-                          ? AppColors.secondaryContainer
-                          : AppColors.surfaceVariant,
-                      badgeTextColor: pageState.isMedicationTaken
-                          ? AppColors.onSecondaryContainer
-                          : AppColors.onSurfaceVariant,
-                      onTap: () => showMedicationEntrySheet(
-                        context,
-                        initialMedicationName: pageState.medicationName == '-' ? 'Metformin' : pageState.medicationName,
-                        initialDosage: pageState.medicationDosage,
-                        initialSchedule: pageState.medicationSchedule,
-                        initialIsTaken: pageState.isMedicationTaken,
-                        onSaved: _onMedicationSaved,
+                      RecordActionCard(
+                        title: 'Makanan',
+                        valueText: pageState.foodValue,
+                        unitText: 'kcal',
+                        subtitle: pageState.foodSubtitle,
+                        buttonText: 'Tambah',
+                        icon: Icons.restaurant,
+                        iconBgColor: AppColors.tertiaryFixed,
+                        iconColor: AppColors.onTertiaryFixedVariant,
+                        isPrimaryButton: true,
+                        onTap: () => context.push(RouteNames.mealEntry),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                      RecordActionCard(
+                        title: 'Aktivitas',
+                        valueText: '${pageState.activityDuration}',
+                        unitText: 'menit',
+                        subtitle: pageState.activityName,
+                        buttonText: 'Catat',
+                        icon: Icons.directions_walk,
+                        iconBgColor: AppColors.secondaryFixed,
+                        iconColor: AppColors.onSecondaryFixedVariant,
+                        onTap:
+                            () => showActivityEntrySheet(
+                              context,
+                              initialActivityName: pageState.activityName,
+                              initialDuration:
+                                  pageState.activityDuration == 0
+                                      ? 30
+                                      : pageState.activityDuration,
+                              initialIntensity: pageState.activityIntensity,
+                              onSaved: _onActivitySaved,
+                            ),
+                      ),
+                      RecordActionCard(
+                        title: 'Minum Obat',
+                        valueText: pageState.medicationName,
+                        unitText: pageState.medicationDosage,
+                        subtitle: 'Jadwal ${pageState.medicationSchedule}',
+                        buttonText:
+                            (pageState.medicationName != '-' &&
+                                    pageState.medicationName.trim().isNotEmpty)
+                                ? 'Perbarui'
+                                : 'Catat Obat',
+                        icon: Icons.medication,
+                        iconBgColor: AppColors.surfaceContainerHighest,
+                        iconColor: AppColors.onSurface,
+                        badgeText:
+                            pageState.isMedicationTaken
+                                ? 'Sudah minum'
+                                : 'Belum minum',
+                        badgeBgColor:
+                            pageState.isMedicationTaken
+                                ? AppColors.secondaryContainer
+                                : AppColors.surfaceVariant,
+                        badgeTextColor:
+                            pageState.isMedicationTaken
+                                ? AppColors.onSecondaryContainer
+                                : AppColors.onSurfaceVariant,
+                        onTap:
+                            () => showMedicationEntrySheet(
+                              context,
+                              initialMedicationName:
+                                  pageState.medicationName == '-'
+                                      ? 'Metformin'
+                                      : pageState.medicationName,
+                              initialDosage: pageState.medicationDosage,
+                              initialSchedule: pageState.medicationSchedule,
+                              initialIsTaken: pageState.isMedicationTaken,
+                              onSaved: _onMedicationSaved,
+                            ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.xl),
 
-                RecordTimelineSection(
-                  selectedDate: pageState.selectedDate ?? DateTime.now(),
-                  selectedFilter: pageState.selectedFilter,
-                  items: currentTimelineItems,
-                  onDateSelected: (newDate) {
-                    ref.read(recordProvider.notifier).setSelectedDate(newDate);
-                  },
-                  onFilterSelected: (newFilter) {
-                    ref.read(recordProvider.notifier).setSelectedFilter(newFilter);
-                  },
-                  onOpenCalendarSheet: _openCalendarHistoryBottomSheet,
-                  onEditItem: _handleEditItem,
-                  onDeleteItem: _handleDeleteItem,
-                ),
+              RecordTimelineSection(
+                selectedDate: pageState.selectedDate ?? DateTime.now(),
+                selectedFilter: pageState.selectedFilter,
+                items: currentTimelineItems,
+                onDateSelected: (newDate) {
+                  ref.read(recordProvider.notifier).setSelectedDate(newDate);
+                },
+                onFilterSelected: (newFilter) {
+                  ref
+                      .read(recordProvider.notifier)
+                      .setSelectedFilter(newFilter);
+                },
+                onOpenCalendarSheet: _openCalendarHistoryBottomSheet,
+                onEditItem: _handleEditItem,
+                onDeleteItem: _handleDeleteItem,
+              ),
               const SizedBox(height: 80),
             ],
           ),
@@ -529,21 +612,19 @@ class _RecordViewState extends ConsumerState<RecordView> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: FloatingActionButton(
-          onPressed: () => showAddRecordSheet(
-            context,
-            onActivitySaved: _onActivitySaved,
-            onMedicationSaved: _onMedicationSaved,
-          ),
+          onPressed:
+              () => showAddRecordSheet(
+                context,
+                onActivitySaved: _onActivitySaved,
+                onMedicationSaved: _onMedicationSaved,
+              ),
           backgroundColor: AppColors.primaryContainer,
           foregroundColor: AppColors.onPrimaryContainer,
           elevation: 3,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Icon(
-            Icons.add,
-            size: 24,
-          ),
+          child: const Icon(Icons.add, size: 24),
         ),
       ),
     );
@@ -564,10 +645,12 @@ class _MedicationReminderDialog extends ConsumerStatefulWidget {
   final bool isTaken;
 
   @override
-  ConsumerState<_MedicationReminderDialog> createState() => _MedicationReminderDialogState();
+  ConsumerState<_MedicationReminderDialog> createState() =>
+      _MedicationReminderDialogState();
 }
 
-class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDialog> {
+class _MedicationReminderDialogState
+    extends ConsumerState<_MedicationReminderDialog> {
   late bool _enableReminder;
 
   @override
@@ -578,9 +661,12 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
 
   void _onToggleReminder(bool val) async {
     setState(() => _enableReminder = val);
-    final formattedSched = widget.schedule.contains(':')
-        ? (widget.schedule.split(':').length == 2 ? '${widget.schedule}:00' : widget.schedule)
-        : '${widget.schedule}:00';
+    final formattedSched =
+        widget.schedule.contains(':')
+            ? (widget.schedule.split(':').length == 2
+                ? '${widget.schedule}:00'
+                : widget.schedule)
+            : '${widget.schedule}:00';
 
     final parts = widget.schedule.split(':');
     final hour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
@@ -589,25 +675,30 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
 
     if (val) {
       try {
-        await ref.read(reminderListProvider.notifier).create(
-          activityName: 'Minum Obat ${widget.medicationName} (${widget.dosage})',
-          category: 'medis_obat',
-          scheduledTime: formattedSched,
-          notes: 'Belum diminum',
-          activeDays: const [1, 2, 3, 4, 5, 6, 7],
-        );
+        await ref
+            .read(reminderListProvider.notifier)
+            .create(
+              activityName:
+                  'Minum Obat ${widget.medicationName} (${widget.dosage})',
+              category: 'medis_obat',
+              scheduledTime: formattedSched,
+              notes: 'Belum diminum',
+              activeDays: const [1, 2, 3, 4, 5, 6, 7],
+            );
 
         // System Notification Pop-up & Alarm Schedule
         await LocalNotificationService.instance.showNotification(
           id: notifId,
           title: 'Pengingat Minum Obat Diaktifkan ⏰',
-          body: 'Pengingat untuk ${widget.medicationName} (${widget.dosage}) jam ${widget.schedule} WIB telah aktif!',
+          body:
+              'Pengingat untuk ${widget.medicationName} (${widget.dosage}) jam ${widget.schedule} WIB telah aktif!',
         );
 
         await LocalNotificationService.instance.scheduleDailyNotification(
           id: notifId + 1,
           title: 'Waktunya Minum Obat! 💊',
-          body: 'Jangan lupa diminum: ${widget.medicationName} (${widget.dosage})',
+          body:
+              'Jangan lupa diminum: ${widget.medicationName} (${widget.dosage})',
           hour: hour,
           minute: minute,
         );
@@ -621,9 +712,7 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       backgroundColor: AppColors.surfaceContainerLowest,
       elevation: 10,
       child: Padding(
@@ -660,7 +749,9 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
 
             // Dialog Title
             Text(
-              widget.isTaken ? 'Obat Berhasil Dicatat!' : 'Catatan & Pengingat Obat',
+              widget.isTaken
+                  ? 'Obat Berhasil Dicatat!'
+                  : 'Catatan & Pengingat Obat',
               textAlign: TextAlign.center,
               style: AppTextStyles.headlineLg.copyWith(
                 fontSize: 20,
@@ -700,14 +791,18 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: widget.isTaken
-                              ? AppColors.secondaryContainer
-                              : AppColors.primaryContainer,
+                          color:
+                              widget.isTaken
+                                  ? AppColors.secondaryContainer
+                                  : AppColors.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           Icons.medication_rounded,
-                          color: widget.isTaken ? AppColors.secondary : AppColors.primary,
+                          color:
+                              widget.isTaken
+                                  ? AppColors.secondary
+                                  : AppColors.primary,
                           size: 24,
                         ),
                       ),
@@ -741,29 +836,43 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
                   const SizedBox(height: 12),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: widget.isTaken
-                          ? AppColors.secondaryContainer.withValues(alpha: 0.5)
-                          : AppColors.surfaceContainerHighest,
+                      color:
+                          widget.isTaken
+                              ? AppColors.secondaryContainer.withValues(
+                                alpha: 0.5,
+                              )
+                              : AppColors.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          widget.isTaken ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                          widget.isTaken
+                              ? Icons.check_circle_rounded
+                              : Icons.info_outline_rounded,
                           size: 16,
-                          color: widget.isTaken ? AppColors.secondary : AppColors.onSurfaceVariant,
+                          color:
+                              widget.isTaken
+                                  ? AppColors.secondary
+                                  : AppColors.onSurfaceVariant,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          widget.isTaken ? 'Status: Sudah Diminum' : 'Status: Belum Diminum',
+                          widget.isTaken
+                              ? 'Status: Sudah Diminum'
+                              : 'Status: Belum Diminum',
                           style: AppTextStyles.labelMd.copyWith(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: widget.isTaken
-                                ? AppColors.onSecondaryContainer
-                                : AppColors.onSurfaceVariant,
+                            color:
+                                widget.isTaken
+                                    ? AppColors.onSecondaryContainer
+                                    : AppColors.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -777,23 +886,33 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
             if (!widget.isTaken) ...[
               const SizedBox(height: AppSpacing.md),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: _enableReminder
-                      ? AppColors.primaryContainer.withValues(alpha: 0.3)
-                      : AppColors.surfaceContainerLow,
+                  color:
+                      _enableReminder
+                          ? AppColors.primaryContainer.withValues(alpha: 0.3)
+                          : AppColors.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: _enableReminder
-                        ? AppColors.primary.withValues(alpha: 0.4)
-                        : AppColors.outlineVariant.withValues(alpha: 0.3),
+                    color:
+                        _enableReminder
+                            ? AppColors.primary.withValues(alpha: 0.4)
+                            : AppColors.outlineVariant.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      _enableReminder ? Icons.notifications_active_rounded : Icons.notifications_off_rounded,
-                      color: _enableReminder ? AppColors.primary : AppColors.outline,
+                      _enableReminder
+                          ? Icons.notifications_active_rounded
+                          : Icons.notifications_off_rounded,
+                      color:
+                          _enableReminder
+                              ? AppColors.primary
+                              : AppColors.outline,
                       size: 22,
                     ),
                     const SizedBox(width: 12),
@@ -843,7 +962,9 @@ class _MedicationReminderDialogState extends ConsumerState<_MedicationReminderDi
                       style: OutlinedButton.styleFrom(
                         padding: EdgeInsets.zero,
                         side: BorderSide(
-                          color: AppColors.outlineVariant.withValues(alpha: 0.6),
+                          color: AppColors.outlineVariant.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),

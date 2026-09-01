@@ -41,8 +41,7 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
   Future<void> _initBiometricState() async {
     try {
       final storage = ref.read(secureStorageProvider);
-      final stored =
-          await storage.read(key: AppConstants.keyBiometricEnabled);
+      final stored = await storage.read(key: AppConstants.keyBiometricEnabled);
       final available = await _localAuth.canCheckBiometrics;
       final enrolled = await _localAuth.isDeviceSupported();
 
@@ -91,12 +90,16 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
         if (authenticated && mounted) {
           final storage = ref.read(secureStorageProvider);
           await storage.write(
-              key: AppConstants.keyBiometricEnabled, value: 'true');
+            key: AppConstants.keyBiometricEnabled,
+            value: 'true',
+          );
           setState(() => _biometricEnabled = true);
           AppSnackbar.showSuccess(context, 'Login biometrik diaktifkan.');
         } else if (mounted) {
           AppSnackbar.showError(
-              context, 'Verifikasi biometrik gagal. Silakan coba lagi.');
+            context,
+            'Verifikasi biometrik gagal. Silakan coba lagi.',
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -142,47 +145,64 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
               color: AppColors.onSurface,
             ),
           ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: oldPassController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Sandi Saat Ini',
-                    prefixIcon: Icon(Icons.lock_outline_rounded),
-                  ),
-                  validator: (val) => val == null || val.isEmpty
-                      ? 'Kata sandi saat ini wajib diisi'
-                      : null,
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: (MediaQuery.sizeOf(ctx).height -
+                      MediaQuery.viewInsetsOf(ctx).bottom -
+                      220)
+                  .clamp(160.0, 520.0),
+            ),
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: oldPassController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Kata Sandi Saat Ini',
+                        prefixIcon: Icon(Icons.lock_outline_rounded),
+                      ),
+                      validator:
+                          (val) =>
+                              val == null || val.isEmpty
+                                  ? 'Kata sandi saat ini wajib diisi'
+                                  : null,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: newPassController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Kata Sandi Baru',
+                        prefixIcon: Icon(Icons.key_rounded),
+                      ),
+                      validator:
+                          (val) =>
+                              val == null || val.length < 6
+                                  ? 'Minimal 6 karakter'
+                                  : null,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: confirmPassController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Konfirmasi Kata Sandi Baru',
+                        prefixIcon: Icon(Icons.check_circle_outline_rounded),
+                      ),
+                      validator:
+                          (val) =>
+                              val != newPassController.text
+                                  ? 'Konfirmasi kata sandi tidak cocok'
+                                  : null,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                TextFormField(
-                  controller: newPassController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Sandi Baru',
-                    prefixIcon: Icon(Icons.key_rounded),
-                  ),
-                  validator: (val) => val == null || val.length < 6
-                      ? 'Minimal 6 karakter'
-                      : null,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TextFormField(
-                  controller: confirmPassController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Konfirmasi Kata Sandi Baru',
-                    prefixIcon: Icon(Icons.check_circle_outline_rounded),
-                  ),
-                  validator: (val) => val != newPassController.text
-                      ? 'Konfirmasi kata sandi tidak cocok'
-                      : null,
-                ),
-              ],
+              ),
             ),
           ),
           actions: [
@@ -192,34 +212,35 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
             ),
             AppButton(
               label: _isChangingPassword ? 'Menyimpan...' : 'Simpan',
-              onPressed: _isChangingPassword
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-                      setState(() => _isChangingPassword = true);
-                      try {
-                        final authRepo = ref.read(authRepositoryProvider);
-                        await authRepo.changePassword(
-                          currentPassword: oldPassController.text,
-                          newPassword: newPassController.text,
-                        );
-                        if (ctx.mounted) Navigator.pop(ctx);
-                        if (mounted) {
-                          AppSnackbar.showSuccess(
-                            context,
-                            'Kata sandi berhasil diperbarui.',
+              onPressed:
+                  _isChangingPassword
+                      ? null
+                      : () async {
+                        if (!formKey.currentState!.validate()) return;
+                        setState(() => _isChangingPassword = true);
+                        try {
+                          final authRepo = ref.read(authRepositoryProvider);
+                          await authRepo.changePassword(
+                            currentPassword: oldPassController.text,
+                            newPassword: newPassController.text,
                           );
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (mounted) {
+                            AppSnackbar.showSuccess(
+                              context,
+                              'Kata sandi berhasil diperbarui.',
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            AppSnackbar.showError(context, e.toString());
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isChangingPassword = false);
+                          }
                         }
-                      } catch (e) {
-                        if (mounted) {
-                          AppSnackbar.showError(context, e.toString());
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() => _isChangingPassword = false);
-                        }
-                      }
-                    },
+                      },
             ),
           ],
         );
@@ -236,8 +257,10 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.onSurface),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.onSurface,
+          ),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -270,25 +293,35 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.key_rounded,
-                          color: AppColors.primary),
+                      leading: const Icon(
+                        Icons.key_rounded,
+                        color: AppColors.primary,
+                      ),
                       title: const Text('Ubah Kata Sandi'),
-                      subtitle: const Text('Perbarui kata sandi secara berkala'),
+                      subtitle: const Text(
+                        'Perbarui kata sandi secara berkala',
+                      ),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: _showChangePasswordDialog,
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
-                      secondary: _isTogglingBiometric
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.fingerprint_rounded,
-                              color: AppColors.primary),
+                      secondary:
+                          _isTogglingBiometric
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Icon(
+                                Icons.fingerprint_rounded,
+                                color: AppColors.primary,
+                              ),
                       title: const Text(
-                          'Login Biometrik (Face ID / Fingerprint)'),
+                        'Login Biometrik (Face ID / Fingerprint)',
+                      ),
                       subtitle: Text(
                         _biometricAvailable
                             ? 'Masuk cepat dengan sensor biometrik'
@@ -318,25 +351,30 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
                 child: Column(
                   children: [
                     SwitchListTile(
-                      secondary: const Icon(Icons.sync_rounded,
-                          color: AppColors.secondary),
+                      secondary: const Icon(
+                        Icons.sync_rounded,
+                        color: AppColors.secondary,
+                      ),
                       title: const Text('Sinkronisasi Data Kesehatan'),
                       subtitle: const Text('Integrasi catatan kesehatan lokal'),
                       value: _healthSyncEnabled,
-                      onChanged: (val) =>
-                          setState(() => _healthSyncEnabled = val),
+                      onChanged:
+                          (val) => setState(() => _healthSyncEnabled = val),
                       activeColor: AppColors.primary,
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
-                      secondary: const Icon(Icons.insights_rounded,
-                          color: AppColors.tertiary),
+                      secondary: const Icon(
+                        Icons.insights_rounded,
+                        color: AppColors.tertiary,
+                      ),
                       title: const Text('Izin Analisis Aplikasi'),
-                      subtitle:
-                          const Text('Kirim laporan anonim untuk pengembangan'),
+                      subtitle: const Text(
+                        'Kirim laporan anonim untuk pengembangan',
+                      ),
                       value: _analyticsEnabled,
-                      onChanged: (val) =>
-                          setState(() => _analyticsEnabled = val),
+                      onChanged:
+                          (val) => setState(() => _analyticsEnabled = val),
                       activeColor: AppColors.primary,
                     ),
                   ],
@@ -359,8 +397,10 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.policy_outlined,
-                          color: AppColors.outline),
+                      leading: const Icon(
+                        Icons.policy_outlined,
+                        color: AppColors.outline,
+                      ),
                       title: const Text('Kebijakan Privasi'),
                       trailing: const Icon(Icons.open_in_new_rounded, size: 18),
                       onTap: () {
@@ -372,8 +412,10 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.gavel_outlined,
-                          color: AppColors.outline),
+                      leading: const Icon(
+                        Icons.gavel_outlined,
+                        color: AppColors.outline,
+                      ),
                       title: const Text('Syarat & Ketentuan Penggunaan'),
                       trailing: const Icon(Icons.open_in_new_rounded, size: 18),
                       onTap: () {
@@ -408,8 +450,10 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
                           'Hapus akun adalah tindakan permanen.',
                         );
                       },
-                      icon: const Icon(Icons.delete_forever_rounded,
-                          color: AppColors.error),
+                      icon: const Icon(
+                        Icons.delete_forever_rounded,
+                        color: AppColors.error,
+                      ),
                       label: Text(
                         'Hapus Akun Permanen',
                         style: AppTextStyles.labelLg.copyWith(

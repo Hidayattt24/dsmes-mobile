@@ -7,10 +7,6 @@ import '../../core/widgets/app_avatar.dart';
 import '../../core/widgets/app_icon_button.dart';
 
 /// Application-level shared top header bar.
-///
-/// Contains top-level branding ("DSMES Aceh"), Calendar trigger,
-/// Notification trigger with unread badge count, Profile Avatar,
-/// and contextual greeting/subtitles.
 class AppHeader extends StatelessWidget {
   const AppHeader({
     super.key,
@@ -39,40 +35,48 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Top action bar (Logo + actions)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 360;
+        final actionSize = isNarrow ? 36.0 : 40.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (showLogo)
-              Row(
-                children: [
-                  const Icon(
-                    Icons.health_and_safety,
-                    color: AppColors.primary,
-                    size: 26,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    'DSMES Aceh',
-                    style: AppTextStyles.headlineMd.copyWith(
-                      color: AppColors.primary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              )
-            else
-              const SizedBox.shrink(),
             Row(
               children: [
+                if (showLogo)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.health_and_safety,
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Flexible(
+                          child: Text(
+                            'DSMES Aceh',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.headlineMd.copyWith(
+                              color: AppColors.primary,
+                              fontSize: isNarrow ? 17 : 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  const Spacer(),
                 AppIconButton(
                   icon: Icons.calendar_today_rounded,
                   onTap: onCalendarTap,
                   tooltip: 'Kalender',
+                  size: actionSize,
                 ),
                 const SizedBox(width: AppSpacing.xxs),
                 AppIconButton(
@@ -80,39 +84,45 @@ class AppHeader extends StatelessWidget {
                   onTap: onNotificationTap,
                   badgeCount: notificationCount,
                   tooltip: 'Notifikasi',
+                  size: actionSize,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 AppAvatar(
                   imageUrl: avatarUrl,
-                  initials: userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                  initials:
+                      userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
                   onTap: onProfileTap,
+                  radius: isNarrow ? 16 : 18,
                 ),
               ],
             ),
-          ],
-        ),
-        if (showGreeting) ...[
-          const SizedBox(height: AppSpacing.lg),
-          // Greeting & Subtitle
-          Text(
-            '$greetingText, $userName',
-            style: AppTextStyles.poppinsHeadline.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppColors.onSurface,
-            ),
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              subtitle!,
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
+            if (showGreeting) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                '$greetingText, $userName',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.poppinsHeadline.copyWith(
+                  fontSize: isNarrow ? 21 : 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onSurface,
+                ),
               ),
-            ),
+              if (subtitle != null) ...[
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  subtitle!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
           ],
-        ],
-      ],
+        );
+      },
     );
   }
 }

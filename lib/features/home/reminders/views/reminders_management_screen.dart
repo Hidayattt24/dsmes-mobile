@@ -35,20 +35,25 @@ class RemindersManagementScreen extends ConsumerWidget {
             Expanded(
               child: remindersAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Center(
-                  child: Text('Gagal memuat: $err',
-                      style: AppTextStyles.bodyMd
-                          .copyWith(color: AppColors.error)),
-                ),
-                data: (reminders) => SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.page,
-                    0,
-                    AppSpacing.page,
-                    AppSpacing.md,
-                  ),
-                  child: _buildBody(context, ref, reminders),
-                ),
+                error:
+                    (err, _) => Center(
+                      child: Text(
+                        'Gagal memuat: $err',
+                        style: AppTextStyles.bodyMd.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                data:
+                    (reminders) => SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.page,
+                        0,
+                        AppSpacing.page,
+                        AppSpacing.md,
+                      ),
+                      child: _buildBody(context, ref, reminders),
+                    ),
               ),
             ),
           ],
@@ -84,16 +89,17 @@ class RemindersManagementScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(
-      BuildContext context, WidgetRef ref, List<ReminderModel> reminders) {
+    BuildContext context,
+    WidgetRef ref,
+    List<ReminderModel> reminders,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppSpacing.md),
         Text(
           AppStrings.dailyRoutineTitle,
-          style: AppTextStyles.headlineLg.copyWith(
-            color: AppColors.onSurface,
-          ),
+          style: AppTextStyles.headlineLg.copyWith(color: AppColors.onSurface),
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
@@ -115,12 +121,16 @@ class RemindersManagementScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerLowest,
               borderRadius: AppRadius.card,
-              border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppColors.outlineVariant.withValues(alpha: 0.3),
+              ),
             ),
             child: Text(
               'Belum ada pengingat khusus. Klik tombol rekomendasi di atas atau tambah pengingat baru di bawah.',
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           )
         else
@@ -147,42 +157,42 @@ class RemindersManagementScreen extends ConsumerWidget {
         cat: 'medis_obat',
         timeStr: '07:00',
         icon: 'pill',
-        notes: 'Minum obat atau suntik insulin sesudah makan'
+        notes: 'Minum obat atau suntik insulin sesudah makan',
       ),
       (
         name: 'Cek Gula Darah Puasa (GDP)',
         cat: 'medis_obat',
         timeStr: '06:00',
         icon: 'blood',
-        notes: 'Pemeriksaan gula darah sesudah bangun tidur'
+        notes: 'Pemeriksaan gula darah sesudah bangun tidur',
       ),
       (
         name: 'Cek Gula Darah 2 Jam Sesudah Makan',
         cat: 'medis_obat',
         timeStr: '14:00',
         icon: 'blood',
-        notes: 'Pemeriksaan gula darah 2 jam sesudah makan siang'
+        notes: 'Pemeriksaan gula darah 2 jam sesudah makan siang',
       ),
       (
         name: 'Olahraga / Jalan Santai (30 mnt)',
         cat: 'aktivitas_fisik',
         timeStr: '06:30',
         icon: 'walk',
-        notes: 'Aktivitas fisik harian'
+        notes: 'Aktivitas fisik harian',
       ),
       (
         name: 'Minum Air Putih (8 Gelas)',
         cat: 'nutrisi_air',
         timeStr: '08:00',
         icon: 'water',
-        notes: 'Kebutuhan cairan harian'
+        notes: 'Kebutuhan cairan harian',
       ),
       (
         name: 'Pemeriksaan Kesehatan Kaki',
         cat: 'lainnya',
         timeStr: '20:00',
         icon: 'foot',
-        notes: 'Pemeriksaan kebersihan & integritas kulit kaki'
+        notes: 'Pemeriksaan kebersihan & integritas kulit kaki',
       ),
     ];
 
@@ -194,7 +204,11 @@ class RemindersManagementScreen extends ConsumerWidget {
             Expanded(
               child: Row(
                 children: [
-                  const Icon(Icons.auto_awesome, size: 18, color: AppColors.primary),
+                  const Icon(
+                    Icons.auto_awesome,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                   const SizedBox(width: AppSpacing.xs),
                   Flexible(
                     child: Text(
@@ -215,11 +229,14 @@ class RemindersManagementScreen extends ConsumerWidget {
                 await LocalNotificationService.instance.showNotification(
                   id: 99999,
                   title: '🔔 Tes Notifikasi DSMES',
-                  body: 'Notifikasi pop-up pengingat Android berfungsi dengan baik!',
+                  body:
+                      'Notifikasi pop-up pengingat Android berfungsi dengan baik!',
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Notifikasi tes berhasil dikirim ke bar status HP.'),
+                    content: Text(
+                      'Notifikasi tes berhasil dikirim ke bar status HP.',
+                    ),
                     backgroundColor: AppColors.primary,
                     duration: Duration(seconds: 2),
                   ),
@@ -227,16 +244,25 @@ class RemindersManagementScreen extends ConsumerWidget {
               },
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.notifications_active_rounded, size: 14, color: AppColors.primary),
+                    const Icon(
+                      Icons.notifications_active_rounded,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Tes Pop-Up',
@@ -264,35 +290,48 @@ class RemindersManagementScreen extends ConsumerWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: presets.map((p) {
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: ActionChip(
-                  avatar: Icon(resolveRoutineIcon(p.icon), size: 16, color: AppColors.primary),
-                  label: Text('${p.name} • ${p.timeStr}'),
-                  backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.2),
-                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
-                  onPressed: () {
-                    ref.read(reminderListProvider.notifier).create(
-                          activityName: p.name,
-                          category: p.cat,
-                          scheduledTime: '${p.timeStr}:00',
-                          notes: p.notes,
-                          iconName: p.icon,
-                          repeatIntervalDays: 1,
-                          activeDays: [1, 2, 3, 4, 5, 6, 7],
-                        );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Pengingat "${p.name}" ditambahkan (Status: Off). Aktifkan toggle switch untuk mengaktifkan notifikasi.'),
-                        backgroundColor: AppColors.primary,
-                        duration: const Duration(seconds: 3),
+            children:
+                presets.map((p) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: ActionChip(
+                      avatar: Icon(
+                        resolveRoutineIcon(p.icon),
+                        size: 16,
+                        color: AppColors.primary,
                       ),
-                    );
-                  },
-                ),
-              );
-            }).toList(),
+                      label: Text('${p.name} • ${p.timeStr}'),
+                      backgroundColor: AppColors.primaryContainer.withValues(
+                        alpha: 0.2,
+                      ),
+                      side: BorderSide(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(reminderListProvider.notifier)
+                            .create(
+                              activityName: p.name,
+                              category: p.cat,
+                              scheduledTime: '${p.timeStr}:00',
+                              notes: p.notes,
+                              iconName: p.icon,
+                              repeatIntervalDays: 1,
+                              activeDays: [1, 2, 3, 4, 5, 6, 7],
+                            );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Pengingat "${p.name}" ditambahkan (Status: Off). Aktifkan toggle switch untuk mengaktifkan notifikasi.',
+                            ),
+                            backgroundColor: AppColors.primary,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }).toList(),
           ),
         ),
       ],
@@ -300,7 +339,10 @@ class RemindersManagementScreen extends ConsumerWidget {
   }
 
   Widget _buildReminderCard(
-      BuildContext context, WidgetRef ref, ReminderModel reminder) {
+    BuildContext context,
+    WidgetRef ref,
+    ReminderModel reminder,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -328,15 +370,16 @@ class RemindersManagementScreen extends ConsumerWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_outlined,
-                    size: 18, color: AppColors.primary),
-                onPressed: () =>
-                    _onEditReminder(context, ref, reminder),
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                onPressed: () => _onEditReminder(context, ref, reminder),
                 visualDensity: VisualDensity.compact,
               ),
               GestureDetector(
-                onTap: () =>
-                    _onChangeIcon(context, ref, reminder),
+                onTap: () => _onChangeIcon(context, ref, reminder),
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
@@ -359,14 +402,17 @@ class RemindersManagementScreen extends ConsumerWidget {
 
                   if (willBeActive) {
                     // 1. Schedule notification item in NotificationsNotifier for exact target time
-                    ref.read(notificationsProvider.notifier).scheduleReminderNotification(
+                    ref
+                        .read(notificationsProvider.notifier)
+                        .scheduleReminderNotification(
                           title: 'Waktunya: ${reminder.activityName}',
                           description:
                               'Pengingat untuk ${reminder.activityName} (${reminder.notes.isNotEmpty ? reminder.notes : 'Jadwal pengingat harian DSMES'}).',
                           scheduledTimeStr: reminder.scheduledTime,
-                          type: reminder.category == 'medis_obat'
-                              ? NotificationType.medication
-                              : NotificationType.warning,
+                          type:
+                              reminder.category == 'medis_obat'
+                                  ? NotificationType.medication
+                                  : NotificationType.warning,
                         );
 
                     // 2. Trigger System Pop-Up Notification on Android status bar / lockscreen
@@ -374,7 +420,8 @@ class RemindersManagementScreen extends ConsumerWidget {
                     LocalNotificationService.instance.showNotification(
                       id: notifId,
                       title: '⏰ Pengingat DSMES: ${reminder.activityName}',
-                      body: 'Jadwal pukul ${reminder.formattedTime} - ${reminder.notes.isNotEmpty ? reminder.notes : 'Waktunya melakukan ${reminder.activityName}.'}',
+                      body:
+                          'Jadwal pukul ${reminder.formattedTime} - ${reminder.notes.isNotEmpty ? reminder.notes : 'Waktunya melakukan ${reminder.activityName}.'}',
                     );
 
                     // 3. Schedule recurring daily alarm for exact target time
@@ -385,7 +432,8 @@ class RemindersManagementScreen extends ConsumerWidget {
                       LocalNotificationService.instance.scheduleDailyNotification(
                         id: notifId,
                         title: '⏰ Waktunya ${reminder.activityName}',
-                        body: 'Pengingat harian DSMES (${reminder.formattedTime}). ${reminder.notes}',
+                        body:
+                            'Pengingat harian DSMES (${reminder.formattedTime}). ${reminder.notes}',
                         hour: h,
                         minute: m,
                       );
@@ -394,17 +442,21 @@ class RemindersManagementScreen extends ConsumerWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                            'Notifikasi pengingat "${reminder.activityName}" diaktifkan pada pukul ${reminder.formattedTime}'),
+                          'Notifikasi pengingat "${reminder.activityName}" diaktifkan pada pukul ${reminder.formattedTime}',
+                        ),
                         backgroundColor: AppColors.primary,
                         duration: const Duration(seconds: 3),
                       ),
                     );
                   } else {
-                    LocalNotificationService.instance.cancelNotification(reminder.id.hashCode.abs());
+                    LocalNotificationService.instance.cancelNotification(
+                      reminder.id.hashCode.abs(),
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                            'Pengingat "${reminder.activityName}" dinonaktifkan'),
+                          'Pengingat "${reminder.activityName}" dinonaktifkan',
+                        ),
                         backgroundColor: AppColors.onSurfaceVariant,
                         duration: const Duration(seconds: 2),
                       ),
@@ -418,8 +470,11 @@ class RemindersManagementScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
-              const Icon(Icons.schedule,
-                  size: 16, color: AppColors.onSurfaceVariant),
+              const Icon(
+                Icons.schedule,
+                size: 16,
+                color: AppColors.onSurfaceVariant,
+              ),
               const SizedBox(width: AppSpacing.xxs),
               Text(
                 reminder.formattedTime,
@@ -428,8 +483,11 @@ class RemindersManagementScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              const Icon(Icons.calendar_today,
-                  size: 14, color: AppColors.onSurfaceVariant),
+              const Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: AppColors.onSurfaceVariant,
+              ),
               const SizedBox(width: AppSpacing.xxs),
               Expanded(
                 child: Text(
@@ -464,8 +522,11 @@ class RemindersManagementScreen extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.delete_outline,
-                      size: 18, color: AppColors.error),
+                  const Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: AppColors.error,
+                  ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
                     'Hapus Pengingat',
@@ -508,8 +569,11 @@ class RemindersManagementScreen extends ConsumerWidget {
                 color: AppColors.primaryContainer,
                 shape: BoxShape.circle,
               ),
-              child:
-                  const Icon(Icons.add, color: AppColors.onPrimary, size: 20),
+              child: const Icon(
+                Icons.add,
+                color: AppColors.onPrimary,
+                size: 20,
+              ),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
@@ -543,180 +607,211 @@ class RemindersManagementScreen extends ConsumerWidget {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.page,
-                AppSpacing.lg,
-                AppSpacing.page,
-                MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.outlineVariant,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+            final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.page,
+                  AppSpacing.lg,
+                  AppSpacing.page,
+                  bottomInset + AppSpacing.lg,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height - bottomInset,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Tambah Pengingat Baru',
-                    style: AppTextStyles.headlineMd.copyWith(
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Aktivitas',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TextField(
-                    controller: notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Catatan (opsional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Text(
-                        'Pilih Ikon:',
-                        style: AppTextStyles.labelLg
-                            .copyWith(color: AppColors.onSurface),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      ValueListenableBuilder<String>(
-                        valueListenable: iconKey,
-                        builder: (context, currentIcon, _) {
-                          return GestureDetector(
-                            onTap: () async {
-                              final selected = await showIconPicker(
-                                context,
-                                currentKey: currentIcon,
-                              );
-                              if (selected != null) {
-                                iconKey.value = selected;
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondaryContainer
-                                    .withValues(alpha: 0.3),
-                                borderRadius: AppRadius.cardMd,
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: AppColors.outlineVariant,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          'Tambah Pengingat Baru',
+                          style: AppTextStyles.headlineMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        TextField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Aktivitas',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextField(
+                          controller: notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Catatan (opsional)',
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            Text(
+                              'Pilih Ikon:',
+                              style: AppTextStyles.labelLg.copyWith(
+                                color: AppColors.onSurface,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    resolveRoutineIcon(currentIcon),
-                                    color: AppColors.secondary,
-                                    size: 24,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            ValueListenableBuilder<String>(
+                              valueListenable: iconKey,
+                              builder: (context, currentIcon, _) {
+                                return GestureDetector(
+                                  onTap: () async {
+                                    final selected = await showIconPicker(
+                                      context,
+                                      currentKey: currentIcon,
+                                    );
+                                    if (selected != null) {
+                                      iconKey.value = selected;
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.sm,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondaryContainer
+                                          .withValues(alpha: 0.3),
+                                      borderRadius: AppRadius.cardMd,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          resolveRoutineIcon(currentIcon),
+                                          color: AppColors.secondary,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: AppSpacing.xs),
+                                        const Icon(
+                                          Icons.arrow_drop_down,
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  const Icon(Icons.arrow_drop_down,
-                                      color: AppColors.onSurfaceVariant),
-                                ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Waktu:',
+                              style: AppTextStyles.labelLg.copyWith(
+                                color: AppColors.onSurface,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Waktu:',
-                        style: AppTextStyles.labelLg
-                            .copyWith(color: AppColors.onSurface),
-                      ),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: time,
-                            builder: (context, child) => MediaQuery(
-                              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-                              child: child!,
+                            TextButton.icon(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: time,
+                                  builder:
+                                      (context, child) => MediaQuery(
+                                        data: MediaQuery.of(
+                                          context,
+                                        ).copyWith(alwaysUse24HourFormat: true),
+                                        child: child!,
+                                      ),
+                                );
+                                if (picked != null) {
+                                  setSheetState(() => time = picked);
+                                }
+                              },
+                              icon: const Icon(Icons.access_time, size: 18),
+                              label: Text(
+                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+                                style: AppTextStyles.labelLg.copyWith(
+                                  color: AppColors.primary,
+                                ),
+                              ),
                             ),
-                          );
-                          if (picked != null) {
-                            setSheetState(() => time = picked);
-                          }
-                        },
-                        icon: const Icon(Icons.access_time, size: 18),
-                        label: Text(
-                          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-                          style: AppTextStyles.labelLg
-                              .copyWith(color: AppColors.primary),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Hari Aktif:',
-                    style:
-                        AppTextStyles.labelLg.copyWith(color: AppColors.onSurface),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  _buildDayChips(context, selectedDays, setSheetState),
-                  const SizedBox(height: AppSpacing.md),
-                  const SizedBox(height: AppSpacing.xl),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.trim().isEmpty) return;
-                        final timeStr =
-                            '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                        ref
-                            .read(reminderListProvider.notifier)
-                            .create(
-                              activityName: nameController.text.trim(),
-                              category: category,
-                              scheduledTime: timeStr,
-                              notes: notesController.text.trim(),
-                              iconName: iconKey.value,
-                              activeDays: selectedDays,
-                            );
-                        ref.read(notificationsProvider.notifier).scheduleReminderNotification(
-                          title: 'Pengingat DSMES: ${nameController.text.trim()}',
-                          description: 'Jadwal pengingat ${nameController.text.trim()} (${notesController.text.trim().isNotEmpty ? notesController.text.trim() : 'Waktunya melakukan ${nameController.text.trim()}'}).',
-                          scheduledTimeStr: timeStr,
-                          type: category == 'medis_obat' ? NotificationType.medication : NotificationType.warning,
-                        );
-                        Navigator.pop(sheetContext);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryContainer,
-                        foregroundColor: AppColors.onPrimary,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: AppRadius.button,
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Hari Aktif:',
+                          style: AppTextStyles.labelLg.copyWith(
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        AppStrings.dailyRoutineAddButton,
-                        style: AppTextStyles.poppinsButton,
-                      ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _buildDayChips(context, selectedDays, setSheetState),
+                        const SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: AppSpacing.xl),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (nameController.text.trim().isEmpty) return;
+                              final timeStr =
+                                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
+                              ref
+                                  .read(reminderListProvider.notifier)
+                                  .create(
+                                    activityName: nameController.text.trim(),
+                                    category: category,
+                                    scheduledTime: timeStr,
+                                    notes: notesController.text.trim(),
+                                    iconName: iconKey.value,
+                                    activeDays: selectedDays,
+                                  );
+                              ref
+                                  .read(notificationsProvider.notifier)
+                                  .scheduleReminderNotification(
+                                    title:
+                                        'Pengingat DSMES: ${nameController.text.trim()}',
+                                    description:
+                                        'Jadwal pengingat ${nameController.text.trim()} (${notesController.text.trim().isNotEmpty ? notesController.text.trim() : 'Waktunya melakukan ${nameController.text.trim()}'}).',
+                                    scheduledTimeStr: timeStr,
+                                    type:
+                                        category == 'medis_obat'
+                                            ? NotificationType.medication
+                                            : NotificationType.warning,
+                                  );
+                              Navigator.pop(sheetContext);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryContainer,
+                              foregroundColor: AppColors.onPrimary,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: AppRadius.button,
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              AppStrings.dailyRoutineAddButton,
+                              style: AppTextStyles.poppinsButton,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -726,7 +821,10 @@ class RemindersManagementScreen extends ConsumerWidget {
   }
 
   Widget _buildDayChips(
-      BuildContext context, List<int> selectedDays, void Function(void Function()) setState) {
+    BuildContext context,
+    List<int> selectedDays,
+    void Function(void Function()) setState,
+  ) {
     const dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
     final todayWeekday = DateTime.now().weekday; // 1 = Monday, 7 = Sunday
     final todayName = dayNames[todayWeekday - 1];
@@ -744,23 +842,31 @@ class RemindersManagementScreen extends ConsumerWidget {
                 avatar: Icon(
                   Icons.today,
                   size: 14,
-                  color: (selectedDays.length == 1 && selectedDays.contains(todayWeekday))
-                      ? Colors.white
-                      : AppColors.primary,
+                  color:
+                      (selectedDays.length == 1 &&
+                              selectedDays.contains(todayWeekday))
+                          ? Colors.white
+                          : AppColors.primary,
                 ),
                 label: Text(
                   'Hari Ini ($todayName)',
                   style: TextStyle(
-                    color: (selectedDays.length == 1 && selectedDays.contains(todayWeekday))
-                        ? Colors.white
-                        : AppColors.primary,
+                    color:
+                        (selectedDays.length == 1 &&
+                                selectedDays.contains(todayWeekday))
+                            ? Colors.white
+                            : AppColors.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
                 ),
-                selected: selectedDays.length == 1 && selectedDays.contains(todayWeekday),
+                selected:
+                    selectedDays.length == 1 &&
+                    selectedDays.contains(todayWeekday),
                 selectedColor: AppColors.primary,
-                backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.2),
+                backgroundColor: AppColors.primaryContainer.withValues(
+                  alpha: 0.2,
+                ),
                 side: BorderSide(
                   color: AppColors.primary.withValues(alpha: 0.4),
                 ),
@@ -777,7 +883,10 @@ class RemindersManagementScreen extends ConsumerWidget {
                 label: Text(
                   'Setiap Hari',
                   style: TextStyle(
-                    color: selectedDays.length == 7 ? Colors.white : AppColors.onSurfaceVariant,
+                    color:
+                        selectedDays.length == 7
+                            ? Colors.white
+                            : AppColors.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                     fontSize: 12,
                   ),
@@ -798,16 +907,18 @@ class RemindersManagementScreen extends ConsumerWidget {
                 label: Text(
                   'Sen - Jum',
                   style: TextStyle(
-                    color: (selectedDays.length == 5 &&
-                            !selectedDays.contains(6) &&
-                            !selectedDays.contains(7))
-                        ? Colors.white
-                        : AppColors.onSurfaceVariant,
+                    color:
+                        (selectedDays.length == 5 &&
+                                !selectedDays.contains(6) &&
+                                !selectedDays.contains(7))
+                            ? Colors.white
+                            : AppColors.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                     fontSize: 12,
                   ),
                 ),
-                selected: selectedDays.length == 5 &&
+                selected:
+                    selectedDays.length == 5 &&
                     !selectedDays.contains(6) &&
                     !selectedDays.contains(7),
                 selectedColor: AppColors.primary,
@@ -866,43 +977,49 @@ class RemindersManagementScreen extends ConsumerWidget {
   }
 
   Future<bool> _onDeleteReminder(
-      BuildContext context, WidgetRef ref, ReminderModel reminder) async {
+    BuildContext context,
+    WidgetRef ref,
+    ReminderModel reminder,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-        ),
-        title: Text(
-          'Hapus Pengingat',
-          style: AppTextStyles.headlineMd
-              .copyWith(color: AppColors.onSurface),
-        ),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus pengingat "${reminder.activityName}"?',
-          style: AppTextStyles.bodyMd
-              .copyWith(color: AppColors.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Batal',
-              style: AppTextStyles.labelLg
-                  .copyWith(color: AppColors.onSurfaceVariant),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'Hapus',
-              style:
-                  AppTextStyles.labelLg.copyWith(color: AppColors.error),
+            title: Text(
+              'Hapus Pengingat',
+              style: AppTextStyles.headlineMd.copyWith(
+                color: AppColors.onSurface,
+              ),
             ),
+            content: Text(
+              'Apakah Anda yakin ingin menghapus pengingat "${reminder.activityName}"?',
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(
+                  'Batal',
+                  style: AppTextStyles.labelLg.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(
+                  'Hapus',
+                  style: AppTextStyles.labelLg.copyWith(color: AppColors.error),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
@@ -913,24 +1030,35 @@ class RemindersManagementScreen extends ConsumerWidget {
   }
 
   void _onChangeIcon(
-      BuildContext context, WidgetRef ref, ReminderModel reminder) async {
-    final iconKey = await showIconPicker(context, currentKey: reminder.iconName);
+    BuildContext context,
+    WidgetRef ref,
+    ReminderModel reminder,
+  ) async {
+    final iconKey = await showIconPicker(
+      context,
+      currentKey: reminder.iconName,
+    );
     if (iconKey != null) {
-      ref.read(reminderListProvider.notifier).updateReminder(
-        reminder.id,
-        activityName: reminder.activityName,
-        category: reminder.category,
-        scheduledTime: reminder.scheduledTime,
-        notes: reminder.notes,
-        iconName: iconKey,
-        repeatIntervalDays: reminder.repeatIntervalDays,
-        activeDays: reminder.activeDays,
-      );
+      ref
+          .read(reminderListProvider.notifier)
+          .updateReminder(
+            reminder.id,
+            activityName: reminder.activityName,
+            category: reminder.category,
+            scheduledTime: reminder.scheduledTime,
+            notes: reminder.notes,
+            iconName: iconKey,
+            repeatIntervalDays: reminder.repeatIntervalDays,
+            activeDays: reminder.activeDays,
+          );
     }
   }
 
   void _onEditReminder(
-      BuildContext context, WidgetRef ref, ReminderModel reminder) async {
+    BuildContext context,
+    WidgetRef ref,
+    ReminderModel reminder,
+  ) async {
     final nameController = TextEditingController(text: reminder.activityName);
     final notesController = TextEditingController(text: reminder.notes);
     TimeOfDay time;
@@ -957,174 +1085,198 @@ class RemindersManagementScreen extends ConsumerWidget {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.page,
-                AppSpacing.lg,
-                AppSpacing.page,
-                MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.outlineVariant,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+            final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.page,
+                  AppSpacing.lg,
+                  AppSpacing.page,
+                  bottomInset + AppSpacing.lg,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height - bottomInset,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Edit Pengingat',
-                    style: AppTextStyles.headlineMd.copyWith(
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Aktivitas',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TextField(
-                    controller: notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Catatan (opsional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Text(
-                        'Ikon:',
-                        style: AppTextStyles.labelLg
-                            .copyWith(color: AppColors.onSurface),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      ValueListenableBuilder<String>(
-                        valueListenable: iconKey,
-                        builder: (context, currentIcon, _) {
-                          return GestureDetector(
-                            onTap: () async {
-                              final selected = await showIconPicker(
-                                context,
-                                currentKey: currentIcon,
-                              );
-                              if (selected != null) {
-                                iconKey.value = selected;
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondaryContainer
-                                    .withValues(alpha: 0.3),
-                                borderRadius: AppRadius.cardMd,
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: AppColors.outlineVariant,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          'Edit Pengingat',
+                          style: AppTextStyles.headlineMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        TextField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Aktivitas',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextField(
+                          controller: notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Catatan (opsional)',
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            Text(
+                              'Ikon:',
+                              style: AppTextStyles.labelLg.copyWith(
+                                color: AppColors.onSurface,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    resolveRoutineIcon(currentIcon),
-                                    color: AppColors.secondary,
-                                    size: 24,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            ValueListenableBuilder<String>(
+                              valueListenable: iconKey,
+                              builder: (context, currentIcon, _) {
+                                return GestureDetector(
+                                  onTap: () async {
+                                    final selected = await showIconPicker(
+                                      context,
+                                      currentKey: currentIcon,
+                                    );
+                                    if (selected != null) {
+                                      iconKey.value = selected;
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.sm,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondaryContainer
+                                          .withValues(alpha: 0.3),
+                                      borderRadius: AppRadius.cardMd,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          resolveRoutineIcon(currentIcon),
+                                          color: AppColors.secondary,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: AppSpacing.xs),
+                                        const Icon(
+                                          Icons.arrow_drop_down,
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  const Icon(Icons.arrow_drop_down,
-                                      color: AppColors.onSurfaceVariant),
-                                ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Waktu:',
+                              style: AppTextStyles.labelLg.copyWith(
+                                color: AppColors.onSurface,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Waktu:',
-                        style: AppTextStyles.labelLg
-                            .copyWith(color: AppColors.onSurface),
-                      ),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: time,
-                            builder: (context, child) => MediaQuery(
-                              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-                              child: child!,
+                            TextButton.icon(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: time,
+                                  builder:
+                                      (context, child) => MediaQuery(
+                                        data: MediaQuery.of(
+                                          context,
+                                        ).copyWith(alwaysUse24HourFormat: true),
+                                        child: child!,
+                                      ),
+                                );
+                                if (picked != null) {
+                                  setSheetState(() => time = picked);
+                                }
+                              },
+                              icon: const Icon(Icons.access_time, size: 18),
+                              label: Text(
+                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+                                style: AppTextStyles.labelLg.copyWith(
+                                  color: AppColors.primary,
+                                ),
+                              ),
                             ),
-                          );
-                          if (picked != null) {
-                            setSheetState(() => time = picked);
-                          }
-                        },
-                        icon: const Icon(Icons.access_time, size: 18),
-                        label: Text(
-                          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-                          style: AppTextStyles.labelLg
-                              .copyWith(color: AppColors.primary),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'Hari Aktif:',
-                    style: AppTextStyles.labelLg
-                        .copyWith(color: AppColors.onSurface),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  _buildDayChips(context, selectedDays, setSheetState),
-                  const SizedBox(height: AppSpacing.xl),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.trim().isEmpty) return;
-                        final timeStr =
-                            '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                        ref
-                            .read(reminderListProvider.notifier)
-                            .updateReminder(
-                              reminder.id,
-                              activityName: nameController.text.trim(),
-                              category: category,
-                              scheduledTime: timeStr,
-                              notes: notesController.text.trim(),
-                              iconName: iconKey.value,
-                              activeDays: selectedDays,
-                            );
-                        Navigator.pop(sheetContext);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryContainer,
-                        foregroundColor: AppColors.onPrimary,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: AppRadius.button,
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Hari Aktif:',
+                          style: AppTextStyles.labelLg.copyWith(
+                            color: AppColors.onSurface,
+                          ),
                         ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Simpan Perubahan',
-                        style: AppTextStyles.poppinsButton,
-                      ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _buildDayChips(context, selectedDays, setSheetState),
+                        const SizedBox(height: AppSpacing.xl),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (nameController.text.trim().isEmpty) return;
+                              final timeStr =
+                                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
+                              ref
+                                  .read(reminderListProvider.notifier)
+                                  .updateReminder(
+                                    reminder.id,
+                                    activityName: nameController.text.trim(),
+                                    category: category,
+                                    scheduledTime: timeStr,
+                                    notes: notesController.text.trim(),
+                                    iconName: iconKey.value,
+                                    activeDays: selectedDays,
+                                  );
+                              Navigator.pop(sheetContext);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryContainer,
+                              foregroundColor: AppColors.onPrimary,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: AppRadius.button,
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'Simpan Perubahan',
+                              style: AppTextStyles.poppinsButton,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -1134,7 +1286,10 @@ class RemindersManagementScreen extends ConsumerWidget {
   }
 
   Widget _buildFooter(
-      BuildContext context, WidgetRef ref, double bottomPadding) {
+    BuildContext context,
+    WidgetRef ref,
+    double bottomPadding,
+  ) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.page,
@@ -1145,10 +1300,7 @@ class RemindersManagementScreen extends ConsumerWidget {
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          top: BorderSide(
-            color: AppColors.outlineVariant,
-            width: 0.5,
-          ),
+          top: BorderSide(color: AppColors.outlineVariant, width: 0.5),
         ),
       ),
       child: AppButton(

@@ -28,12 +28,16 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver {
+class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
   int get _selectedIndex => ref.watch(appShellTabIndexProvider);
 
   Widget _buildScreen(int index) {
     return switch (index) {
-      0 => HomeView(key: const ValueKey('home'), nowOverride: widget.nowOverride),
+      0 => HomeView(
+        key: const ValueKey('home'),
+        nowOverride: widget.nowOverride,
+      ),
       1 => const RecordView(key: ValueKey('record')),
       2 => const EducationScreen(key: ValueKey('education')),
       3 => const QuestionnaireScreen(key: ValueKey('questionnaire')),
@@ -70,12 +74,13 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CalendarHistoryBottomSheet(
-        initialDate: widget.nowOverride ?? DateTime.now(),
-        onDateSelected: (date) {
-          // Calendar date selected callback
-        },
-      ),
+      builder:
+          (context) => CalendarHistoryBottomSheet(
+            initialDate: widget.nowOverride ?? DateTime.now(),
+            onDateSelected: (date) {
+              // Calendar date selected callback
+            },
+          ),
     );
   }
 
@@ -93,7 +98,9 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   @override
   Widget build(BuildContext context) {
     final unreadNotificationCount = ref.watch(
-      notificationsProvider.select((list) => list.where((n) => n.isUnread).length),
+      notificationsProvider.select(
+        (list) => list.where((n) => n.isUnread).length,
+      ),
     );
     final dashboardData = ref.watch(homeDashboardProvider).value?.dashboardData;
     final patientName = dashboardData?.displayName ?? 'Pasien';
@@ -108,10 +115,14 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
               children: [
                 // Shared Top Header (Persistent across primary navigation destinations)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
+                    MediaQuery.sizeOf(context).width < 360
+                        ? AppSpacing.md
+                        : AppSpacing.page,
                     AppSpacing.page,
-                    AppSpacing.page,
-                    AppSpacing.page,
+                    MediaQuery.sizeOf(context).width < 360
+                        ? AppSpacing.md
+                        : AppSpacing.page,
                     0,
                   ),
                   child: AppHeader(
@@ -121,7 +132,8 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                     subtitle: _getSubtitleForIndex(_selectedIndex),
                     notificationCount: unreadNotificationCount,
                     onCalendarTap: _openCalendarHistoryBottomSheet,
-                    onNotificationTap: () => context.push(RouteNames.notifications),
+                    onNotificationTap:
+                        () => context.push(RouteNames.notifications),
                     onProfileTap: () {
                       ref.read(appShellTabIndexProvider.notifier).state = 4;
                     },

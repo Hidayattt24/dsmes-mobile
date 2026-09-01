@@ -23,7 +23,8 @@ class MedicationEntrySheet extends StatefulWidget {
     String dosage,
     String schedule,
     bool isTaken,
-  )? onSaved;
+  )?
+  onSaved;
 
   @override
   State<MedicationEntrySheet> createState() => _MedicationEntrySheetState();
@@ -56,7 +57,9 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
   @override
   void initState() {
     super.initState();
-    _medNameController = TextEditingController(text: widget.initialMedicationName);
+    _medNameController = TextEditingController(
+      text: widget.initialMedicationName,
+    );
     _dosageController = TextEditingController(text: widget.initialDosage);
     _notesController = TextEditingController();
     _selectedTime = widget.initialSchedule;
@@ -73,378 +76,429 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.sm,
-          AppSpacing.lg,
-          AppSpacing.lg,
-        ),
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height - bottomInset,
           ),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 32,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: AppColors.outlineVariant,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(28),
+                topRight: Radius.circular(28),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Catat Minum Obat',
-                    style: AppTextStyles.headlineLg.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  Center(
+                    child: Container(
+                      width: 32,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: AppColors.outlineVariant,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              Text(
-                'Masukkan nama & dosis obat yang Anda konsumsi.',
-                style: AppTextStyles.bodyMd.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Custom Medication Name Text Field
-              Text(
-                'Nama Obat',
-                style: AppTextStyles.labelLg.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              TextField(
-                controller: _medNameController,
-                style: AppTextStyles.bodyLg.copyWith(color: AppColors.onSurface),
-                decoration: InputDecoration(
-                  hintText: 'Misal: Metformin, Glibenclamide...',
-                  hintStyle: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.outline,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.surfaceContainerLow,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              // Medication Suggestion Chips
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: _medSuggestions.map((med) {
-                  return ActionChip(
-                    label: Text(med),
-                    labelStyle: AppTextStyles.labelMd.copyWith(
-                      fontSize: 12,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    backgroundColor: AppColors.surfaceContainerLow,
-                    side: BorderSide(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _medNameController.text = med;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Custom Dosage Text Field
-              Text(
-                'Dosis',
-                style: AppTextStyles.labelLg.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              TextField(
-                controller: _dosageController,
-                style: AppTextStyles.bodyLg.copyWith(color: AppColors.onSurface),
-                decoration: InputDecoration(
-                  hintText: 'Misal: 500 mg, 1 Tablet...',
-                  hintStyle: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.outline,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.surfaceContainerLow,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              // Dosage Suggestion Chips
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: _doseSuggestions.map((dose) {
-                  return ActionChip(
-                    label: Text(dose),
-                    labelStyle: AppTextStyles.labelMd.copyWith(
-                      fontSize: 12,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    backgroundColor: AppColors.surfaceContainerLow,
-                    side: BorderSide(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _dosageController.text = dose;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Waktu Jadwal (Custom 24-Jam Input User)
-              Text(
-                'Waktu Jadwal Minum Obat',
-                style: AppTextStyles.labelLg.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              InkWell(
-                onTap: () async {
-                  final parts = _selectedTime.split(':');
-                  final initHour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
-                  final initMin = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-                  final picked = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay(hour: initHour, minute: initMin),
-                    builder: (context, child) {
-                      return MediaQuery(
-                        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-                        child: child!,
-                      );
-                    },
-                  );
-                  if (picked != null) {
-                    final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                    setState(() {
-                      _selectedTime = formatted;
-                    });
-                  }
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Row(
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      Expanded(
+                        child: Text(
+                          'Catat Minum Obat',
+                          softWrap: true,
+                          style: AppTextStyles.headlineLg.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    'Masukkan nama & dosis obat yang Anda konsumsi.',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Custom Medication Name Text Field
+                  Text(
+                    'Nama Obat',
+                    style: AppTextStyles.labelLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  TextField(
+                    controller: _medNameController,
+                    style: AppTextStyles.bodyLg.copyWith(
+                      color: AppColors.onSurface,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Misal: Metformin, Glibenclamide...',
+                      hintStyle: AppTextStyles.bodyMd.copyWith(
+                        color: AppColors.outline,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surfaceContainerLow,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: AppColors.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: AppColors.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  // Medication Suggestion Chips
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children:
+                        _medSuggestions.map((med) {
+                          return ActionChip(
+                            label: Text(med),
+                            labelStyle: AppTextStyles.labelMd.copyWith(
+                              fontSize: 12,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                            backgroundColor: AppColors.surfaceContainerLow,
+                            side: BorderSide(
+                              color: AppColors.outlineVariant.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _medNameController.text = med;
+                              });
+                            },
+                          );
+                        }).toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Custom Dosage Text Field
+                  Text(
+                    'Dosis',
+                    style: AppTextStyles.labelLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  TextField(
+                    controller: _dosageController,
+                    style: AppTextStyles.bodyLg.copyWith(
+                      color: AppColors.onSurface,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Misal: 500 mg, 1 Tablet...',
+                      hintStyle: AppTextStyles.bodyMd.copyWith(
+                        color: AppColors.outline,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surfaceContainerLow,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: AppColors.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: AppColors.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  // Dosage Suggestion Chips
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children:
+                        _doseSuggestions.map((dose) {
+                          return ActionChip(
+                            label: Text(dose),
+                            labelStyle: AppTextStyles.labelMd.copyWith(
+                              fontSize: 12,
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                            backgroundColor: AppColors.surfaceContainerLow,
+                            side: BorderSide(
+                              color: AppColors.outlineVariant.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _dosageController.text = dose;
+                              });
+                            },
+                          );
+                        }).toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Waktu Jadwal (Custom 24-Jam Input User)
+                  Text(
+                    'Waktu Jadwal Minum Obat',
+                    style: AppTextStyles.labelLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  InkWell(
+                    onTap: () async {
+                      final parts = _selectedTime.split(':');
+                      final initHour =
+                          parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
+                      final initMin =
+                          parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay(hour: initHour, minute: initMin),
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(
+                              context,
+                            ).copyWith(alwaysUse24HourFormat: true),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        final formatted =
+                            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                        setState(() {
+                          _selectedTime = formatted;
+                        });
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 22),
-                          const SizedBox(width: 12),
-                          Text(
-                            '$_selectedTime WIB',
-                            style: AppTextStyles.bodyLg.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.onSurface,
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time_rounded,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                '$_selectedTime WIB',
+                                style: AppTextStyles.bodyLg.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Pilih Jam',
+                              style: AppTextStyles.labelMd.copyWith(
+                                color: AppColors.onPrimaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Pilih Jam',
-                          style: AppTextStyles.labelMd.copyWith(
-                            color: AppColors.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.lg),
 
-              // Status Konsumsi Switch
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Status Konsumsi Switch
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.outlineVariant.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Status Konsumsi',
-                          style: AppTextStyles.labelLg.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.onSurface,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Status Konsumsi',
+                              style: AppTextStyles.labelLg.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            Text(
+                              _isTaken ? 'Sudah Diminum' : 'Belum Diminum',
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color:
+                                    _isTaken
+                                        ? AppColors.secondary
+                                        : AppColors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          _isTaken ? 'Sudah Diminum' : 'Belum Diminum',
-                          style: AppTextStyles.bodyMd.copyWith(
-                            color: _isTaken
-                                ? AppColors.secondary
-                                : AppColors.onSurfaceVariant,
-                          ),
+                        Switch(
+                          value: _isTaken,
+                          activeColor: AppColors.primary,
+                          onChanged: (val) => setState(() => _isTaken = val),
                         ),
                       ],
                     ),
-                    Switch(
-                      value: _isTaken,
-                      activeColor: AppColors.primary,
-                      onChanged: (val) => setState(() => _isTaken = val),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
                   ),
-                  onPressed: () {
-                    final medName = _medNameController.text.trim();
-                    final dose = _dosageController.text.trim();
+                  const SizedBox(height: AppSpacing.xl),
 
-                    // Medication name is required — do not silently fall back
-                    // to a placeholder value.
-                    if (medName.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Nama obat wajib diisi.'),
-                          duration: Duration(seconds: 2),
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      );
-                      return;
-                    }
-
-                    widget.onSaved?.call(
-                      medName,
-                      dose.isEmpty ? '500 mg' : dose,
-                      _selectedTime,
-                      _isTaken,
-                    );
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          _isTaken
-                              ? 'Konsumsi "$medName ($dose)" telah dicatat.'
-                              : 'Pengingat minum "$medName ($dose)" diaktifkan jam $_selectedTime WIB.',
-                        ),
-                        duration: const Duration(seconds: 2),
                       ),
-                    );
-                  },
-                  child: Text(
-                    'Simpan Catatan Obat',
-                    style: AppTextStyles.poppinsButton.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.w600,
+                      onPressed: () {
+                        final medName = _medNameController.text.trim();
+                        final dose = _dosageController.text.trim();
+
+                        // Medication name is required — do not silently fall back
+                        // to a placeholder value.
+                        if (medName.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Nama obat wajib diisi.'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+
+                        widget.onSaved?.call(
+                          medName,
+                          dose.isEmpty ? '500 mg' : dose,
+                          _selectedTime,
+                          _isTaken,
+                        );
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _isTaken
+                                  ? 'Konsumsi "$medName ($dose)" telah dicatat.'
+                                  : 'Pengingat minum "$medName ($dose)" diaktifkan jam $_selectedTime WIB.',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Simpan Catatan Obat',
+                        style: AppTextStyles.poppinsButton.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -463,18 +517,20 @@ Future<void> showMedicationEntrySheet(
     String dosage,
     String schedule,
     bool isTaken,
-  )? onSaved,
+  )?
+  onSaved,
 }) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => MedicationEntrySheet(
-      initialMedicationName: initialMedicationName,
-      initialDosage: initialDosage,
-      initialSchedule: initialSchedule,
-      initialIsTaken: initialIsTaken,
-      onSaved: onSaved,
-    ),
+    builder:
+        (context) => MedicationEntrySheet(
+          initialMedicationName: initialMedicationName,
+          initialDosage: initialDosage,
+          initialSchedule: initialSchedule,
+          initialIsTaken: initialIsTaken,
+          onSaved: onSaved,
+        ),
   );
 }
