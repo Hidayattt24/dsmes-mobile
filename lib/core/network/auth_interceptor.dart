@@ -64,7 +64,7 @@ class AuthInterceptor extends Interceptor {
             options.headers['Authorization'] = 'Bearer $newAccessToken';
             final dio = Dio(
               BaseOptions(
-                baseUrl: AppConstants.baseUrl,
+                baseUrl: AppConstants.requiredBaseUrl,
                 connectTimeout: AppConstants.connectTimeout,
                 receiveTimeout: AppConstants.receiveTimeout,
                 headers: {'Content-Type': 'application/json'},
@@ -87,7 +87,7 @@ class AuthInterceptor extends Interceptor {
     final storage = _ref.read(secureStorageProvider);
     final dio = Dio(
       BaseOptions(
-        baseUrl: AppConstants.baseUrl,
+        baseUrl: AppConstants.requiredBaseUrl,
         connectTimeout: AppConstants.connectTimeout,
         receiveTimeout: AppConstants.receiveTimeout,
         headers: {'Content-Type': 'application/json'},

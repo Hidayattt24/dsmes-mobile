@@ -28,13 +28,6 @@ class App extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      builder: (context, child) {
-        return MediaQuery.withClampedTextScaling(
-          minScaleFactor: 0.9,
-          maxScaleFactor: 1.25,
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
     );
   }
 }
