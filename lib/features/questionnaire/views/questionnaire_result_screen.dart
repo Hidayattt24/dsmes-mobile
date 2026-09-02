@@ -478,8 +478,10 @@ class _ResultBottomActions extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
                 if (returnToHome) {
+                  await ref.read(preTestHistoryProvider.notifier).refresh();
+                  if (!context.mounted) return;
                   context.go(RouteNames.home);
                 } else {
                   Navigator.of(context).pop();

@@ -37,11 +37,12 @@ class AppNavigationItem extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.1)
-                      : Colors.transparent,
+                  color:
+                      isSelected
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: AnimatedScale(

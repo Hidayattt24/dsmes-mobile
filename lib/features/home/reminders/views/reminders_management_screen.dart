@@ -307,8 +307,8 @@ class RemindersManagementScreen extends ConsumerWidget {
                       side: BorderSide(
                         color: AppColors.primary.withValues(alpha: 0.3),
                       ),
-                      onPressed: () {
-                        ref
+                      onPressed: () async {
+                        await ref
                             .read(reminderListProvider.notifier)
                             .create(
                               activityName: p.name,
@@ -414,30 +414,6 @@ class RemindersManagementScreen extends ConsumerWidget {
                                   ? NotificationType.medication
                                   : NotificationType.warning,
                         );
-
-                    // 2. Trigger System Pop-Up Notification on Android status bar / lockscreen
-                    final notifId = reminder.id.hashCode.abs();
-                    LocalNotificationService.instance.showNotification(
-                      id: notifId,
-                      title: '⏰ Pengingat DSMES: ${reminder.activityName}',
-                      body:
-                          'Jadwal pukul ${reminder.formattedTime} - ${reminder.notes.isNotEmpty ? reminder.notes : 'Waktunya melakukan ${reminder.activityName}.'}',
-                    );
-
-                    // 3. Schedule recurring daily alarm for exact target time
-                    final timeParts = reminder.scheduledTime.split(':');
-                    if (timeParts.length >= 2) {
-                      final h = int.tryParse(timeParts[0]) ?? 8;
-                      final m = int.tryParse(timeParts[1]) ?? 0;
-                      LocalNotificationService.instance.scheduleDailyNotification(
-                        id: notifId,
-                        title: '⏰ Waktunya ${reminder.activityName}',
-                        body:
-                            'Pengingat harian DSMES (${reminder.formattedTime}). ${reminder.notes}',
-                        hour: h,
-                        minute: m,
-                      );
-                    }
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -765,11 +741,11 @@ class RemindersManagementScreen extends ConsumerWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               if (nameController.text.trim().isEmpty) return;
                               final timeStr =
                                   '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                              ref
+                              await ref
                                   .read(reminderListProvider.notifier)
                                   .create(
                                     activityName: nameController.text.trim(),
@@ -1242,11 +1218,11 @@ class RemindersManagementScreen extends ConsumerWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               if (nameController.text.trim().isEmpty) return;
                               final timeStr =
                                   '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                              ref
+                              await ref
                                   .read(reminderListProvider.notifier)
                                   .updateReminder(
                                     reminder.id,
@@ -1257,7 +1233,9 @@ class RemindersManagementScreen extends ConsumerWidget {
                                     iconName: iconKey.value,
                                     activeDays: selectedDays,
                                   );
-                              Navigator.pop(sheetContext);
+                              if (context.mounted) {
+                                Navigator.pop(sheetContext);
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primaryContainer,

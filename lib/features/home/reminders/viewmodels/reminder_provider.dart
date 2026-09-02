@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/local_notification_service.dart';
 import '../../../../data/repositories/reminder_repository.dart';
 import '../models/reminder_model.dart';
 
@@ -11,7 +12,32 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
 
   Future<List<ReminderModel>> _fetchReminders() async {
     final repo = ref.read(reminderRepositoryProvider);
-    return repo.list();
+    final reminders = await repo.list();
+    for (final reminder in reminders.where((reminder) => reminder.isActive)) {
+      await _scheduleSystemNotification(reminder);
+    }
+    return reminders;
+  }
+
+  Future<void> _scheduleSystemNotification(ReminderModel reminder) async {
+    final parts = reminder.scheduledTime.split(':');
+    if (parts.length < 2) return;
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return;
+
+    final notificationId = reminder.id.hashCode.abs();
+    await LocalNotificationService.instance.scheduleDailyNotification(
+      id: notificationId,
+      title: 'Pengingat DSMES: ${reminder.activityName}',
+      body:
+          reminder.notes.isEmpty
+              ? 'Waktunya melakukan ${reminder.activityName}.'
+              : reminder.notes,
+      hour: hour,
+      minute: minute,
+    );
   }
 
   Future<void> refresh() async {
@@ -38,11 +64,18 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
       repeatIntervalDays: repeatIntervalDays,
       activeDays: activeDays,
     );
-    final current = <ReminderModel>[...(state.valueOrNull ?? <ReminderModel>[]), newReminder];
+    final current = <ReminderModel>[
+      ...(state.valueOrNull ?? <ReminderModel>[]),
+      newReminder,
+    ];
     state = AsyncValue.data(current);
+    if (newReminder.isActive) {
+      await _scheduleSystemNotification(newReminder);
+    }
   }
 
-  Future<void> updateReminder(String id, {
+  Future<void> updateReminder(
+    String id, {
     required String activityName,
     required String category,
     required String scheduledTime,
@@ -52,7 +85,8 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     required List<int> activeDays,
   }) async {
     final repo = ref.read(reminderRepositoryProvider);
-    final updated = await repo.update(id,
+    final updated = await repo.update(
+      id,
       activityName: activityName,
       category: category,
       scheduledTime: scheduledTime,
@@ -65,6 +99,12 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     state = AsyncValue.data(
       current.map((r) => r.id == id ? updated : r).toList(),
     );
+    await LocalNotificationService.instance.cancelNotification(
+      id.hashCode.abs(),
+    );
+    if (updated.isActive) {
+      await _scheduleSystemNotification(updated);
+    }
   }
 
   Future<void> toggle(String id) async {
@@ -74,11 +114,22 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     state = AsyncValue.data(
       current.map((r) => r.id == id ? updated : r).toList(),
     );
+    final notificationId = id.hashCode.abs();
+    if (updated.isActive) {
+      await _scheduleSystemNotification(updated);
+    } else {
+      await LocalNotificationService.instance.cancelNotification(
+        notificationId,
+      );
+    }
   }
 
   Future<void> delete(String id) async {
     final repo = ref.read(reminderRepositoryProvider);
     await repo.delete(id);
+    await LocalNotificationService.instance.cancelNotification(
+      id.hashCode.abs(),
+    );
     final current = state.valueOrNull ?? <ReminderModel>[];
     state = AsyncValue.data(current.where((r) => r.id != id).toList());
   }
@@ -86,5 +137,5 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
 
 final reminderListProvider =
     AsyncNotifierProvider<ReminderListNotifier, List<ReminderModel>>(
-  ReminderListNotifier.new,
-);
+      ReminderListNotifier.new,
+    );
