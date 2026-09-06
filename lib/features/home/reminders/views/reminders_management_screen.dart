@@ -11,8 +11,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/info_card.dart';
 import '../../../../core/services/local_notification_service.dart';
-import '../../../notifications/models/notification_item.dart';
-import '../../../notifications/viewmodels/notifications_notifier.dart';
 import '../../../onboarding/constants/routine_icons.dart';
 import '../../../onboarding/widgets/icon_picker_bottom_sheet.dart';
 import '../models/reminder_model.dart';
@@ -280,7 +278,7 @@ class RemindersManagementScreen extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          'Klik contoh pengingat untuk menambahkan ke daftar Anda (default: Nonaktif/Off):',
+          'Klik contoh pengingat untuk menambahkan ke daftar Anda (aktif secara default):',
           style: AppTextStyles.bodyMd.copyWith(
             color: AppColors.onSurfaceVariant,
             fontSize: 12,
@@ -307,8 +305,8 @@ class RemindersManagementScreen extends ConsumerWidget {
                       side: BorderSide(
                         color: AppColors.primary.withValues(alpha: 0.3),
                       ),
-                      onPressed: () {
-                        ref
+                      onPressed: () async {
+                        await ref
                             .read(reminderListProvider.notifier)
                             .create(
                               activityName: p.name,
@@ -322,7 +320,7 @@ class RemindersManagementScreen extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Pengingat "${p.name}" ditambahkan (Status: Off). Aktifkan toggle switch untuk mengaktifkan notifikasi.',
+                              'Pengingat "${p.name}" ditambahkan dan notifikasi dijadwalkan.',
                             ),
                             backgroundColor: AppColors.primary,
                             duration: const Duration(seconds: 3),
@@ -401,44 +399,6 @@ class RemindersManagementScreen extends ConsumerWidget {
                   ref.read(reminderListProvider.notifier).toggle(reminder.id);
 
                   if (willBeActive) {
-                    // 1. Schedule notification item in NotificationsNotifier for exact target time
-                    ref
-                        .read(notificationsProvider.notifier)
-                        .scheduleReminderNotification(
-                          title: 'Waktunya: ${reminder.activityName}',
-                          description:
-                              'Pengingat untuk ${reminder.activityName} (${reminder.notes.isNotEmpty ? reminder.notes : 'Jadwal pengingat harian DSMES'}).',
-                          scheduledTimeStr: reminder.scheduledTime,
-                          type:
-                              reminder.category == 'medis_obat'
-                                  ? NotificationType.medication
-                                  : NotificationType.warning,
-                        );
-
-                    // 2. Trigger System Pop-Up Notification on Android status bar / lockscreen
-                    final notifId = reminder.id.hashCode.abs();
-                    LocalNotificationService.instance.showNotification(
-                      id: notifId,
-                      title: '⏰ Pengingat DSMES: ${reminder.activityName}',
-                      body:
-                          'Jadwal pukul ${reminder.formattedTime} - ${reminder.notes.isNotEmpty ? reminder.notes : 'Waktunya melakukan ${reminder.activityName}.'}',
-                    );
-
-                    // 3. Schedule recurring daily alarm for exact target time
-                    final timeParts = reminder.scheduledTime.split(':');
-                    if (timeParts.length >= 2) {
-                      final h = int.tryParse(timeParts[0]) ?? 8;
-                      final m = int.tryParse(timeParts[1]) ?? 0;
-                      LocalNotificationService.instance.scheduleDailyNotification(
-                        id: notifId,
-                        title: '⏰ Waktunya ${reminder.activityName}',
-                        body:
-                            'Pengingat harian DSMES (${reminder.formattedTime}). ${reminder.notes}',
-                        hour: h,
-                        minute: m,
-                      );
-                    }
-
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -449,9 +409,6 @@ class RemindersManagementScreen extends ConsumerWidget {
                       ),
                     );
                   } else {
-                    LocalNotificationService.instance.cancelNotification(
-                      reminder.id.hashCode.abs(),
-                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -765,11 +722,11 @@ class RemindersManagementScreen extends ConsumerWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               if (nameController.text.trim().isEmpty) return;
                               final timeStr =
                                   '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                              ref
+                              await ref
                                   .read(reminderListProvider.notifier)
                                   .create(
                                     activityName: nameController.text.trim(),
@@ -778,19 +735,6 @@ class RemindersManagementScreen extends ConsumerWidget {
                                     notes: notesController.text.trim(),
                                     iconName: iconKey.value,
                                     activeDays: selectedDays,
-                                  );
-                              ref
-                                  .read(notificationsProvider.notifier)
-                                  .scheduleReminderNotification(
-                                    title:
-                                        'Pengingat DSMES: ${nameController.text.trim()}',
-                                    description:
-                                        'Jadwal pengingat ${nameController.text.trim()} (${notesController.text.trim().isNotEmpty ? notesController.text.trim() : 'Waktunya melakukan ${nameController.text.trim()}'}).',
-                                    scheduledTimeStr: timeStr,
-                                    type:
-                                        category == 'medis_obat'
-                                            ? NotificationType.medication
-                                            : NotificationType.warning,
                                   );
                               Navigator.pop(sheetContext);
                             },
@@ -1242,11 +1186,11 @@ class RemindersManagementScreen extends ConsumerWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               if (nameController.text.trim().isEmpty) return;
                               final timeStr =
                                   '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                              ref
+                              await ref
                                   .read(reminderListProvider.notifier)
                                   .updateReminder(
                                     reminder.id,
@@ -1257,7 +1201,9 @@ class RemindersManagementScreen extends ConsumerWidget {
                                     iconName: iconKey.value,
                                     activeDays: selectedDays,
                                   );
-                              Navigator.pop(sheetContext);
+                              if (context.mounted) {
+                                Navigator.pop(sheetContext);
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primaryContainer,

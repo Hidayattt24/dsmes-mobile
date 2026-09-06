@@ -1,82 +1,164 @@
-# DSMES Mobile Application
+# DSMES Aceh Mobile Application
 
-Aplikasi Mobile Client **DSMES Aceh** untuk Pasien Diabetes Melitus.
+Aplikasi mobile untuk pasien Diabetes Melitus dalam menjalankan manajemen mandiri, mengikuti edukasi DSMES, mencatat kondisi kesehatan, dan menerima pengingat rutinitas.
 
-## 🚀 Tech Stack & Package Utama
+## Tujuan Sistem
 
-- **Framework**: **Flutter** (Dart SDK `^3.7.0`)
-- **State Management**: **Flutter Riverpod 2.6.1** & `riverpod_generator`
-- **Routing**: **GoRouter 14.6.3**
-- **Immutable Models**: **Freezed 3.0.0** & `json_annotation`
-- **HTTP Client**: **Dio 5.7.0** (Interceptors & Auth Tokens)
-- **Local Storage**: `flutter_secure_storage` & `shared_preferences`
-- **Biometric Auth**: `local_auth` (Fingerprint & FaceID)
-- **Notifications**: `flutter_local_notifications` 18.0.1 & `timezone`
-- **UI & Utilities**: Google Fonts, Flutter SVG, Shimmer, Youtube Player Flutter, Flutter Widget from HTML
+Mobile app menjadi client utama pasien. Pasien dapat mengisi profil kesehatan, mencatat gula darah dan pola makan, memantau aktivitas, mengikuti assessment, membaca edukasi, serta berkomunikasi dengan AI assistant. Semua data utama disimpan melalui backend DSMES.
 
-## 🏗️ Struktur Proyek
+## Fitur Utama
+
+- Authentication: login, register, reset password, refresh token, logout, dan session restore.
+- Biometric login menggunakan fingerprint atau Face ID jika tersedia.
+- Onboarding kesehatan dan sosiodemografi.
+- Dashboard pasien dengan ringkasan kesehatan dan progress.
+- Catatan gula darah beserta waktu pengukuran dan hasil klasifikasi backend.
+- Catatan makanan, porsi, asupan kalori, dan riwayat nutrisi.
+- Catatan aktivitas fisik, obat, dan rutinitas.
+- Reminder serta notifikasi lokal berbasis timezone.
+- Edukasi artikel/video DSMES dan progress belajar.
+- Pre-test, questionnaire, quiz, survey, dan hasil assessment.
+- AI diabetes assistant chat.
+- Profil pasien, foto profil, keamanan, bantuan, dan pengaturan akun.
+- Responsive UI untuk compact Android, standard Android, dan ukuran layar yang lebih besar.
+
+## Teknologi
+
+- Flutter dan Dart SDK `^3.7.0`
+- Riverpod `2.6.1`
+- GoRouter `14.6.3`
+- Dio `5.7.0`
+- Freezed dan JSON Serializable
+- Flutter Secure Storage dan Shared Preferences
+- Local Auth
+- Flutter Local Notifications dan timezone
+- Image Picker
+- Google Fonts, SVG, Shimmer, HTML widget, dan YouTube player
+
+## Struktur Proyek
 
 ```text
-lib/
-├── app/          # Initial routes & App configuration
-├── core/         # Network client, theme, constants, storage, security
-└── features/     # Feature modules
-    ├── auth/          # Login, Register, Biometric, OTP
-    ├── home/          # Dashboard Pasien & Summary
-    ├── record/        # Pencatatan Gula Darah, Nutrisi & Rutinitas
-    ├── education/     # Artikel & Video Edukasi DSMES
-    ├── questionnaire/ # Quiz & Assessment Mandiri
-    ├── notifications/ # Local Reminder System
-    ├── ai_chat/       # AI Health Assistant Chat
-    └── settings/      # Profil & Pengaturan Akun Pasien
+lib/app/             Konfigurasi aplikasi dan shell navigasi
+lib/core/            Theme, network client, constants, storage, dan utilities
+lib/data/            Repository dan akses data
+lib/features/auth/   Login, register, biometric, dan reset password
+lib/features/home/   Dashboard, reminder, dan catatan ringkasan
+lib/features/record/ Catatan gula darah, makanan, aktivitas, dan obat
+lib/features/education/ Artikel dan video edukasi
+lib/features/questionnaire/ Pre-test, quiz, survey, dan assessment
+lib/features/notifications/ Notifikasi pasien
+lib/features/ai_chat/ AI health assistant
+lib/features/settings/ Profil dan pengaturan akun
+assets/              Gambar dan icon aplikasi
+tool/                Script environment dan build APK
 ```
 
-## 🛠️ Menjalankan Mobile App
+## Prasyarat
 
-```bash
-# Get dependencies
-flutter pub get
+- Flutter SDK
+- Android SDK dan emulator atau perangkat Android
+- Backend DSMES aktif
 
-# Generate freezed & riverpod code
-dart run build_runner build --delete-conflicting-outputs
+## Environment API
 
-# Run app
-flutter run
+API di-inject saat compile menggunakan `BASE_URL`.
+
+```text
+BASE_URL    URL base REST API DSMES
 ```
 
-## Environment Development dan Production
+Nilai yang umum digunakan:
 
-Gunakan script PowerShell berikut supaya URL backend tidak perlu ditulis manual:
+```text
+Windows/web:       http://localhost:8080/api/v1
+Android emulator:  http://10.0.2.2:8080/api/v1
+Staging:            http://72.62.198.217:8080/api/v1
+Production:         gunakan URL HTTPS production
+```
+
+Android emulator tidak dapat menggunakan `localhost` untuk mengakses komputer host. Script local otomatis mengubah `localhost` menjadi `10.0.2.2` untuk emulator.
+
+## Setup dan Code Generation
 
 ```powershell
-# Android emulator -> backend local di komputer host
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+```
+
+## Menjalankan Aplikasi
+
+Backend local melalui Android emulator:
+
+```powershell
 .\tool\run-local.ps1
+```
 
-# Gunakan device lain
+Device tertentu:
+
+```powershell
 .\tool\run-local.ps1 -DeviceId <device-id>
+```
 
-# Physical device melalui IP LAN komputer
+Physical device melalui IP LAN komputer:
+
+```powershell
 .\tool\run-local.ps1 -DeviceId <device-id> `
     -ApiBaseUrl http://192.168.1.10:8080/api/v1
+```
 
-# Backend staging
+Staging:
+
+```powershell
 .\tool\run-staging.ps1
+```
 
-# Build APK production
+## Build APK
+
+Debug APK local:
+
+```powershell
+flutter build apk --debug `
+    --dart-define=BASE_URL=http://10.0.2.2:8080/api/v1
+```
+
+Release APK:
+
+```powershell
 .\tool\build-production.ps1
 ```
 
-Local backend menggunakan `http://localhost:8080/api/v1`. Saat targetnya Android
-emulator, script otomatis menerjemahkannya menjadi `10.0.2.2` agar emulator dapat
-mengakses komputer host. Untuk physical device, kirim `-ApiBaseUrl` dengan IP LAN
-komputer.
+Output APK:
 
-## Build APK Produksi
-
-API produksi di-inject saat compile dari file `.env.production.local`:
-
-```bash
-flutter build apk --release --dart-define-from-file=.env.production.local
+```text
+build/app/outputs/flutter-apk/app-release.apk
 ```
 
-`/api/health` digunakan untuk health check. Base URL aplikasi tetap menggunakan `/api/v1`.
+HTTP IP hanya cocok untuk testing sementara. Untuk distribusi publik gunakan HTTPS dan signing key release yang aman.
+
+## Arsitektur Client
+
+```text
+Screen/Widget
+    -> Riverpod Provider/Notifier
+    -> Repository
+    -> Dio Client + Auth Interceptor
+    -> DSMES REST API
+```
+
+Token autentikasi disimpan menggunakan secure storage. Jangan memasukkan JWT, password, atau API key ke source code.
+
+## Validasi
+
+```powershell
+flutter analyze
+flutter test
+flutter build apk --debug
+```
+
+Uji khusus sebelum distribusi:
+
+- Login dan refresh session.
+- Backend local, staging, dan production.
+- Android emulator dan physical device.
+- Keyboard terbuka pada form/dialog/sheet.
+- Font scale besar dan layar compact.

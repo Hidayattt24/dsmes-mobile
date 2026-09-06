@@ -7,7 +7,8 @@ class LocalNotificationService {
   LocalNotificationService._();
   static final LocalNotificationService instance = LocalNotificationService._();
 
-  final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
 
@@ -23,7 +24,9 @@ class LocalNotificationService {
       debugPrint('LocalNotificationService: timezone init failed: $e');
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -44,8 +47,11 @@ class LocalNotificationService {
     );
 
     // Create high-importance Android Notification Channel & Request Permissions
-    final androidImplementation = _notificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidImplementation =
+        _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
     if (androidImplementation != null) {
       const channel = AndroidNotificationChannel(
         'dsmes_reminders_channel',
@@ -140,8 +146,14 @@ class LocalNotificationService {
     try {
       final tzLocation = tz.getLocation('Asia/Jakarta');
       final now = tz.TZDateTime.now(tzLocation);
-      var scheduledTzDateTime =
-          tz.TZDateTime(tzLocation, now.year, now.month, now.day, hour, minute);
+      var scheduledTzDateTime = tz.TZDateTime(
+        tzLocation,
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      );
       // If today's target time already passed, schedule for tomorrow.
       if (!scheduledTzDateTime.isAfter(now)) {
         scheduledTzDateTime = scheduledTzDateTime.add(const Duration(days: 1));
@@ -163,8 +175,72 @@ class LocalNotificationService {
       // do NOT fall back to an immediate pop-up (that would notify the user at
       // the wrong time); the in-app inbox entry still reminds the user while
       // the app is open.
-      debugPrint('LocalNotificationService: failed to schedule daily notification '
-          '(id=$id): $e');
+      debugPrint(
+        'LocalNotificationService: failed to schedule daily notification '
+        '(id=$id): $e',
+      );
+    }
+  }
+
+  Future<void> scheduleWeeklyNotification({
+    required int id,
+    required String title,
+    required String body,
+    required int weekday,
+    required int hour,
+    required int minute,
+  }) async {
+    await initialize();
+
+    const androidDetails = AndroidNotificationDetails(
+      'dsmes_reminders_channel',
+      'Pengingat DSMES',
+      channelDescription: 'Saluran notifikasi pengingat harian diabetes DSMES',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+
+    try {
+      final location = tz.getLocation('Asia/Jakarta');
+      final now = tz.TZDateTime.now(location);
+      var scheduled = tz.TZDateTime(
+        location,
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      );
+      var daysUntil = (weekday - scheduled.weekday) % 7;
+      if (daysUntil == 0 && !scheduled.isAfter(now)) daysUntil = 7;
+      scheduled = scheduled.add(Duration(days: daysUntil));
+
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduled,
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    } catch (e) {
+      debugPrint(
+        'LocalNotificationService: failed to schedule weekly notification '
+        '(id=$id): $e',
+      );
     }
   }
 

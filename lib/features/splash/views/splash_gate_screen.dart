@@ -27,7 +27,16 @@ class SplashGateScreen extends ConsumerWidget {
       backgroundColor: AppColors.surface,
       body: sessionAsync.when(
         loading: () => const _SplashLoading(),
-        error: (_, _) => const _SplashLoading(),
+        error: (_, _) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted &&
+                GoRouterState.of(context).matchedLocation ==
+                    RouteNames.splash) {
+              context.go(RouteNames.welcome);
+            }
+          });
+          return const _SplashLoading();
+        },
         data: (loggedIn) {
           if (!loggedIn) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
