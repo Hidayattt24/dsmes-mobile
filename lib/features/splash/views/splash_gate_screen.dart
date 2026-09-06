@@ -79,10 +79,6 @@ class SplashGateScreen extends ConsumerWidget {
   }
 }
 
-final sessionRestoreProvider = FutureProvider<bool>((ref) {
-  return ref.read(authRepositoryProvider).restoreSession();
-});
-
 class _SplashLoading extends StatelessWidget {
   const _SplashLoading();
 

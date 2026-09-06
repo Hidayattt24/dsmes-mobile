@@ -462,3 +462,12 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   final storage = ref.watch(secureStorageProvider);
   return AuthRepository(dio, storage);
 });
+
+/// Resolves whether a previously saved authentication session is still valid.
+///
+/// This provider lives with the auth repository so login can invalidate it
+/// immediately after saving new tokens. Otherwise the splash gate can reuse a
+/// cached unauthenticated result from before login.
+final sessionRestoreProvider = FutureProvider<bool>((ref) {
+  return ref.read(authRepositoryProvider).restoreSession();
+});

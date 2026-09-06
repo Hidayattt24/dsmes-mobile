@@ -56,8 +56,11 @@ const _publicRoutes = <String>{
 /// Provided as a Riverpod [Provider] so that redirects can watch
 /// [hasCompletedPreTestProvider] and call [GoRouter.refresh] when
 /// pre-test state changes.
+final appNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
+    navigatorKey: appNavigatorKey,
     initialLocation: RouteNames.splash,
     debugLogDiagnostics: true,
     redirect: (context, state) {

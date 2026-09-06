@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/services/firebase_messaging_service.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../data/repositories/device_token_repository.dart';
 import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../models/login_form_state.dart';
-
 
 /// ViewModel for the login form.
 ///
@@ -102,10 +103,20 @@ class LoginNotifier extends Notifier<LoginFormState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      await ref.read(authRepositoryProvider).login(
+      await ref
+          .read(authRepositoryProvider)
+          .login(
             phoneNumber: phoneController.text.trim(),
             password: passwordController.text,
           );
+
+      await firebaseMessagingService.registerCurrentToken(
+        ref.read(deviceTokenRepositoryProvider),
+      );
+
+      // The splash gate may have cached an unauthenticated result before this
+      // login. Re-evaluate it after the new tokens have been saved.
+      ref.invalidate(sessionRestoreProvider);
 
       // Reset questionnaire state for the logged-in account so the Pre-Test
       // guard reflects THIS user (not a previous session's data).
@@ -117,10 +128,7 @@ class LoginNotifier extends Notifier<LoginFormState> {
       state = state.copyWith(isLoading: false);
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.message,
-      );
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
       return false;
     } catch (e) {
       state = state.copyWith(
@@ -131,7 +139,6 @@ class LoginNotifier extends Notifier<LoginFormState> {
     }
   }
 }
-
 
 /// Provider for [LoginNotifier].
 final loginProvider = NotifierProvider<LoginNotifier, LoginFormState>(

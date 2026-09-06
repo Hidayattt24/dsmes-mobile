@@ -40,8 +40,18 @@ class RecordTimelineSection extends StatelessWidget {
   }
 
   static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
   ];
 
   @override
@@ -51,9 +61,10 @@ class RecordTimelineSection extends StatelessWidget {
     final isToday = _isSameDate(selectedDate, now);
 
     // Apply active RecordType filter
-    final filteredItems = selectedFilter == RecordType.all
-        ? items
-        : items.where((item) => item.type == selectedFilter).toList();
+    final filteredItems =
+        selectedFilter == RecordType.all
+            ? items
+            : items.where((item) => item.type == selectedFilter).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +84,10 @@ class RecordTimelineSection extends StatelessWidget {
               onTap: onOpenCalendarSheet,
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.outlineVariant),
@@ -130,25 +144,39 @@ class RecordTimelineSection extends StatelessWidget {
               const SizedBox(width: 6),
               _DateChoiceChip(
                 label: '2 Hari Lalu',
-                isSelected: _isSameDate(selectedDate, now.subtract(const Duration(days: 2))),
-                onTap: () => onDateSelected(now.subtract(const Duration(days: 2))),
+                isSelected: _isSameDate(
+                  selectedDate,
+                  now.subtract(const Duration(days: 2)),
+                ),
+                onTap:
+                    () => onDateSelected(now.subtract(const Duration(days: 2))),
               ),
               const SizedBox(width: 6),
               _DateChoiceChip(
                 label: '3 Hari Lalu',
-                isSelected: _isSameDate(selectedDate, now.subtract(const Duration(days: 3))),
-                onTap: () => onDateSelected(now.subtract(const Duration(days: 3))),
+                isSelected: _isSameDate(
+                  selectedDate,
+                  now.subtract(const Duration(days: 3)),
+                ),
+                onTap:
+                    () => onDateSelected(now.subtract(const Duration(days: 3))),
               ),
               const SizedBox(width: 6),
               ActionChip(
-                avatar: const Icon(Icons.calendar_today, size: 14, color: AppColors.primary),
+                avatar: const Icon(
+                  Icons.calendar_today,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
                 label: const Text('Kalender Lengkap'),
                 labelStyle: AppTextStyles.labelMd.copyWith(
                   fontSize: 12,
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
-                backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.15),
+                backgroundColor: AppColors.primaryContainer.withValues(
+                  alpha: 0.15,
+                ),
                 side: BorderSide.none,
                 onPressed: onOpenCalendarSheet,
               ),
@@ -162,43 +190,45 @@ class RecordTimelineSection extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           child: Row(
-            children: RecordType.values.map((type) {
-              final isSelected = selectedFilter == type;
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: FilterChip(
-                  label: Text(type.label),
-                  selected: isSelected,
-                  selectedColor: AppColors.primaryContainer,
-                  labelStyle: AppTextStyles.labelMd.copyWith(
-                    fontSize: 12,
-                    color: isSelected ? AppColors.onPrimaryContainer : AppColors.onSurface,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  backgroundColor: AppColors.surfaceContainerLow,
-                  side: BorderSide(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                  onSelected: (selected) {
-                    if (selected) {
-                      onFilterSelected(type);
-                    }
-                  },
-                ),
-              );
-            }).toList(),
+            children:
+                RecordType.values.map((type) {
+                  final isSelected = selectedFilter == type;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: FilterChip(
+                      label: Text(type.label),
+                      selected: isSelected,
+                      selectedColor: AppColors.primary,
+                      labelStyle: AppTextStyles.labelMd.copyWith(
+                        fontSize: 12,
+                        color: isSelected ? Colors.white : AppColors.onSurface,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      backgroundColor: AppColors.surfaceContainerLow,
+                      side: BorderSide(
+                        color:
+                            isSelected
+                                ? AppColors.primary
+                                : AppColors.outlineVariant.withValues(
+                                  alpha: 0.3,
+                                ),
+                      ),
+                      onSelected: (selected) {
+                        if (selected) {
+                          onFilterSelected(type);
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
 
         // Timeline Content or Empty State
         if (filteredItems.isEmpty)
-          _RecordEmptyState(
-            isToday: isToday,
-            selectedFilter: selectedFilter,
-          )
+          _RecordEmptyState(isToday: isToday, selectedFilter: selectedFilter)
         else
           Stack(
             children: [
@@ -214,169 +244,188 @@ class RecordTimelineSection extends StatelessWidget {
               ),
               // Timeline items
               Column(
-                children: filteredItems.map((item) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Timeline dot
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: item.dotOuterColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: item.dotInnerColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        // Content Icon
-                        Icon(
-                          item.icon,
-                          color: AppColors.onSurfaceVariant,
-                          size: 20,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.title,
-                                style: AppTextStyles.labelMd.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.onSurface,
-                                ),
-                              ),
-                              Text(
-                                item.subtitle,
-                                style: AppTextStyles.bodyMd.copyWith(
-                                  fontSize: 12,
-                                  color: AppColors.onSurfaceVariant,
-                                ),
-                              ),
-                              if (item.badgeText != null) ...[
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: item.badgeBgColor ??
-                                        AppColors.secondaryContainer,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    item.badgeText!,
-                                    style: AppTextStyles.labelMd.copyWith(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: item.badgeTextColor ??
-                                          AppColors.onSecondaryContainer,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        // Time & More (⋮) Action Menu
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+                children:
+                    filteredItems.map((item) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  item.time,
-                                  style: AppTextStyles.labelMd.copyWith(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.onSurface,
+                            // Timeline dot
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: item.dotOuterColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: item.dotInnerColor,
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
-                                Text(
-                                  item.dateText,
-                                  style: AppTextStyles.bodyMd.copyWith(
-                                    fontSize: 10,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            // Content Icon
+                            Icon(
+                              item.icon,
+                              color: AppColors.onSurfaceVariant,
+                              size: 20,
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: AppTextStyles.labelMd.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    item.subtitle,
+                                    style: AppTextStyles.bodyMd.copyWith(
+                                      fontSize: 12,
+                                      color: AppColors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  if (item.badgeText != null) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            item.badgeBgColor ??
+                                            AppColors.secondaryContainer,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        item.badgeText!,
+                                        style: AppTextStyles.labelMd.copyWith(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              item.badgeTextColor ??
+                                              AppColors.onSecondaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            // Time & More (⋮) Action Menu
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      item.time,
+                                      style: AppTextStyles.labelMd.copyWith(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.onSurface,
+                                      ),
+                                    ),
+                                    Text(
+                                      item.dateText,
+                                      style: AppTextStyles.bodyMd.copyWith(
+                                        fontSize: 10,
+                                        color: AppColors.outline,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 2),
+                                PopupMenuButton<String>(
+                                  icon: const Icon(
+                                    Icons.more_vert_rounded,
+                                    size: 18,
                                     color: AppColors.outline,
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(width: 2),
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_vert_rounded,
-                                size: 18,
-                                color: AppColors.outline,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 140),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              color: AppColors.surfaceContainerLowest,
-                              onSelected: (action) {
-                                if (action == 'edit') {
-                                  onEditItem(item);
-                                } else if (action == 'delete') {
-                                  onDeleteItem(item);
-                                }
-                              },
-                              itemBuilder: (context) => <PopupMenuEntry<String>>[
-                                PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Ubah Catatan',
-                                        style: AppTextStyles.bodyMd.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          color: AppColors.onSurface,
-                                        ),
-                                      ),
-                                    ],
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 140,
                                   ),
-                                ),
-                                PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Hapus Catatan',
-                                        style: AppTextStyles.bodyMd.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.error,
-                                        ),
-                                      ),
-                                    ],
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
+                                  color: AppColors.surfaceContainerLowest,
+                                  onSelected: (action) {
+                                    if (action == 'edit') {
+                                      onEditItem(item);
+                                    } else if (action == 'delete') {
+                                      onDeleteItem(item);
+                                    }
+                                  },
+                                  itemBuilder:
+                                      (context) => <PopupMenuEntry<String>>[
+                                        PopupMenuItem<String>(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.edit_outlined,
+                                                size: 18,
+                                                color: AppColors.primary,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Ubah Catatan',
+                                                style: AppTextStyles.bodyMd
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          AppColors.onSurface,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.delete_outline_rounded,
+                                                size: 18,
+                                                color: AppColors.error,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Hapus Catatan',
+                                                style: AppTextStyles.bodyMd
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: AppColors.error,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
               ),
             ],
           ),
@@ -401,17 +450,18 @@ class _DateChoiceChip extends StatelessWidget {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      selectedColor: AppColors.primaryContainer,
+      selectedColor: AppColors.primary,
       labelStyle: AppTextStyles.labelMd.copyWith(
         fontSize: 12,
-        color: isSelected ? AppColors.onPrimaryContainer : AppColors.onSurface,
+        color: isSelected ? Colors.white : AppColors.onSurface,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       backgroundColor: AppColors.surfaceContainerLow,
       side: BorderSide(
-        color: isSelected
-            ? AppColors.primary
-            : AppColors.outlineVariant.withValues(alpha: 0.3),
+        color:
+            isSelected
+                ? AppColors.primary
+                : AppColors.outlineVariant.withValues(alpha: 0.3),
       ),
       onSelected: (val) {
         if (val) onTap();
@@ -431,7 +481,8 @@ class _RecordEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filterLabel = selectedFilter == RecordType.all ? '' : selectedFilter.label;
+    final filterLabel =
+        selectedFilter == RecordType.all ? '' : selectedFilter.label;
 
     return Container(
       width: double.infinity,
@@ -442,10 +493,7 @@ class _RecordEmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.surfaceContainerLow,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.surfaceContainerLow, width: 1),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
