@@ -140,7 +140,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       final todayAgg = _computeTodaySummary(allItems, targetDate);
 
       // Compute medication info from history + reminders
-      final medReminder = reminders.where((r) => r.category == 'medis_obat').toList();
+      final medReminder =
+          reminders.where((r) => r.category == 'medis_obat').toList();
       // '-' is treated as the "no data yet" placeholder by the UI (see
       // RecordView's "Catat Obat" vs "Perbarui" logic). Never show fake data.
       String medName = '-';
@@ -150,19 +151,22 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
 
       // Prioritize latest actual medication log from history
       final targetDateStr = _dateKey(targetDate);
-      final medLogs = allItems.where((item) => item.activityType == 'medication').toList();
+      final medLogs =
+          allItems.where((item) => item.activityType == 'medication').toList();
 
       if (medLogs.isNotEmpty) {
         final latestMed = medLogs.first;
         if (latestMed.title.isNotEmpty) medName = latestMed.title;
         if (latestMed.notes.isNotEmpty) {
           medDosage = latestMed.notes;
-        } else if (latestMed.subtitle.isNotEmpty && !['selesai', 'pending', 'terlewat'].contains(latestMed.subtitle)) {
+        } else if (latestMed.subtitle.isNotEmpty &&
+            !['selesai', 'pending', 'terlewat'].contains(latestMed.subtitle)) {
           medDosage = latestMed.subtitle;
         }
         if (latestMed.parsedMeasuredAt != null) {
           final dt = latestMed.parsedMeasuredAt!;
-          medSchedule = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+          medSchedule =
+              '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
         }
       } else if (medReminder.isNotEmpty) {
         medName = medReminder.first.activityName;
@@ -200,14 +204,14 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: _formatError(e),
-      );
+      state = state.copyWith(isLoading: false, errorMessage: _formatError(e));
     }
   }
 
-  _TodaySummary _computeTodaySummary(List<HistoryItemModel> allItems, DateTime today) {
+  _TodaySummary _computeTodaySummary(
+    List<HistoryItemModel> allItems,
+    DateTime today,
+  ) {
     final todayStr = _dateKey(today);
     String bsValue = '-';
     String bsSubtitle = 'Belum dicatat';
@@ -238,7 +242,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
           break;
         case 'activity':
           actName = item.title;
-          actDuration = (item.metadata['activity_minutes'] as num?)?.toInt() ?? 30;
+          actDuration =
+              (item.metadata['activity_minutes'] as num?)?.toInt() ?? 30;
           actIntensity = item.category;
           break;
         case 'medication':
@@ -265,12 +270,16 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     );
   }
 
-  List<TimelineRecordItem> _buildTimelineItems(List<HistoryItemModel> items, DateTime date) {
+  List<TimelineRecordItem> _buildTimelineItems(
+    List<HistoryItemModel> items,
+    DateTime date,
+  ) {
     final dateStr = _dateKey(date);
-    final filtered = items.where((item) {
-      final dt = item.parsedMeasuredAt;
-      return dt != null && _dateKey(dt) == dateStr;
-    }).toList();
+    final filtered =
+        items.where((item) {
+          final dt = item.parsedMeasuredAt;
+          return dt != null && _dateKey(dt) == dateStr;
+        }).toList();
 
     return filtered.map((item) {
       final icon = _iconForType(item.activityType);
@@ -286,7 +295,10 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       return TimelineRecordItem(
         id: item.id,
         type: _recordTypeFromActivity(item.activityType),
-        title: item.title,
+        title:
+            item.activityType == 'meal'
+                ? _formatMealTitle(item.title)
+                : item.title,
         subtitle: subtitle,
         time: _formatTime(item.parsedMeasuredAt),
         dateText: _formatDate(item.parsedMeasuredAt!),
@@ -298,7 +310,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     }).toList();
   }
 
-  String _dateKey(DateTime dt) => '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  String _dateKey(DateTime dt) =>
+      '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
 
   String _formatTime(DateTime? dt) {
     if (dt == null) return '--:--';
@@ -306,8 +319,38 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
   }
 
   String _formatDate(DateTime dt) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  String _formatMealTitle(String title) {
+    switch (title.toLowerCase()) {
+      case 'makan_pagi':
+      case 'sarapan':
+        return 'Sarapan';
+      case 'makan_siang':
+        return 'Makan Siang';
+      case 'makan_malam':
+        return 'Makan Malam';
+      case 'camilan':
+      case 'snack':
+        return 'Camilan';
+      default:
+        return title;
+    }
   }
 
   String? _badgeForActivity(String activityType, String status) {
@@ -425,13 +468,16 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
       final dio = _ref.read(dioClientProvider);
-      await dio.post('/patient/activities/log', data: {
-        'activity_name': activityName,
-        'duration_minutes': duration,
-        'intensity': intensity,
-        'notes': notes,
-        'logged_at': DateTime.now().toUtc().toIso8601String(),
-      });
+      await dio.post(
+        '/patient/activities/log',
+        data: {
+          'activity_name': activityName,
+          'duration_minutes': duration,
+          'intensity': intensity,
+          'notes': notes,
+          'logged_at': DateTime.now().toUtc().toIso8601String(),
+        },
+      );
       state = state.copyWith(isSubmitting: false);
       await loadData();
       _ref.read(historyProvider.notifier).refresh();
@@ -458,21 +504,31 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       final reminders = await reminderRepo.list();
 
       // Match by name first, fall back to any medis_obat reminder
-      final byName = reminders.where((r) =>
-          r.category == 'medis_obat' &&
-          r.activityName.toLowerCase() == medicationName.toLowerCase()).toList();
+      final byName =
+          reminders
+              .where(
+                (r) =>
+                    r.category == 'medis_obat' &&
+                    r.activityName.toLowerCase() ==
+                        medicationName.toLowerCase(),
+              )
+              .toList();
       String reminderId;
       if (byName.isNotEmpty) {
         reminderId = byName.first.id;
         final existingRem = byName.first;
-        if (existingRem.notes != dosage || existingRem.scheduledTime != formattedSched) {
+        if (existingRem.notes != dosage ||
+            existingRem.scheduledTime != formattedSched) {
           await reminderRepo.update(
             reminderId,
             activityName: medicationName,
             category: 'medis_obat',
             scheduledTime: formattedSched,
             notes: dosage,
-            activeDays: existingRem.activeDays.isEmpty ? [1, 2, 3, 4, 5, 6, 7] : existingRem.activeDays,
+            activeDays:
+                existingRem.activeDays.isEmpty
+                    ? [1, 2, 3, 4, 5, 6, 7]
+                    : existingRem.activeDays,
           );
         }
       } else {
@@ -488,11 +544,14 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       }
 
       final dio = _ref.read(dioClientProvider);
-      await dio.post('/patient/medications/log', data: {
-        'reminder_id': reminderId,
-        'status': isTaken ? 'selesai' : 'pending',
-        'log_date': DateTime.now().toIso8601String().substring(0, 10),
-      });
+      await dio.post(
+        '/patient/medications/log',
+        data: {
+          'reminder_id': reminderId,
+          'status': isTaken ? 'selesai' : 'pending',
+          'log_date': DateTime.now().toIso8601String().substring(0, 10),
+        },
+      );
       state = state.copyWith(isSubmitting: false);
       await loadData();
       _ref.read(historyProvider.notifier).refresh();
@@ -573,11 +632,14 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
       final dio = _ref.read(dioClientProvider);
-      await dio.put('/patient/blood-sugar/$id', data: {
-        'glucose_value': glucoseValue,
-        'measurement_time_type': measurementType,
-        'measured_at': measuredAt,
-      });
+      await dio.put(
+        '/patient/blood-sugar/$id',
+        data: {
+          'glucose_value': glucoseValue,
+          'measurement_time_type': measurementType,
+          'measured_at': measuredAt,
+        },
+      );
       state = state.copyWith(isSubmitting: false);
       await loadData();
       return true;
@@ -620,6 +682,8 @@ class _TodaySummary {
   });
 }
 
-final recordProvider = StateNotifierProvider<RecordNotifier, RecordPageState>((ref) {
+final recordProvider = StateNotifierProvider<RecordNotifier, RecordPageState>((
+  ref,
+) {
   return RecordNotifier(ref);
 });

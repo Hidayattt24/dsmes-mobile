@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/app_shell.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../blood_sugar/widgets/blood_sugar_card.dart';
@@ -40,7 +42,11 @@ class _HomeViewState extends ConsumerState<HomeView> {
     _selectedDate = widget.nowOverride ?? DateTime.now();
   }
 
-  WeeklyDayState _resolveDayState(DateTime date, DateTime now, HistoryState? historyState) {
+  WeeklyDayState _resolveDayState(
+    DateTime date,
+    DateTime now,
+    HistoryState? historyState,
+  ) {
     final todayStart = DateTime(now.year, now.month, now.day);
     final dateStart = DateTime(date.year, date.month, date.day);
 
@@ -70,14 +76,15 @@ class _HomeViewState extends ConsumerState<HomeView> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CalendarHistoryBottomSheet(
-        initialDate: _selectedDate,
-        onDateSelected: (date) {
-          setState(() {
-            _selectedDate = date;
-          });
-        },
-      ),
+      builder:
+          (context) => CalendarHistoryBottomSheet(
+            initialDate: _selectedDate,
+            onDateSelected: (date) {
+              setState(() {
+                _selectedDate = date;
+              });
+            },
+          ),
     );
   }
 
@@ -98,14 +105,97 @@ class _HomeViewState extends ConsumerState<HomeView> {
       },
       color: AppColors.primary,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         padding: const EdgeInsets.all(AppSpacing.page),
         child: dashboardAsync.when(
           loading: () => const HomeSkeleton(),
           error: (err, stack) => _buildErrorState(err.toString()),
-          data: (state) => _buildHomeContent(context, now, state, historyAsync, remindersAsync),
+          data:
+              (state) => _buildHomeContent(
+                context,
+                now,
+                state,
+                historyAsync,
+                remindersAsync,
+              ),
         ),
       ),
+    );
+  }
+
+  Widget _buildReminderErrorState(Object error) {
+    final message = error is ApiException ? error.message : error.toString();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+          child: Text(
+            'Pengingat Hari Ini',
+            style: AppTextStyles.headlineMd.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.onSurface,
+              fontSize: 18,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.errorContainer.withValues(alpha: 0.35),
+            borderRadius: AppRadius.card,
+            border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.notifications_off_outlined,
+                color: AppColors.error,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pengingat belum dapat dimuat',
+                      style: AppTextStyles.labelMd.copyWith(
+                        color: AppColors.onErrorContainer,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      message,
+                      style: AppTextStyles.bodyMd.copyWith(
+                        color: AppColors.onErrorContainer,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    TextButton(
+                      onPressed:
+                          () =>
+                              ref.read(reminderListProvider.notifier).refresh(),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -115,21 +205,30 @@ class _HomeViewState extends ConsumerState<HomeView> {
         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
         child: Column(
           children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.red, size: 48),
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Colors.red,
+              size: 48,
+            ),
             const SizedBox(height: 12),
             Text(
               'Gagal memuat data dashboard',
-              style: AppTextStyles.labelLg.copyWith(fontWeight: FontWeight.bold),
+              style: AppTextStyles.labelLg.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               errorMsg,
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () => ref.read(homeDashboardProvider.notifier).refresh(),
+              onPressed:
+                  () => ref.read(homeDashboardProvider.notifier).refresh(),
               icon: const Icon(Icons.refresh),
               label: const Text('Coba Lagi'),
               style: ElevatedButton.styleFrom(
@@ -143,12 +242,17 @@ class _HomeViewState extends ConsumerState<HomeView> {
     );
   }
 
-  Widget _buildHomeContent(BuildContext context, DateTime now, HomeDashboardState state,
-      AsyncValue<HistoryState> historyAsync,
-      AsyncValue<List<ReminderModel>> remindersAsync) {
+  Widget _buildHomeContent(
+    BuildContext context,
+    DateTime now,
+    HomeDashboardState state,
+    AsyncValue<HistoryState> historyAsync,
+    AsyncValue<List<ReminderModel>> remindersAsync,
+  ) {
     final dash = state.dashboardData;
     final latestBs = state.latestBloodSugar;
-    final isSelectedToday = _selectedDate.day == now.day &&
+    final isSelectedToday =
+        _selectedDate.day == now.day &&
         _selectedDate.month == now.month &&
         _selectedDate.year == now.year;
 
@@ -214,20 +318,22 @@ class _HomeViewState extends ConsumerState<HomeView> {
           target: state.dailyCalorieTarget,
           isToday: isSelectedToday,
           onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
-          onViewHistoryPressed: () =>
-              ref.read(appShellTabIndexProvider.notifier).state = 1,
+          onViewHistoryPressed:
+              () => ref.read(appShellTabIndexProvider.notifier).state = 1,
         ),
         const SizedBox(height: AppSpacing.lg),
 
         remindersAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (error, _) => _buildReminderErrorState(error),
           data: (reminders) {
-            final todayReminders = reminders
-                .where((r) =>
-                    r.isActive && r.activeDays.contains(now.weekday))
-                .map(ReminderItemData.fromReminderModel)
-                .toList();
+            final todayReminders =
+                reminders
+                    .where(
+                      (r) => r.isActive && r.activeDays.contains(now.weekday),
+                    )
+                    .map(ReminderItemData.fromReminderModel)
+                    .toList();
             return ReminderSection(
               reminders: todayReminders,
               emptyMessage: 'Belum ada pengingat hari ini.',
@@ -249,17 +355,21 @@ class _HomeViewState extends ConsumerState<HomeView> {
         const SizedBox(height: AppSpacing.sm),
 
         historyAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (err, _) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              'Gagal memuat aktivitas',
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
-            ),
-          ),
+          loading:
+              () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+          error:
+              (err, _) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'Gagal memuat aktivitas',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ),
           data: (historyState) {
             if (historyState.allItems.isEmpty) {
               return const HistoryEmptyState();
@@ -275,18 +385,22 @@ class _HomeViewState extends ConsumerState<HomeView> {
                 final act = activities[index];
                 final iconColor = _parseColor(act.color);
                 final iconBgColor = iconColor.withValues(alpha: 0.1);
-                final statusColor = act.status == 'normal'
-                    ? AppColors.secondary
-                    : (act.status == 'hyperglycemia' || act.status == 'severe_hyperglycemia'
-                        ? AppColors.error
-                        : AppColors.tertiary);
+                final statusColor =
+                    act.status == 'normal'
+                        ? AppColors.secondary
+                        : (act.status == 'hyperglycemia' ||
+                                act.status == 'severe_hyperglycemia'
+                            ? AppColors.error
+                            : AppColors.tertiary);
 
                 return Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -327,7 +441,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
                             Text(
                               _formatActivityDate(act.parsedMeasuredAt),
                               style: AppTextStyles.bodyMd.copyWith(
-                                color: AppColors.onSurfaceVariant.withValues(alpha: 0.7),
+                                color: AppColors.onSurfaceVariant.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontSize: 11,
                               ),
                             ),
@@ -335,7 +451,10 @@ class _HomeViewState extends ConsumerState<HomeView> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
@@ -422,8 +541,18 @@ class _HomeViewState extends ConsumerState<HomeView> {
     if (date == null) return '';
     final d = date.toLocal();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     return '${d.day} ${months[d.month - 1]} ${d.year}';
   }

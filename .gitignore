@@ -56,3 +56,6 @@ app.*.map.json
 #test
 test/
 widget_test.dart
+
+
+google-services.json

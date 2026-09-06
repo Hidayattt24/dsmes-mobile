@@ -394,32 +394,7 @@ class RemindersManagementScreen extends ConsumerWidget {
               const SizedBox(width: AppSpacing.sm),
               Switch(
                 value: reminder.isActive,
-                onChanged: (_) {
-                  final willBeActive = !reminder.isActive;
-                  ref.read(reminderListProvider.notifier).toggle(reminder.id);
-
-                  if (willBeActive) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Notifikasi pengingat "${reminder.activityName}" diaktifkan pada pukul ${reminder.formattedTime}',
-                        ),
-                        backgroundColor: AppColors.primary,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Pengingat "${reminder.activityName}" dinonaktifkan',
-                        ),
-                        backgroundColor: AppColors.onSurfaceVariant,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                },
+                onChanged: (_) => _onToggleReminder(context, ref, reminder),
                 activeTrackColor: AppColors.primary,
               ),
             ],
@@ -553,6 +528,7 @@ class RemindersManagementScreen extends ConsumerWidget {
     final iconKey = ValueNotifier<String>('walk');
     String category = 'lainnya';
     List<int> selectedDays = [1, 2, 3, 4, 5, 6, 7];
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -723,20 +699,40 @@ class RemindersManagementScreen extends ConsumerWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () async {
-                              if (nameController.text.trim().isEmpty) return;
+                              if (isSubmitting ||
+                                  nameController.text.trim().isEmpty) {
+                                return;
+                              }
+                              setSheetState(() => isSubmitting = true);
                               final timeStr =
                                   '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                              await ref
-                                  .read(reminderListProvider.notifier)
-                                  .create(
-                                    activityName: nameController.text.trim(),
-                                    category: category,
-                                    scheduledTime: timeStr,
-                                    notes: notesController.text.trim(),
-                                    iconName: iconKey.value,
-                                    activeDays: selectedDays,
+                              try {
+                                await ref
+                                    .read(reminderListProvider.notifier)
+                                    .create(
+                                      activityName: nameController.text.trim(),
+                                      category: category,
+                                      scheduledTime: timeStr,
+                                      notes: notesController.text.trim(),
+                                      iconName: iconKey.value,
+                                      activeDays: selectedDays,
+                                    );
+                                if (sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                              } catch (error) {
+                                if (context.mounted) {
+                                  setSheetState(() => isSubmitting = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Gagal menambahkan pengingat: $error',
+                                      ),
+                                      backgroundColor: AppColors.error,
+                                    ),
                                   );
-                              Navigator.pop(sheetContext);
+                                }
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primaryContainer,
@@ -746,10 +742,20 @@ class RemindersManagementScreen extends ConsumerWidget {
                               ),
                               elevation: 0,
                             ),
-                            child: Text(
-                              AppStrings.dailyRoutineAddButton,
-                              style: AppTextStyles.poppinsButton,
-                            ),
+                            child:
+                                isSubmitting
+                                    ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.onPrimary,
+                                      ),
+                                    )
+                                    : Text(
+                                      AppStrings.dailyRoutineAddButton,
+                                      style: AppTextStyles.poppinsButton,
+                                    ),
                           ),
                         ),
                       ],
@@ -967,10 +973,61 @@ class RemindersManagementScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      ref.read(reminderListProvider.notifier).delete(reminder.id);
-      return true;
+      try {
+        await ref.read(reminderListProvider.notifier).delete(reminder.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pengingat berhasil dihapus')),
+          );
+        }
+        return true;
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal menghapus pengingat: $error'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
     }
     return false;
+  }
+
+  Future<void> _onToggleReminder(
+    BuildContext context,
+    WidgetRef ref,
+    ReminderModel reminder,
+  ) async {
+    try {
+      final updated = await ref
+          .read(reminderListProvider.notifier)
+          .toggle(reminder.id);
+      if (!context.mounted) return;
+
+      final message =
+          updated.isActive
+              ? 'Notifikasi pengingat "${updated.activityName}" diaktifkan pada pukul ${updated.formattedTime}'
+              : 'Pengingat "${updated.activityName}" dinonaktifkan';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor:
+              updated.isActive ? AppColors.primary : AppColors.onSurfaceVariant,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengubah pengingat: $error'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _onChangeIcon(
@@ -983,18 +1040,29 @@ class RemindersManagementScreen extends ConsumerWidget {
       currentKey: reminder.iconName,
     );
     if (iconKey != null) {
-      ref
-          .read(reminderListProvider.notifier)
-          .updateReminder(
-            reminder.id,
-            activityName: reminder.activityName,
-            category: reminder.category,
-            scheduledTime: reminder.scheduledTime,
-            notes: reminder.notes,
-            iconName: iconKey,
-            repeatIntervalDays: reminder.repeatIntervalDays,
-            activeDays: reminder.activeDays,
+      try {
+        await ref
+            .read(reminderListProvider.notifier)
+            .updateReminder(
+              reminder.id,
+              activityName: reminder.activityName,
+              category: reminder.category,
+              scheduledTime: reminder.scheduledTime,
+              notes: reminder.notes,
+              iconName: iconKey,
+              repeatIntervalDays: reminder.repeatIntervalDays,
+              activeDays: reminder.activeDays,
+            );
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal memperbarui ikon: $error'),
+              backgroundColor: AppColors.error,
+            ),
           );
+        }
+      }
     }
   }
 
@@ -1018,6 +1086,7 @@ class RemindersManagementScreen extends ConsumerWidget {
     final iconKey = ValueNotifier<String>(reminder.iconName);
     String category = reminder.category;
     List<int> selectedDays = [...reminder.activeDays];
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -1187,22 +1256,40 @@ class RemindersManagementScreen extends ConsumerWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () async {
-                              if (nameController.text.trim().isEmpty) return;
+                              if (isSubmitting ||
+                                  nameController.text.trim().isEmpty) {
+                                return;
+                              }
+                              setSheetState(() => isSubmitting = true);
                               final timeStr =
                                   '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
-                              await ref
-                                  .read(reminderListProvider.notifier)
-                                  .updateReminder(
-                                    reminder.id,
-                                    activityName: nameController.text.trim(),
-                                    category: category,
-                                    scheduledTime: timeStr,
-                                    notes: notesController.text.trim(),
-                                    iconName: iconKey.value,
-                                    activeDays: selectedDays,
+                              try {
+                                await ref
+                                    .read(reminderListProvider.notifier)
+                                    .updateReminder(
+                                      reminder.id,
+                                      activityName: nameController.text.trim(),
+                                      category: category,
+                                      scheduledTime: timeStr,
+                                      notes: notesController.text.trim(),
+                                      iconName: iconKey.value,
+                                      activeDays: selectedDays,
+                                    );
+                                if (sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                              } catch (error) {
+                                if (context.mounted) {
+                                  setSheetState(() => isSubmitting = false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Gagal memperbarui pengingat: $error',
+                                      ),
+                                      backgroundColor: AppColors.error,
+                                    ),
                                   );
-                              if (context.mounted) {
-                                Navigator.pop(sheetContext);
+                                }
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -1213,10 +1300,20 @@ class RemindersManagementScreen extends ConsumerWidget {
                               ),
                               elevation: 0,
                             ),
-                            child: Text(
-                              'Simpan Perubahan',
-                              style: AppTextStyles.poppinsButton,
-                            ),
+                            child:
+                                isSubmitting
+                                    ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.onPrimary,
+                                      ),
+                                    )
+                                    : Text(
+                                      'Simpan Perubahan',
+                                      style: AppTextStyles.poppinsButton,
+                                    ),
                           ),
                         ),
                       ],

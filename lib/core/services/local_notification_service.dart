@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
+import '../router/app_router.dart';
+import '../router/route_names.dart';
 
 class LocalNotificationService {
   LocalNotificationService._();
@@ -14,6 +20,8 @@ class LocalNotificationService {
 
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    debugPrint('[REMINDER][NOTIFICATION] initialize start');
 
     try {
       tz.initializeTimeZones();
@@ -40,10 +48,7 @@ class LocalNotificationService {
 
     await _notificationsPlugin.initialize(
       initSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Intentionally no logging of the payload — it may contain
-        // user-identifiable data.
-      },
+      onDidReceiveNotificationResponse: _onNotificationResponse,
     );
 
     // Create high-importance Android Notification Channel & Request Permissions
@@ -62,11 +67,33 @@ class LocalNotificationService {
         enableVibration: true,
       );
       await androidImplementation.createNotificationChannel(channel);
-      await androidImplementation.requestNotificationsPermission();
-      await androidImplementation.requestExactAlarmsPermission();
+      final notificationsGranted =
+          await androidImplementation.requestNotificationsPermission();
+      debugPrint(
+        '[REMINDER][NOTIFICATION] permissions notifications=$notificationsGranted',
+      );
     }
 
     _isInitialized = true;
+    debugPrint('[REMINDER][NOTIFICATION] initialize complete');
+  }
+
+  Future<void> _onNotificationResponse(NotificationResponse response) async {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      if (data['type'] == 'education') {
+        final articleId = data['article_id'] as String?;
+        if (articleId == null || articleId.isEmpty) return;
+        appNavigatorKey.currentContext?.go(
+          '${RouteNames.educationDetail}/$articleId',
+        );
+      }
+    } catch (_) {
+      // Ignore malformed payloads.
+    }
   }
 
   /// Instantly trigger a system pop-up notification on Android status bar
@@ -175,10 +202,7 @@ class LocalNotificationService {
       // do NOT fall back to an immediate pop-up (that would notify the user at
       // the wrong time); the in-app inbox entry still reminds the user while
       // the app is open.
-      debugPrint(
-        'LocalNotificationService: failed to schedule daily notification '
-        '(id=$id): $e',
-      );
+      debugPrint('[REMINDER][NOTIFICATION][ERROR] daily id=$id error=$e');
     }
   }
 
@@ -236,11 +260,12 @@ class LocalNotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       );
-    } catch (e) {
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
       debugPrint(
-        'LocalNotificationService: failed to schedule weekly notification '
-        '(id=$id): $e',
+        '[REMINDER][NOTIFICATION] weekly scheduled id=$id pending=${pending.length}',
       );
+    } catch (e) {
+      debugPrint('[REMINDER][NOTIFICATION][ERROR] weekly id=$id error=$e');
     }
   }
 
