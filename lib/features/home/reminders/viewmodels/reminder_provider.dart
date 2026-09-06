@@ -14,12 +14,28 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     final repo = ref.read(reminderRepositoryProvider);
     final reminders = await repo.list();
     for (final reminder in reminders.where((reminder) => reminder.isActive)) {
-      await _scheduleSystemNotification(reminder);
+      await _scheduleSystemNotifications(reminder);
     }
     return reminders;
   }
 
-  Future<void> _scheduleSystemNotification(ReminderModel reminder) async {
+  int _notificationId(String reminderId, int weekday) {
+    return (reminderId.hashCode.abs() % 1000000) * 10 + weekday;
+  }
+
+  Future<void> _cancelSystemNotifications(String reminderId) async {
+    // Cancel the legacy single daily ID as well as the current per-weekday IDs.
+    await LocalNotificationService.instance.cancelNotification(
+      reminderId.hashCode.abs(),
+    );
+    for (var weekday = 1; weekday <= 7; weekday++) {
+      await LocalNotificationService.instance.cancelNotification(
+        _notificationId(reminderId, weekday),
+      );
+    }
+  }
+
+  Future<void> _scheduleSystemNotifications(ReminderModel reminder) async {
     final parts = reminder.scheduledTime.split(':');
     if (parts.length < 2) return;
 
@@ -27,17 +43,23 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     final minute = int.tryParse(parts[1]);
     if (hour == null || minute == null) return;
 
-    final notificationId = reminder.id.hashCode.abs();
-    await LocalNotificationService.instance.scheduleDailyNotification(
-      id: notificationId,
-      title: 'Pengingat DSMES: ${reminder.activityName}',
-      body:
-          reminder.notes.isEmpty
-              ? 'Waktunya melakukan ${reminder.activityName}.'
-              : reminder.notes,
-      hour: hour,
-      minute: minute,
+    final days = reminder.activeDays.toSet().where(
+      (day) => day >= 1 && day <= 7,
     );
+    await _cancelSystemNotifications(reminder.id);
+    for (final weekday in days) {
+      await LocalNotificationService.instance.scheduleWeeklyNotification(
+        id: _notificationId(reminder.id, weekday),
+        title: 'Pengingat DSMES: ${reminder.activityName}',
+        body:
+            reminder.notes.isEmpty
+                ? 'Waktunya melakukan ${reminder.activityName}.'
+                : reminder.notes,
+        weekday: weekday,
+        hour: hour,
+        minute: minute,
+      );
+    }
   }
 
   Future<void> refresh() async {
@@ -70,7 +92,7 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     ];
     state = AsyncValue.data(current);
     if (newReminder.isActive) {
-      await _scheduleSystemNotification(newReminder);
+      await _scheduleSystemNotifications(newReminder);
     }
   }
 
@@ -99,11 +121,9 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     state = AsyncValue.data(
       current.map((r) => r.id == id ? updated : r).toList(),
     );
-    await LocalNotificationService.instance.cancelNotification(
-      id.hashCode.abs(),
-    );
+    await _cancelSystemNotifications(id);
     if (updated.isActive) {
-      await _scheduleSystemNotification(updated);
+      await _scheduleSystemNotifications(updated);
     }
   }
 
@@ -114,22 +134,18 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     state = AsyncValue.data(
       current.map((r) => r.id == id ? updated : r).toList(),
     );
-    final notificationId = id.hashCode.abs();
     if (updated.isActive) {
-      await _scheduleSystemNotification(updated);
+      await _cancelSystemNotifications(id);
+      await _scheduleSystemNotifications(updated);
     } else {
-      await LocalNotificationService.instance.cancelNotification(
-        notificationId,
-      );
+      await _cancelSystemNotifications(id);
     }
   }
 
   Future<void> delete(String id) async {
     final repo = ref.read(reminderRepositoryProvider);
     await repo.delete(id);
-    await LocalNotificationService.instance.cancelNotification(
-      id.hashCode.abs(),
-    );
+    await _cancelSystemNotifications(id);
     final current = state.valueOrNull ?? <ReminderModel>[];
     state = AsyncValue.data(current.where((r) => r.id != id).toList());
   }

@@ -11,8 +11,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/info_card.dart';
 import '../../../../core/services/local_notification_service.dart';
-import '../../../notifications/models/notification_item.dart';
-import '../../../notifications/viewmodels/notifications_notifier.dart';
 import '../../../onboarding/constants/routine_icons.dart';
 import '../../../onboarding/widgets/icon_picker_bottom_sheet.dart';
 import '../models/reminder_model.dart';
@@ -280,7 +278,7 @@ class RemindersManagementScreen extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          'Klik contoh pengingat untuk menambahkan ke daftar Anda (default: Nonaktif/Off):',
+          'Klik contoh pengingat untuk menambahkan ke daftar Anda (aktif secara default):',
           style: AppTextStyles.bodyMd.copyWith(
             color: AppColors.onSurfaceVariant,
             fontSize: 12,
@@ -322,7 +320,7 @@ class RemindersManagementScreen extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Pengingat "${p.name}" ditambahkan (Status: Off). Aktifkan toggle switch untuk mengaktifkan notifikasi.',
+                              'Pengingat "${p.name}" ditambahkan dan notifikasi dijadwalkan.',
                             ),
                             backgroundColor: AppColors.primary,
                             duration: const Duration(seconds: 3),
@@ -401,20 +399,6 @@ class RemindersManagementScreen extends ConsumerWidget {
                   ref.read(reminderListProvider.notifier).toggle(reminder.id);
 
                   if (willBeActive) {
-                    // 1. Schedule notification item in NotificationsNotifier for exact target time
-                    ref
-                        .read(notificationsProvider.notifier)
-                        .scheduleReminderNotification(
-                          title: 'Waktunya: ${reminder.activityName}',
-                          description:
-                              'Pengingat untuk ${reminder.activityName} (${reminder.notes.isNotEmpty ? reminder.notes : 'Jadwal pengingat harian DSMES'}).',
-                          scheduledTimeStr: reminder.scheduledTime,
-                          type:
-                              reminder.category == 'medis_obat'
-                                  ? NotificationType.medication
-                                  : NotificationType.warning,
-                        );
-
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -425,9 +409,6 @@ class RemindersManagementScreen extends ConsumerWidget {
                       ),
                     );
                   } else {
-                    LocalNotificationService.instance.cancelNotification(
-                      reminder.id.hashCode.abs(),
-                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -754,19 +735,6 @@ class RemindersManagementScreen extends ConsumerWidget {
                                     notes: notesController.text.trim(),
                                     iconName: iconKey.value,
                                     activeDays: selectedDays,
-                                  );
-                              ref
-                                  .read(notificationsProvider.notifier)
-                                  .scheduleReminderNotification(
-                                    title:
-                                        'Pengingat DSMES: ${nameController.text.trim()}',
-                                    description:
-                                        'Jadwal pengingat ${nameController.text.trim()} (${notesController.text.trim().isNotEmpty ? notesController.text.trim() : 'Waktunya melakukan ${nameController.text.trim()}'}).',
-                                    scheduledTimeStr: timeStr,
-                                    type:
-                                        category == 'medis_obat'
-                                            ? NotificationType.medication
-                                            : NotificationType.warning,
                                   );
                               Navigator.pop(sheetContext);
                             },
