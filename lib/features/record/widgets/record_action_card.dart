@@ -166,7 +166,7 @@ class RecordActionCard extends StatelessWidget {
                     ? AppColors.primaryContainer
                     : AppColors.surfaceContainerLow,
                 foregroundColor: isPrimaryButton
-                    ? AppColors.onPrimaryContainer
+                    ? AppColors.onPrimary
                     : AppColors.primary,
                 elevation: 0,
                 padding: EdgeInsets.zero,
@@ -186,7 +186,7 @@ class RecordActionCard extends StatelessWidget {
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: isPrimaryButton
-                      ? AppColors.onPrimaryContainer
+                      ? AppColors.onPrimary
                       : AppColors.primary,
                 ),
               ),

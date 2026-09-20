@@ -199,6 +199,7 @@ class RecordTimelineSection extends StatelessWidget {
                       label: Text(type.label),
                       selected: isSelected,
                       selectedColor: AppColors.primary,
+                      checkmarkColor: AppColors.onPrimary,
                       labelStyle: AppTextStyles.labelMd.copyWith(
                         fontSize: 12,
                         color: isSelected ? Colors.white : AppColors.onSurface,
@@ -451,6 +452,7 @@ class _DateChoiceChip extends StatelessWidget {
       label: Text(label),
       selected: isSelected,
       selectedColor: AppColors.primary,
+      checkmarkColor: AppColors.onPrimary,
       labelStyle: AppTextStyles.labelMd.copyWith(
         fontSize: 12,
         color: isSelected ? Colors.white : AppColors.onSurface,

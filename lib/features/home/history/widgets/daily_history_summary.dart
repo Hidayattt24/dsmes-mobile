@@ -213,7 +213,9 @@ class DailyHistorySummary extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item.title,
+                            item.activityType == 'meal'
+                                ? formatMealTitle(item.title)
+                                : item.title,
                             style: AppTextStyles.labelLg.copyWith(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
