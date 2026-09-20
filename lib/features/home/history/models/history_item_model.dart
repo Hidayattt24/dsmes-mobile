@@ -80,6 +80,27 @@ class HistoryItemModel {
   }
 }
 
+String formatMealTitle(String title) {
+  final normalized = title.trim().toLowerCase().replaceAll('_', ' ').replaceAll(RegExp(r'\s+'), ' ');
+  switch (normalized) {
+    case 'makan pagi':
+    case 'sarapan':
+    case 'breakfast':
+      return 'Sarapan';
+    case 'makan siang':
+    case 'lunch':
+      return 'Makan Siang';
+    case 'makan malam':
+    case 'dinner':
+      return 'Makan Malam';
+    case 'camilan':
+    case 'snack':
+      return 'Camilan';
+    default:
+      return title;
+  }
+}
+
 class DailyHistoryAggregate {
   final DateTime date;
   final List<HistoryItemModel> items;

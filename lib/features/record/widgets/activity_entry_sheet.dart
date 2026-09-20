@@ -160,13 +160,13 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                             decoration: BoxDecoration(
                               color:
                                   _isCompleted
-                                      ? AppColors.secondaryContainer
+                                      ? AppColors.primary
                                       : AppColors.surfaceContainerLow,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color:
                                     _isCompleted
-                                        ? AppColors.secondary
+                                        ? AppColors.primary
                                         : AppColors.outlineVariant.withValues(
                                           alpha: 0.4,
                                         ),
@@ -181,7 +181,7 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                                   size: 18,
                                   color:
                                       _isCompleted
-                                          ? AppColors.onSecondaryContainer
+                                          ? AppColors.onPrimary
                                           : AppColors.outline,
                                 ),
                                 const SizedBox(width: 6),
@@ -194,7 +194,7 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                                             : FontWeight.w500,
                                     color:
                                         _isCompleted
-                                            ? AppColors.onSecondaryContainer
+                                            ? AppColors.onPrimary
                                             : AppColors.onSurfaceVariant,
                                   ),
                                 ),
@@ -213,13 +213,13 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                             decoration: BoxDecoration(
                               color:
                                   !_isCompleted
-                                      ? AppColors.surfaceVariant
+                                      ? AppColors.primary
                                       : AppColors.surfaceContainerLow,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color:
                                     !_isCompleted
-                                        ? AppColors.outline
+                                        ? AppColors.primary
                                         : AppColors.outlineVariant.withValues(
                                           alpha: 0.4,
                                         ),
@@ -234,7 +234,7 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                                   size: 18,
                                   color:
                                       !_isCompleted
-                                          ? AppColors.onSurfaceVariant
+                                          ? AppColors.onPrimary
                                           : AppColors.outline,
                                 ),
                                 const SizedBox(width: 6),
@@ -247,7 +247,7 @@ class _ActivityEntrySheetState extends State<ActivityEntrySheet> {
                                             : FontWeight.w500,
                                     color:
                                         !_isCompleted
-                                            ? AppColors.onSurfaceVariant
+                                            ? AppColors.onPrimary
                                             : AppColors.outline,
                                   ),
                                 ),

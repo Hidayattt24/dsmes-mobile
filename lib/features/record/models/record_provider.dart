@@ -336,22 +336,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
-  String _formatMealTitle(String title) {
-    switch (title.toLowerCase()) {
-      case 'makan_pagi':
-      case 'sarapan':
-        return 'Sarapan';
-      case 'makan_siang':
-        return 'Makan Siang';
-      case 'makan_malam':
-        return 'Makan Malam';
-      case 'camilan':
-      case 'snack':
-        return 'Camilan';
-      default:
-        return title;
-    }
-  }
+  String _formatMealTitle(String title) => formatMealTitle(title);
 
   String? _badgeForActivity(String activityType, String status) {
     if (activityType == 'medication') {
