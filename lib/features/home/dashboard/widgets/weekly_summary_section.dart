@@ -42,98 +42,97 @@ class WeeklySummarySection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 1.2,
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
           ),
-          itemCount: summaries.length,
-          itemBuilder: (context, index) {
-            final summary = summaries[index];
-            return _SummaryCard(data: summary);
-          },
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: AppRadius.card,
+            border: Border.all(
+              color: AppColors.outlineVariant.withValues(alpha: 0.3),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0500695c),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < summaries.length; i++) ...[
+                  if (i > 0)
+                    VerticalDivider(
+                      width: AppSpacing.lg,
+                      thickness: 1,
+                      color: AppColors.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  Expanded(child: _SummaryTile(data: summaries[i])),
+                ],
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.data});
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({required this.data});
 
   final SummaryItemData data;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: AppRadius.card,
-        border: Border.all(
-          color: AppColors.outlineVariant.withValues(alpha: 0.3),
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(data.icon, color: AppColors.primary, size: 22),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0500695c),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Icon Circular Box
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              data.icon,
-              color: AppColors.primary,
-              size: 18,
-            ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                data.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 11,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                data.value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.poppinsHeadline.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onSurface,
+                  height: 1.2,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          // Value
-          Text(
-            data.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.poppinsHeadline.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.onSurface,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 2),
-          // Title/Label
-          Text(
-            data.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 11,
-              height: 1.2,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

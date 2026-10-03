@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/local_notification_service.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../data/repositories/notification_repository.dart';
+import '../helpers/notification_copywriter.dart';
 import '../models/notification_item.dart';
 
 class NotificationsNotifier extends Notifier<List<NotificationItem>> {
@@ -52,12 +53,18 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
 
   NotificationItem _toItem(NotificationModel n) {
     final isEducation = n.notifType == 'education';
+    final notifType = isEducation ? NotificationType.education : NotificationType.medication;
+    final (title, desc) = NotificationCopywriter.getInteractiveCopy(
+      rawTitle: isEducation ? 'Materi Edukasi Baru' : 'Pengingat DSMES',
+      rawDescription: n.messageText,
+      type: notifType,
+    );
     return NotificationItem(
       id: n.id,
-      title: isEducation ? 'Materi Edukasi Baru' : 'Pengingat DSMES',
-      description: n.messageText,
+      title: title,
+      description: desc,
       timestamp: _formatTimestamp(n.notifiedAt),
-      type: isEducation ? NotificationType.education : NotificationType.medication,
+      type: notifType,
       isUnread: !n.isRead,
       group: _groupFor(n.notifiedAt),
       articleId: n.articleId,
@@ -169,10 +176,15 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     NotificationType type = NotificationType.medication,
     String? customTimestamp,
   }) {
+    final (interactiveTitle, interactiveDesc) = NotificationCopywriter.getInteractiveCopy(
+      rawTitle: title,
+      rawDescription: description,
+      type: type,
+    );
     final newItem = NotificationItem(
       id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
-      title: title,
-      description: description,
+      title: interactiveTitle,
+      description: interactiveDesc,
       timestamp: customTimestamp ?? 'Baru saja',
       type: type,
       isUnread: true,

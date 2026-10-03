@@ -235,7 +235,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Share sheet
+  // Build
   // ──────────────────────────────────────────────────────────────
   void _handleShare(EducationArticle article) {
     final mockUrl = 'https://dsmes-aceh.id/edukasi/${article.id}';
@@ -497,13 +497,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
             ),
             onPressed: _toggleBookmark,
           ),
-          IconButton(
-            icon: const Icon(
-              Icons.share_rounded,
-              color: AppColors.onSurfaceVariant,
-            ),
-            onPressed: () => _handleShare(article),
-          ),
+
           const SizedBox(width: 8),
         ],
       ),
