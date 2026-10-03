@@ -386,23 +386,26 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                   const SizedBox(height: AppSpacing.xl),
                 ],
 
-                // Article List Section Header with "Lihat Semua" Button
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.xs,
+                // Article List Section Header with "Lihat Semua" Button (Fixed Row Layout)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Pelajari Lebih Lanjut',
-                      style: AppTextStyles.headlineMd.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
+                    Expanded(
+                      child: Text(
+                        'Pelajari Lebih Lanjut',
+                        style: AppTextStyles.headlineMd.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.xs),
                     TextButton.icon(
                       onPressed: _navigateToAllArticles,
+                      iconAlignment: IconAlignment.end,
                       icon: const Icon(
                         Icons.arrow_forward_rounded,
                         size: 16,

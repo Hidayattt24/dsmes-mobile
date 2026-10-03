@@ -35,6 +35,7 @@ class HomeView extends ConsumerStatefulWidget {
 
 class _HomeViewState extends ConsumerState<HomeView> {
   late DateTime _selectedDate;
+  bool _showAllActivities = false;
 
   @override
   void initState() {
@@ -375,8 +376,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
               return const HistoryEmptyState();
             }
 
-            final activities = historyState.recentItemsLimited;
-            return ListView.separated(
+            final allActivities = historyState.allItems;
+            final hasMore = allActivities.length > 3;
+            final activities =
+                _showAllActivities ? allActivities : allActivities.take(3).toList();
+            return Column(
+              children: [
+            ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activities.length,
@@ -472,7 +478,34 @@ class _HomeViewState extends ConsumerState<HomeView> {
                   ),
                 );
               },
-            );
+            ),
+            if (hasMore)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: TextButton.icon(
+                  onPressed:
+                      () => setState(
+                        () => _showAllActivities = !_showAllActivities,
+                      ),
+                  icon: Icon(
+                    _showAllActivities
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.primary,
+                  ),
+                  label: Text(
+                    _showAllActivities
+                        ? 'Tampilkan Lebih Sedikit'
+                        : 'Lihat Semua (${allActivities.length})',
+                    style: AppTextStyles.labelMd.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
           },
         ),
         const SizedBox(height: AppSpacing.lg),
