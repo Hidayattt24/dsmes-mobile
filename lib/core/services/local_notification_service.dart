@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../router/app_router.dart';
 import '../router/route_names.dart';
+import '../theme/app_colors.dart';
 
 class LocalNotificationService {
   LocalNotificationService._();
@@ -25,15 +26,15 @@ class LocalNotificationService {
 
     try {
       tz.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
+      try {
+        tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
+      } catch (_) {}
     } catch (e) {
-      // If timezone initialization fails, the schedule would silently be off.
-      // Log it so the issue is visible instead of scheduling at the wrong time.
       debugPrint('LocalNotificationService: timezone init failed: $e');
     }
 
     const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
+      'ic_stat_diba',
     );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -46,32 +47,35 @@ class LocalNotificationService {
       iOS: iosSettings,
     );
 
-    await _notificationsPlugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationResponse,
-    );
+    try {
+      await _notificationsPlugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: _onNotificationResponse,
+      );
 
-    // Create high-importance Android Notification Channel & Request Permissions
-    final androidImplementation =
-        _notificationsPlugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >();
-    if (androidImplementation != null) {
-      const channel = AndroidNotificationChannel(
-        'dsmes_reminders_channel',
-        'Pengingat DSMES',
-        description: 'Saluran notifikasi pengingat harian diabetes DSMES',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-      );
-      await androidImplementation.createNotificationChannel(channel);
-      final notificationsGranted =
-          await androidImplementation.requestNotificationsPermission();
-      debugPrint(
-        '[REMINDER][NOTIFICATION] permissions notifications=$notificationsGranted',
-      );
+      final androidImplementation =
+          _notificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
+      if (androidImplementation != null) {
+        const channel = AndroidNotificationChannel(
+          'dsmes_reminders_channel',
+          'Pengingat DIBA',
+          description: 'Saluran notifikasi pengingat harian diabetes DIBA',
+          importance: Importance.max,
+          playSound: true,
+          enableVibration: true,
+        );
+        await androidImplementation.createNotificationChannel(channel);
+        final notificationsGranted =
+            await androidImplementation.requestNotificationsPermission();
+        debugPrint(
+          '[REMINDER][NOTIFICATION] permissions notifications=$notificationsGranted',
+        );
+      }
+    } catch (e) {
+      debugPrint('[REMINDER][NOTIFICATION] initialize skipped/failed: $e');
     }
 
     _isInitialized = true;
@@ -83,12 +87,20 @@ class LocalNotificationService {
     if (payload == null || payload.isEmpty) return;
 
     try {
-      final data = jsonDecode(payload) as Map<String, dynamic>;
-      if (data['type'] == 'education') {
-        final articleId = data['article_id'] as String?;
-        if (articleId == null || articleId.isEmpty) return;
+      if (payload.startsWith('{')) {
+        final data = jsonDecode(payload) as Map<String, dynamic>;
+        if (data['type'] == 'education') {
+          final articleId = data['article_id'] as String?;
+          if (articleId != null && articleId.isNotEmpty) {
+            appNavigatorKey.currentContext?.go(
+              '${RouteNames.educationDetail}/$articleId',
+            );
+          }
+        }
+      } else {
+        // Plain string articleId fallback
         appNavigatorKey.currentContext?.go(
-          '${RouteNames.educationDetail}/$articleId',
+          '${RouteNames.educationDetail}/$payload',
         );
       }
     } catch (_) {
@@ -107,13 +119,15 @@ class LocalNotificationService {
 
     const androidDetails = AndroidNotificationDetails(
       'dsmes_reminders_channel',
-      'Pengingat DSMES',
-      channelDescription: 'Saluran notifikasi pengingat harian diabetes DSMES',
+      'Pengingat DIBA',
+      channelDescription: 'Saluran notifikasi pengingat harian diabetes DIBA',
       importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
       playSound: true,
       enableVibration: true,
+      icon: 'ic_stat_diba',
+      color: AppColors.primary,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -127,13 +141,52 @@ class LocalNotificationService {
       iOS: iosDetails,
     );
 
-    await _notificationsPlugin.show(
-      id,
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
-    );
+    try {
+      await _notificationsPlugin.show(
+        id,
+        title,
+        body,
+        notificationDetails,
+        payload: payload,
+      );
+      debugPrint('[REMINDER][NOTIFICATION] showNotification SUCCESS id=$id');
+    } catch (e, stack) {
+      debugPrint(
+        '[REMINDER][NOTIFICATION][ERROR] primary show failed: $e\n$stack',
+      );
+      // Fallback without explicit icon (uses initialization default icon)
+      try {
+        const fallbackDetails = NotificationDetails(
+          android: AndroidNotificationDetails(
+            'dsmes_reminders_channel',
+            'Pengingat DIBA',
+            channelDescription:
+                'Saluran notifikasi pengingat harian diabetes DIBA',
+            importance: Importance.max,
+            priority: Priority.high,
+            showWhen: true,
+            playSound: true,
+            enableVibration: true,
+            color: AppColors.primary,
+          ),
+          iOS: iosDetails,
+        );
+        await _notificationsPlugin.show(
+          id,
+          title,
+          body,
+          fallbackDetails,
+          payload: payload,
+        );
+        debugPrint(
+          '[REMINDER][NOTIFICATION] fallback showNotification SUCCESS id=$id',
+        );
+      } catch (fallbackError) {
+        debugPrint(
+          '[REMINDER][NOTIFICATION][FATAL] fallback failed: $fallbackError',
+        );
+      }
+    }
   }
 
   /// Schedule a system alarm notification for daily/weekly reminders.
@@ -153,12 +206,14 @@ class LocalNotificationService {
 
     const androidDetails = AndroidNotificationDetails(
       'dsmes_reminders_channel',
-      'Pengingat DSMES',
-      channelDescription: 'Saluran notifikasi pengingat harian diabetes DSMES',
+      'Pengingat DIBA',
+      channelDescription: 'Saluran notifikasi pengingat harian diabetes DIBA',
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
+      icon: 'ic_stat_diba',
+      color: AppColors.primary,
     );
 
     const notificationDetails = NotificationDetails(
@@ -171,10 +226,9 @@ class LocalNotificationService {
     );
 
     try {
-      final tzLocation = tz.getLocation('Asia/Jakarta');
-      final now = tz.TZDateTime.now(tzLocation);
+      final now = tz.TZDateTime.now(tz.local);
       var scheduledTzDateTime = tz.TZDateTime(
-        tzLocation,
+        tz.local,
         now.year,
         now.month,
         now.day,
@@ -186,22 +240,33 @@ class LocalNotificationService {
         scheduledTzDateTime = scheduledTzDateTime.add(const Duration(days: 1));
       }
 
-      await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        scheduledTzDateTime,
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduledTzDateTime,
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      } catch (_) {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduledTzDateTime,
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      }
+      debugPrint('[REMINDER][NOTIFICATION] daily scheduled id=$id at=$scheduledTzDateTime');
     } catch (e) {
-      // Scheduling a recurring alarm can fail on some devices. We intentionally
-      // do NOT fall back to an immediate pop-up (that would notify the user at
-      // the wrong time); the in-app inbox entry still reminds the user while
-      // the app is open.
       debugPrint('[REMINDER][NOTIFICATION][ERROR] daily id=$id error=$e');
     }
   }
@@ -218,12 +283,14 @@ class LocalNotificationService {
 
     const androidDetails = AndroidNotificationDetails(
       'dsmes_reminders_channel',
-      'Pengingat DSMES',
-      channelDescription: 'Saluran notifikasi pengingat harian diabetes DSMES',
+      'Pengingat DIBA',
+      channelDescription: 'Saluran notifikasi pengingat harian diabetes DIBA',
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
+      icon: 'ic_stat_diba',
+      color: AppColors.primary,
     );
     const notificationDetails = NotificationDetails(
       android: androidDetails,
@@ -235,10 +302,9 @@ class LocalNotificationService {
     );
 
     try {
-      final location = tz.getLocation('Asia/Jakarta');
-      final now = tz.TZDateTime.now(location);
+      final now = tz.TZDateTime.now(tz.local);
       var scheduled = tz.TZDateTime(
-        location,
+        tz.local,
         now.year,
         now.month,
         now.day,
@@ -249,17 +315,31 @@ class LocalNotificationService {
       if (daysUntil == 0 && !scheduled.isAfter(now)) daysUntil = 7;
       scheduled = scheduled.add(Duration(days: daysUntil));
 
-      await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        scheduled,
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-      );
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduled,
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      } catch (_) {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          scheduled,
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      }
       final pending = await _notificationsPlugin.pendingNotificationRequests();
       debugPrint(
         '[REMINDER][NOTIFICATION] weekly scheduled id=$id pending=${pending.length}',
@@ -271,11 +351,19 @@ class LocalNotificationService {
 
   /// Cancel scheduled notification by ID
   Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id);
+    try {
+      await _notificationsPlugin.cancel(id);
+    } catch (e) {
+      debugPrint('[REMINDER][NOTIFICATION] cancel failed: $e');
+    }
   }
 
   /// Cancel all scheduled notifications
   Future<void> cancelAllNotifications() async {
-    await _notificationsPlugin.cancelAll();
+    try {
+      await _notificationsPlugin.cancelAll();
+    } catch (e) {
+      debugPrint('[REMINDER][NOTIFICATION] cancelAll failed: $e');
+    }
   }
 }

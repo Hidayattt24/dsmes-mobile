@@ -58,7 +58,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Tuliskan saran atau kendala yang Anda alami untuk perbaikan aplikasi DSMES Aceh.',
+                    'Tuliskan saran atau kendala yang Anda alami untuk perbaikan aplikasi DIBA.',
                     style: AppTextStyles.bodyMd.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),
@@ -182,7 +182,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                       onTap: () {
                         AppSnackbar.showInfo(
                           context,
-                          'Menghubungkan ke Tim Layanan WhatsApp DSMES.',
+                          'Menghubungkan ke Tim Layanan WhatsApp DIBA.',
                         );
                       },
                     ),
@@ -303,7 +303,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                     Icons.info_outline_rounded,
                     color: AppColors.primary,
                   ),
-                  title: const Text('Tentang Aplikasi DSMES Aceh'),
+                  title: const Text('Tentang Aplikasi DIBA'),
                   subtitle: const Text(
                     'Versi, pengembang, & informasi lisensi',
                   ),

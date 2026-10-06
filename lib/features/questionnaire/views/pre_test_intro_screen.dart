@@ -56,10 +56,11 @@ class _PreTestIntroContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final questionCount = preTest.questionCount;
 
-    return SafeArea(
-      child: Column(
-        children: [
-          Expanded(
+    return Column(
+      children: [
+        Expanded(
+          child: SafeArea(
+            bottom: false,
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(
@@ -103,7 +104,7 @@ class _PreTestIntroContent extends StatelessWidget {
 
                   // ── Subtitle ───────────────────────────────────────────
                   Text(
-                    'Kuesioner ini bertujuan mengetahui tingkat keyakinan Anda dalam mengelola diabetes sebelum menggunakan aplikasi DSMES.',
+                    'Kuesioner ini bertujuan mengetahui tingkat keyakinan Anda dalam mengelola diabetes sebelum menggunakan aplikasi DIBA.',
                     style: AppTextStyles.bodyLg.copyWith(
                       fontSize: 15,
                       color: AppColors.onSurfaceVariant,
@@ -240,15 +241,10 @@ class _PreTestIntroContent extends StatelessWidget {
               ),
             ),
           ),
+        ),
 
-          // ── CTA button (fixed bottom) ──────────────────────────────────
+        // ── CTA button (fixed bottom) ──────────────────────────────────
           Container(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.page,
-              AppSpacing.md,
-              AppSpacing.page,
-              AppSpacing.lg + MediaQuery.of(context).padding.bottom,
-            ),
             decoration: BoxDecoration(
               color: AppColors.surface,
               border: Border(
@@ -256,59 +252,74 @@ class _PreTestIntroContent extends StatelessWidget {
                   color: AppColors.outlineVariant.withValues(alpha: 0.3),
                 ),
               ),
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, -4),
                 ),
-                onPressed: () {
-                  if (useDirectNavigation) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder:
-                            (_) => QuestionnaireQuestionsScreen(
-                              questionnaire: preTest,
-                              isPreTest: true,
-                            ),
-                      ),
-                    );
-                  } else {
-                    context.push(RouteNames.preTestQuestions, extra: preTest);
-                  }
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.play_arrow_rounded,
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Mulai Kuesioner',
-                      style: AppTextStyles.poppinsButton.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.white,
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.page,
+                  vertical: AppSpacing.sm,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ],
+                    onPressed: () {
+                      if (useDirectNavigation) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder:
+                                (_) => QuestionnaireQuestionsScreen(
+                                  questionnaire: preTest,
+                                  isPreTest: true,
+                                ),
+                          ),
+                        );
+                      } else {
+                        context.push(RouteNames.preTestQuestions, extra: preTest);
+                      }
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.play_arrow_rounded,
+                          size: 24,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Mulai Kuesioner',
+                          style: AppTextStyles.poppinsButton.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }
 

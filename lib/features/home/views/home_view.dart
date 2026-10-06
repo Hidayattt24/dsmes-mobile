@@ -345,13 +345,51 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        Text(
-          'Aktivitas Terakhir',
-          style: AppTextStyles.labelLg.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: AppColors.onSurface,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Aktivitas Terakhir',
+              style: AppTextStyles.labelLg.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: AppColors.onSurface,
+              ),
+            ),
+            InkWell(
+              onTap: _openHistoryBottomSheet,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.calendar_month_rounded,
+                      size: 15,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Riwayat',
+                      style: AppTextStyles.labelSm.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -418,7 +456,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          _mapIcon(act.icon),
+                          _mapIcon(act),
                           color: iconColor,
                           size: 20,
                         ),
@@ -429,7 +467,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              act.title,
+                              act.displayTitle,
                               style: AppTextStyles.labelMd.copyWith(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -538,18 +576,20 @@ class _HomeViewState extends ConsumerState<HomeView> {
     return AppColors.primary;
   }
 
-  IconData _mapIcon(String iconName) {
-    switch (iconName) {
+  IconData _mapIcon(HistoryItemModel item) {
+    if (item.isBloodSugarItem) return Icons.water_drop_rounded;
+    switch (item.icon) {
       case 'water_drop':
-        return Icons.water_drop_outlined;
+        return Icons.water_drop_rounded;
       case 'restaurant':
         return Icons.restaurant_rounded;
       case 'directions_run':
+      case 'directions_walk':
         return Icons.directions_run_rounded;
       case 'medication':
-        return Icons.medication_outlined;
+        return Icons.medication_rounded;
       case 'monitor_heart':
-        return Icons.monitor_heart_outlined;
+        return Icons.monitor_heart_rounded;
       default:
         return Icons.history_rounded;
     }

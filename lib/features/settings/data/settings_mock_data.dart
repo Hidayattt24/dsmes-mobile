@@ -12,12 +12,12 @@ abstract final class SettingsMockData {
 
   static const List<(String, String)> faqList = [
     (
-      'Apa itu aplikasi DSMES Aceh?',
-      'DSMES (Diabetes Self-Management Education and Support) Aceh adalah aplikasi edukasi dan pemantauan mandiri untuk membantu pasien diabetes mengelola kesehatan harian secara optimal.'
+      'Apa itu aplikasi DIBA?',
+      'DIBA (Diabetes Behaviour & Adherence Application) adalah aplikasi edukasi dan pemantauan mandiri untuk membantu pasien diabetes meningkatkan kepatuhan dan mengelola kesehatan harian secara optimal.'
     ),
     (
       'Bagaimana cara menghitung kebutuhan kalori harian saya?',
-      'Aplikasi DSMES menghitung kalori harian berdasarkan pengukuran tinggi badan, berat badan, usia, jenis kelamin, dan tingkat aktivitas harian Anda menggunakan rumus Mifflin-St Jeor.'
+      'Aplikasi DIBA menghitung kalori harian berdasarkan pengukuran tinggi badan, berat badan, usia, jenis kelamin, dan tingkat aktivitas harian Anda menggunakan rumus Mifflin-St Jeor.'
     ),
     (
       'Seberapa sering saya harus memperbarui indikator tubuh?',

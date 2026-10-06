@@ -71,23 +71,10 @@ class WelcomeIllustration extends StatelessWidget {
                             ),
                           ),
                           child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.health_and_safety,
-                                  size: size * 0.2,
-                                  color: AppColors.primaryContainer
-                                      .withValues(alpha: 0.4),
-                                ),
-                                const SizedBox(height: 8),
-                                Icon(
-                                  Icons.timeline_outlined,
-                                  size: size * 0.15,
-                                  color: AppColors.secondary
-                                      .withValues(alpha: 0.3),
-                                ),
-                              ],
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              width: size * 0.55,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),

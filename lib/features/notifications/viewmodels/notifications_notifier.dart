@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/local_notification_service.dart';
@@ -44,8 +45,8 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
 
       state = merged;
 
-      // Auto-trigger system pop-ups for unread education notifications.
-      _triggerEducationPopups(backendItems);
+      // Auto-trigger system pop-ups for unread incoming notifications.
+      _triggerIncomingPopups(backendItems);
     } catch (_) {
       // Silently ignore network/auth failures (e.g. app opened pre-login).
     }
@@ -55,7 +56,7 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     final isEducation = n.notifType == 'education';
     final notifType = isEducation ? NotificationType.education : NotificationType.medication;
     final (title, desc) = NotificationCopywriter.getInteractiveCopy(
-      rawTitle: isEducation ? 'Materi Edukasi Baru' : 'Pengingat DSMES',
+      rawTitle: isEducation ? 'Materi Edukasi Baru' : 'Pengingat DIBA',
       rawDescription: n.messageText,
       type: notifType,
     );
@@ -71,19 +72,18 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     );
   }
 
-  void _triggerEducationPopups(List<NotificationItem> backendItems) {
+  void _triggerIncomingPopups(List<NotificationItem> backendItems) {
     for (final item in backendItems) {
-      final isUnreadEducation =
-          item.type == NotificationType.education && item.isUnread;
-      if (isUnreadEducation && item.articleId != null) {
-        if (_shownEducationIds.add(item.id)) {
-          LocalNotificationService.instance.showNotification(
-            id: item.articleId.hashCode.abs(),
-            title: item.title,
-            body: item.description,
-            payload: item.articleId,
-          );
-        }
+      if (item.isUnread && _shownEducationIds.add(item.id)) {
+        LocalNotificationService.instance.showNotification(
+          id: item.id.hashCode.abs(),
+          title: item.title,
+          body: item.description,
+          payload: jsonEncode({
+            'type': item.type == NotificationType.education ? 'education' : 'reminder',
+            'article_id': item.articleId,
+          }),
+        );
       }
     }
   }
@@ -175,6 +175,7 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     required String description,
     NotificationType type = NotificationType.medication,
     String? customTimestamp,
+    bool showSystemPopup = true,
   }) {
     final (interactiveTitle, interactiveDesc) = NotificationCopywriter.getInteractiveCopy(
       rawTitle: title,
@@ -191,6 +192,14 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       group: 'Hari Ini',
     );
     state = [newItem, ...state];
+
+    if (showSystemPopup) {
+      LocalNotificationService.instance.showNotification(
+        id: newItem.id.hashCode.abs(),
+        title: newItem.title,
+        body: newItem.description,
+      );
+    }
   }
 
   /// Schedule a notification to be added to the inbox list at a specific time (HH:mm)

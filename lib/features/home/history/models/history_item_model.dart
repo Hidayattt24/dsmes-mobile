@@ -40,7 +40,29 @@ class HistoryItemModel {
   DateTime? get parsedMeasuredAt => DateTime.tryParse(measuredAt)?.toLocal();
   DateTime? get parsedCreatedAt => DateTime.tryParse(createdAt)?.toLocal();
 
+  bool get isBloodSugarItem =>
+      activityType == 'blood_sugar' ||
+      unit == 'mg/dL' ||
+      category == 'blood_sugar' ||
+      metadata.containsKey('glucose_value');
+
+  String get displayTitle {
+    if (isBloodSugarItem) {
+      return 'Pencatatan Gula Darah';
+    }
+    if (activityType == 'meal') {
+      return formatMealTitle(title);
+    }
+    if (title.isEmpty || title == 'Pengukuran Tubuh') {
+      if (unit == 'mg/dL') return 'Pencatatan Gula Darah';
+      if (unit == 'kg') return 'Pengukuran Berat Badan';
+      return 'Pengukuran Kesehatan';
+    }
+    return title;
+  }
+
   String get activityTypeLabel {
+    if (isBloodSugarItem) return 'Gula Darah';
     switch (activityType) {
       case 'blood_sugar':
         return 'Gula Darah';
@@ -51,7 +73,7 @@ class HistoryItemModel {
       case 'medication':
         return 'Obat';
       case 'measurement':
-        return 'Pengukuran';
+        return unit == 'mg/dL' ? 'Gula Darah' : 'Pengukuran';
       default:
         return 'Lainnya';
     }

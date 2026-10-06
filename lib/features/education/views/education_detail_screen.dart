@@ -583,7 +583,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                                   videoTitle: article.title,
                                   videoDuration: 'Video Edukasi',
                                   channelName:
-                                      article.channelName ?? 'DSMES Official',
+                                      article.channelName ?? 'DIBA Official',
                                   imageUrl: article.imageUrl,
                                   videoUrl:
                                       'https://www.youtube.com/watch?v=$youtubeId',
@@ -794,7 +794,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                   ],
                   const SizedBox(height: 8),
                   Text(
-                    '© 2026 DSMES Aceh',
+                    '© 2026 DIBA',
                     style: AppTextStyles.bodyMd.copyWith(
                       fontSize: 11,
                       color: AppColors.onSurfaceVariant.withValues(alpha: 0.6),

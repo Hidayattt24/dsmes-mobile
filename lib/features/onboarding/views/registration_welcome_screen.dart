@@ -101,7 +101,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                           child: Column(
                             children: [
                               Text(
-                                "Selamat datang di DSMES Aceh!",
+                                "Selamat datang di DIBA!",
                                 style: AppTextStyles.poppinsHeadline.copyWith(
                                   fontSize: 26,
                                   color: AppColors.primary,

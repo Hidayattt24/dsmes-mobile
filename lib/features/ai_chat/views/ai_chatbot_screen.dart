@@ -110,7 +110,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Asisten DSMES',
+                    'Asisten DIBA',
                     style: AppTextStyles.headlineMd.copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -247,7 +247,7 @@ class _AiChatbotScreenState extends ConsumerState<AiChatbotScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Saya adalah Asisten Kesehatan DSMES.\nSaya siap membantu menjawab pertanyaan seputar diabetes, nutrisi, aktivitas fisik, serta penggunaan aplikasi DSMES.',
+                  'Saya adalah Asisten Kesehatan DIBA.\nSaya siap membantu menjawab pertanyaan seputar diabetes, nutrisi, aktivitas fisik, serta penggunaan aplikasi DIBA.',
                   style: AppTextStyles.bodyMd.copyWith(
                     fontSize: 13,
                     color: AppColors.onSurfaceVariant,
@@ -518,7 +518,7 @@ class _AnimatedThinkingBubbleState extends State<_AnimatedThinkingBubble>
     'Sedang menganalisis data kesehatan Anda...',
     'Mempersiapkan edukasi diabetes terbaik...',
     'Menyusun rekomendasi personal untuk Anda...',
-    'Menghubungkan ke konsultan AI DSMES...',
+    'Menghubungkan ke konsultan AI DIBA...',
     'Hampir selesai, merapikan jawaban...',
   ];
 

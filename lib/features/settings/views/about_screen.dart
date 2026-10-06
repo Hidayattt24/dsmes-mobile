@@ -25,7 +25,7 @@ class AboutScreen extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Tentang DSMES Aceh',
+          'Tentang DIBA',
           style: AppTextStyles.headlineMd.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.onSurface,
@@ -45,32 +45,22 @@ class AboutScreen extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryContainer.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          width: 2,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.health_and_safety_rounded,
-                        color: AppColors.primary,
-                        size: 54,
-                      ),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 64,
+                      fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'DSMES Aceh',
-                      style: AppTextStyles.headlineLg.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                      'Diabetes Behaviour & Adherence Application',
+                      style: AppTextStyles.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 4),
@@ -122,7 +112,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'Aplikasi DSMES (Diabetes Self-Management Education and Support) Aceh dirancang khusus untuk memfasilitasi perawatan dan edukasi mandiri penderita diabetes melitus tipe 2 di Provinsi Aceh.',
+                      'Aplikasi DIBA (Diabetes Behaviour & Adherence Application) dirancang khusus untuk memfasilitasi perawatan, kepatuhan, dan edukasi mandiri penderita diabetes melitus tipe 2 di Provinsi Aceh.',
                       style: AppTextStyles.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                         height: 1.5,
@@ -172,7 +162,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     const _TeamMemberRow(
-                      name: 'Tim Penelitian DSMES Aceh',
+                      name: 'Tim Penelitian DIBA Aceh',
                       role: 'Konseptor & Pakar Klinis Diabetes',
                     ),
                     const Divider(height: 20),
@@ -188,7 +178,7 @@ class AboutScreen extends StatelessWidget {
 
               // Copyright Footer
               Text(
-                '© 2026 DSMES Aceh Project. Hak Cipta Dilindungi.',
+                '© 2026 DIBA Project. Hak Cipta Dilindungi.',
                 style: AppTextStyles.bodyMd.copyWith(
                   color: AppColors.outline,
                   fontSize: 12,

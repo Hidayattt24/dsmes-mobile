@@ -1,14 +1,14 @@
 abstract final class AppStrings {
   AppStrings._();
 
-  static const String appName = 'DSMES Aceh';
+  static const String appName = 'DIBA';
   static const String appTagline =
-      'Diabetes Self-Management Education & Support';
+      'Diabetes Behaviour & Adherence Application';
 
   // ── Welcome ────────────────────────────────────────────────────────────────
-  static const String welcomeTitle = 'Selamat Datang di\nDSMES Aceh';
+  static const String welcomeTitle = 'Selamat Datang di\nDIBA';
   static const String welcomeSubtitle =
-      'Dukungan manajemen mandiri diabetes yang dipersonalisasi untuk kesehatan Anda yang lebih baik.';
+      'Dukungan kepatuhan dan manajemen mandiri diabetes yang dipersonalisasi untuk kesehatan Anda yang lebih baik.';
   static const String welcomeMulai = 'Mulai';
   static const String welcomeLogin = 'Masuk';
   static const String welcomeRegister = 'Daftar Sekarang';
@@ -17,7 +17,7 @@ abstract final class AppStrings {
 
   // ── Auth — Login ───────────────────────────────────────────────────────────
   static const String loginTitle = 'Selamat Datang';
-  static const String loginSubtitle = 'Masuk ke akun DSMES Aceh Anda';
+  static const String loginSubtitle = 'Masuk ke akun DIBA Anda';
   static const String loginPhone = 'Nomor Handphone';
   static const String loginPhoneHint = 'Contoh: 081234567890';
   static const String loginEmail = 'Email';
@@ -117,7 +117,7 @@ abstract final class AppStrings {
   // ── Step 6: Welcome Introduction ───────────────────────────────────────────
   static const String step6Title = 'Lengkapi Data Diri Anda';
   static const String step6Subtitle =
-      'Kami akan menyesuaikan pengalaman Digital DSMES berdasarkan informasi tempat tinggal, sosial, pendidikan, dan riwayat diabetes Anda.';
+      'Kami akan menyesuaikan pengalaman DIBA berdasarkan informasi tempat tinggal, sosial, pendidikan, dan riwayat diabetes Anda.';
   static const String step6Button = 'Lanjutkan';
 
   // ── Step 8: Tempat Tinggal ──────────────────────────────────────────────────
@@ -140,7 +140,7 @@ abstract final class AppStrings {
   static const String healthFacilityLoading = 'Memuat daftar puskesmas...';
 
   // ── Step 10: Informasi Sosial ───────────────────────────────────────────────
-  static const String livingArrangementTitle = 'Tinggal bersama siapa?';
+  static const String livingArrangementTitle = 'Anda Tinggal bersama siapa?';
   static const String livingArrangementSubtitle =
       'Informasi ini membantu kami memberikan dukungan yang lebih sesuai.';
   static const String livingAlone = 'Sendiri';
@@ -204,15 +204,39 @@ abstract final class AppStrings {
   static const String step12Subtitle =
       'Informasi ini digunakan untuk menghitung kebutuhan kalori harian Anda secara medis.';
   static const String step12Sedentary = 'Sangat Rendah';
-  static const String step12SedentaryDesc = 'Jarang berolahraga / aktivitas fisik minimal';
+  static const String step12SedentaryEmoji = '🪑';
+  static const String step12SedentaryDesc =
+      'Jarang melakukan aktivitas fisik.';
+  static const String step12SedentaryExample =
+      'lebih sering duduk dan bekerja di depan komputer.';
+
   static const String step12LightlyActive = 'Ringan';
-  static const String step12LightlyActiveDesc = 'Olahraga ringan 1–3 hari/minggu';
+  static const String step12LightlyActiveEmoji = '🚶';
+  static const String step12LightlyActiveDesc =
+      'Melakukan aktivitas ringan secara rutin.';
+  static const String step12LightlyActiveExample =
+      'jalan santai atau pekerjaan rumah.';
+
   static const String step12ModeratelyActive = 'Sedang';
-  static const String step12ModeratelyActiveDesc = 'Olahraga intensitas sedang 3–5 hari/minggu';
+  static const String step12ModeratelyActiveEmoji = '🚶‍♂️';
+  static const String step12ModeratelyActiveDesc =
+      'Aktivitas sedang sekitar 150 menit/minggu.';
+  static const String step12ModeratelyActiveExample =
+      'jalan cepat 30 menit, 5 hari/minggu.';
+
   static const String step12Active = 'Aktif';
-  static const String step12ActiveDesc = 'Olahraga berat 6–7 hari/minggu';
+  static const String step12ActiveEmoji = '🏃';
+  static const String step12ActiveDesc =
+      'Aktivitas sedang sekitar 150–300 menit/minggu.';
+  static const String step12ActiveExample =
+      'jalan cepat hampir setiap hari + latihan kekuatan.';
+
   static const String step12VeryActive = 'Sangat Aktif';
-  static const String step12VeryActiveDesc = 'Aktivitas fisik berat setiap hari / atlet';
+  static const String step12VeryActiveEmoji = '🏃‍♂️';
+  static const String step12VeryActiveDesc =
+      'Aktivitas sedang lebih dari 300 menit/minggu.';
+  static const String step12VeryActiveExample =
+      'latihan intensif hampir setiap hari atau pekerjaan fisik berat.';
 
   // ── Step 13: Result / Summary ──────────────────────────────────────────────
   static const String step13Title = 'Ringkasan Data Diri';
@@ -270,7 +294,7 @@ abstract final class AppStrings {
   static const String dailyRoutineSubtitle =
       'Tentukan jadwal aktivitas sesuai kenyamanan Anda.';
   static const String dailyRoutineInfo =
-      'Mengatur jam rutin membantu sistem Digital DSMES menyesuaikan waktu pengingat medis dan saran nutrisi yang paling ideal untuk kestabilan gula darah Anda.';
+      'Mengatur jam rutin membantu sistem DIBA menyesuaikan waktu pengingat medis dan saran nutrisi yang paling ideal untuk kestabilan gula darah Anda.';
   static const String dailyRoutineActivity1 = 'Jalan Pagi';
   static const String dailyRoutineActivity1Desc = '07:00';
   static const String dailyRoutineActivity2 = 'Minum Air Putih';
@@ -305,7 +329,7 @@ abstract final class AppStrings {
   // ── Account Created Successfully ───────────────────────────────────────────
   static const String successTitle = 'Akun Berhasil Dibuat';
   static const String successSubtitle =
-      'Selamat datang di DSMES Aceh. Akun Anda telah berhasil dibuat dan rutinitas harian Anda telah dikonfigurasi. Anda sekarang siap untuk memulai perjalanan manajemen mandiri diabetes Anda.';
+      'Selamat datang di DIBA (Diabetes Behaviour & Adherence Application). Akun Anda telah berhasil dibuat dan rutinitas harian Anda telah dikonfigurasi. Anda sekarang siap untuk memulai perjalanan manajemen mandiri diabetes Anda.';
   static const String successButton = 'Masuk Aplikasi';
   static const String successFeatureRoutineTitle = 'Rutinitas Harian Dikonfigurasi';
   static const String successFeatureRoutineDesc = 'Jadwal aktivitas harian Anda telah disesuaikan.';

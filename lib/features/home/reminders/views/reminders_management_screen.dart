@@ -199,79 +199,20 @@ class RemindersManagementScreen extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Expanded(
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.auto_awesome,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Flexible(
-                    child: Text(
-                      'Rekomendasi Pengingat DSMES',
-                      style: AppTextStyles.labelLg.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
+            const Icon(
+              Icons.auto_awesome,
+              size: 18,
+              color: AppColors.primary,
             ),
             const SizedBox(width: AppSpacing.xs),
-            InkWell(
-              onTap: () async {
-                await LocalNotificationService.instance.showNotification(
-                  id: 99999,
-                  title: '🔔 Tes Notifikasi DSMES',
-                  body:
-                      'Notifikasi pop-up pengingat Android berfungsi dengan baik!',
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Notifikasi tes berhasil dikirim ke bar status HP.',
-                    ),
-                    backgroundColor: AppColors.primary,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+            Flexible(
+              child: Text(
+                'Rekomendasi Pengingat DIBA',
+                style: AppTextStyles.labelLg.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.notifications_active_rounded,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Tes Pop-Up',
-                      style: AppTextStyles.labelMd.copyWith(
-                        color: AppColors.primary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

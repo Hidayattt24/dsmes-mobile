@@ -48,7 +48,7 @@ class QuestionnaireScreen extends ConsumerWidget {
 
                 // ── Header Title ─────────────────────────────────────────
                 Text(
-                  'Kuesioner DSMES',
+                  'Kuesioner DIBA',
                   style: AppTextStyles.headlineLg.copyWith(
                     fontWeight: FontWeight.bold,
                     fontSize: 24,

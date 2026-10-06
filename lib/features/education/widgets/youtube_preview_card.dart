@@ -238,7 +238,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _fetchedTitle ?? (widget.videoTitle.trim().isNotEmpty ? widget.videoTitle : 'Video Edukasi DSMES'),
+                          _fetchedTitle ?? (widget.videoTitle.trim().isNotEmpty ? widget.videoTitle : 'Video Edukasi DIBA'),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.headlineMd.copyWith(
@@ -248,7 +248,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard> {
                           ),
                         ),
                         Text(
-                          _fetchedAuthor ?? (widget.channelName.trim().isNotEmpty ? widget.channelName : 'DSMES Official'),
+                          _fetchedAuthor ?? (widget.channelName.trim().isNotEmpty ? widget.channelName : 'DIBA Official'),
                           style: AppTextStyles.bodyMd.copyWith(
                             fontSize: 12,
                             color: AppColors.onSurfaceVariant,

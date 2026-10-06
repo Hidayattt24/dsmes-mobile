@@ -208,36 +208,14 @@ class _LoginHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Branding badge + title
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.primaryContainer.withValues(alpha: 0.15),
-                  width: 1,
-                ),
-              ),
-              child: const Icon(
-                Icons.health_and_safety_rounded,
-                color: AppColors.primaryContainer,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              'DSMES ACEH',
-              style: AppTextStyles.poppinsHeadline.copyWith(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryContainer,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
+        // Branding logo
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Image.asset(
+            'assets/images/logo.png',
+            height: 44,
+            fit: BoxFit.contain,
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
@@ -387,7 +365,7 @@ class _LoginFooter extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            '© 2026 Digital DSMES',
+            '© 2026 DIBA (Diabetes Behaviour & Adherence Application)',
             style: AppTextStyles.bodyMd.copyWith(
               color: AppColors.outline.withValues(alpha: 0.8),
               fontSize: 12,
