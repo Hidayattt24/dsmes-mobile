@@ -70,6 +70,8 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   custom_lint: ^0.7.5
   riverpod_lint: ^2.6.3
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
 
 flutter:
   uses-material-design: true
@@ -79,3 +81,23 @@ flutter:
     # files would embed production API hostnames inside every APK/IPA.
     - assets/images/
     - assets/icons/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/images/splash_logo.png"
+  color_dark: "#004F45"
+  image_dark: "assets/images/splash_logo.png"
+  android_12:
+    image: "assets/images/splash_logo.png"
+    color: "#FFFFFF"
+    color_dark: "#004F45"
+  android: true
+  ios: true
+  web: false

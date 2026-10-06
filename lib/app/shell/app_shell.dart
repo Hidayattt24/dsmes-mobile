@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/route_names.dart';
+import '../../core/services/firebase_messaging_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../data/repositories/device_token_repository.dart';
 import '../../features/education/views/education_screen.dart';
+import '../../features/home/reminders/viewmodels/reminder_provider.dart';
 import '../../features/questionnaire/views/questionnaire_screen.dart';
 import '../../features/settings/views/settings_screen.dart';
 import '../../features/home/views/home_view.dart';
@@ -52,7 +55,14 @@ class _AppShellState extends ConsumerState<AppShell>
     WidgetsBinding.instance.addObserver(this);
     // Best-effort initial sync with the backend once the shell is shown.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 1. Sync inbox notifications from backend
       ref.read(notificationsProvider.notifier).loadFromBackend();
+      // 2. Register/update FCM device token with backend
+      firebaseMessagingService.registerCurrentToken(
+        ref.read(deviceTokenRepositoryProvider),
+      );
+      // 3. Sync local alarms for active reminders
+      ref.read(reminderListProvider);
     });
   }
 
@@ -66,6 +76,7 @@ class _AppShellState extends ConsumerState<AppShell>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(notificationsProvider.notifier).loadFromBackend();
+      ref.read(reminderListProvider.notifier).refresh();
     }
   }
 
@@ -89,7 +100,7 @@ class _AppShellState extends ConsumerState<AppShell>
       0 => null,
       1 => 'Catat gula darah & aktivitas harian Anda',
       2 => 'Pelajari tips & informasi kesehatan diabetes',
-      3 => 'Evaluasi kesehatan berkala DSMES',
+      3 => 'Evaluasi kesehatan berkala DIBA',
       4 => 'Informasi profil & pengaturan akun',
       _ => null,
     };

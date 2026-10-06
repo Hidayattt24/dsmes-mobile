@@ -193,7 +193,7 @@ class EducationArticle {
     String title = json['title'] ?? '';
     String categoryName = json['category_name'] ?? 'Umum';
     int readMin = json['estimated_read_minutes'] ?? 5;
-    String author = json['author_name'] ?? 'Tim Medis DSMES';
+    String author = json['author_name'] ?? 'Tim Medis DIBA';
     String bannerUrl = json['banner_image_url'] ?? '';
     String rawSummary = json['summary'] ?? '';
     String rawContent = json['content'] ?? '';
@@ -222,7 +222,7 @@ class EducationArticle {
       title: title,
       category: categoryName,
       readTime: '$readMin menit',
-      author: author.isEmpty ? 'Tim Medis DSMES' : author,
+      author: author.isEmpty ? 'Tim Medis DIBA' : author,
       date: formattedDate,
       views: json['read_count'] ?? 0,
       imageUrl: bannerUrl,
@@ -242,7 +242,7 @@ class EducationArticle {
       hasVideo: youtubeLink.isNotEmpty,
       videoUrl: youtubeLink,
       videoDuration: 'Edukasi Video',
-      channelName: 'DSMES Official',
+      channelName: 'DIBA Official',
     );
   }
 }

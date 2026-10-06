@@ -47,27 +47,13 @@ class AppHeader extends StatelessWidget {
               children: [
                 if (showLogo)
                   Expanded(
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.health_and_safety,
-                          color: AppColors.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Flexible(
-                          child: Text(
-                            'DSMES Aceh',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.headlineMd.copyWith(
-                              color: AppColors.primary,
-                              fontSize: isNarrow ? 17 : 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        height: isNarrow ? 36 : 44,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   )
                 else

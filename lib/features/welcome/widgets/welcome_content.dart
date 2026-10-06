@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/app_strings.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -15,31 +14,10 @@ class WelcomeContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.lg),
+      padding: const EdgeInsets.only(top: AppSpacing.xl, bottom: AppSpacing.lg),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Branding
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.health_and_safety,
-                color: AppColors.primaryContainer,
-                size: 32,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                AppStrings.appName,
-                style: AppTextStyles.headlineMd.copyWith(
-                  color: AppColors.primaryContainer,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
           // Title
           Text.rich(
             TextSpan(
@@ -51,7 +29,7 @@ class WelcomeContent extends StatelessWidget {
               ),
               children: [
                 TextSpan(
-                  text: 'DSMES Aceh',
+                  text: 'DIBA',
                   style: AppTextStyles.poppinsHeadline.copyWith(
                     fontSize: 24,
                     height: 1.3,
@@ -67,7 +45,7 @@ class WelcomeContent extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Text(
-              'Dukungan manajemen mandiri diabetes yang dipersonalisasi untuk kesehatan Anda yang lebih baik.',
+              'Dukungan kepatuhan dan manajemen mandiri diabetes yang dipersonalisasi untuk kesehatan Anda yang lebih baik.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyLg.copyWith(
                 color: AppColors.onSurfaceVariant,

@@ -288,7 +288,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 SettingsTile(
                   icon: Icons.info_outline_rounded,
-                  title: 'Tentang DSMES Aceh',
+                  title: 'Tentang DIBA',
                   subtitle: 'Versi, informasi tim & lisensi',
                   onTap: () => context.push(RouteNames.about),
                 ),

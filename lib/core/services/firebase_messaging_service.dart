@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/device_token_repository.dart';
+import '../../features/notifications/helpers/notification_copywriter.dart';
+import '../../features/notifications/models/notification_item.dart';
 import '../../firebase_options.dart';
 import '../router/app_router.dart';
 import '../router/route_names.dart';
@@ -96,11 +98,25 @@ class FirebaseMessagingService {
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     debugPrint('[FCM][FOREGROUND] message=${message.messageId}');
 
-    final title =
+    final rawTitle =
         message.notification?.title ??
         message.data['title'] ??
-        'Notifikasi DSMES';
-    final body = message.notification?.body ?? message.data['body'] ?? '';
+        'Pengingat DIBA';
+    final rawBody = message.notification?.body ?? message.data['body'] ?? '';
+    final notifTypeStr = message.data['type'] as String? ?? 'reminder';
+    final iconName = message.data['icon_name'] as String?;
+    final activityName = message.data['activity_name'] as String?;
+    final notifType = notifTypeStr == 'education'
+        ? NotificationType.education
+        : NotificationType.medication;
+
+    final (title, body) = NotificationCopywriter.getInteractiveCopy(
+      rawTitle: rawTitle,
+      rawDescription: rawBody,
+      type: notifType,
+      iconName: iconName,
+      activityName: activityName,
+    );
 
     await LocalNotificationService.instance.showNotification(
       id: message.messageId.hashCode.abs(),

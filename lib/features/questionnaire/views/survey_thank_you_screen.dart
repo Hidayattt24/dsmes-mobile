@@ -44,7 +44,7 @@ class SurveyThankYouScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                'Terima kasih telah menyelesaikan survei. Masukan Anda sangat membantu penelitian dan pengembangan aplikasi DSMES Aceh.',
+                'Terima kasih telah menyelesaikan survei. Masukan Anda sangat membantu penelitian dan pengembangan aplikasi DIBA.',
                 style: AppTextStyles.bodyLg.copyWith(
                   color: AppColors.onSurfaceVariant,
                   height: 1.6,
