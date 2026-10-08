@@ -62,7 +62,14 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
     );
     _dosageController = TextEditingController(text: widget.initialDosage);
     _notesController = TextEditingController();
-    _selectedTime = widget.initialSchedule;
+    
+    final now = TimeOfDay.now();
+    final nowFormatted =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    _selectedTime =
+        widget.initialSchedule.trim().isNotEmpty
+            ? widget.initialSchedule
+            : nowFormatted;
     _isTaken = widget.initialIsTaken;
   }
 
@@ -303,9 +310,9 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
 
-                  // Waktu Jadwal (Custom 24-Jam Input User)
+                  // Waktu Jadwal / Konsumsi (Custom 24-Jam Input User)
                   Text(
-                    'Waktu Jadwal Minum Obat',
+                    _isTaken ? 'Waktu Minum Obat' : 'Waktu Jadwal Minum Obat',
                     style: AppTextStyles.labelLg.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.onSurface,
@@ -469,10 +476,18 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
                           return;
                         }
 
+                        final now = TimeOfDay.now();
+                        final nowFormatted =
+                            '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+                        final effectiveTime =
+                            _selectedTime.trim().isNotEmpty
+                                ? _selectedTime
+                                : nowFormatted;
+
                         widget.onSaved?.call(
                           medName,
                           dose.isEmpty ? '500 mg' : dose,
-                          _selectedTime,
+                          effectiveTime,
                           _isTaken,
                         );
                         Navigator.of(context).pop();
@@ -481,7 +496,7 @@ class _MedicationEntrySheetState extends State<MedicationEntrySheet> {
                             content: Text(
                               _isTaken
                                   ? 'Konsumsi "$medName ($dose)" telah dicatat.'
-                                  : 'Pengingat minum "$medName ($dose)" diaktifkan jam $_selectedTime WIB.',
+                                  : 'Pengingat minum "$medName ($dose)" diaktifkan jam $effectiveTime WIB.',
                             ),
                             duration: const Duration(seconds: 2),
                           ),

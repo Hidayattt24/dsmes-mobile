@@ -7,6 +7,7 @@ import '../../../../core/services/local_notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../home/history/widgets/calendar_history_bottom_sheet.dart';
 import '../../home/reminders/viewmodels/reminder_provider.dart';
 import '../../notifications/models/notification_item.dart';
@@ -83,7 +84,7 @@ class _RecordViewState extends ConsumerState<RecordView> {
     bool isTaken,
   ) async {
     // 1. Submit medication log to record provider
-    await ref
+    final success = await ref
         .read(recordProvider.notifier)
         .submitMedication(
           medicationName: medicationName,
@@ -91,6 +92,14 @@ class _RecordViewState extends ConsumerState<RecordView> {
           schedule: schedule,
           isTaken: isTaken,
         );
+
+    if (!success) {
+      final err = ref.read(recordProvider).errorMessage;
+      if (mounted && err != null) {
+        AppSnackbar.showError(context, err);
+      }
+      return;
+    }
 
     // Add to real notifications inbox list
     if (isTaken) {
@@ -151,11 +160,8 @@ class _RecordViewState extends ConsumerState<RecordView> {
           hour: hour,
           minute: minute,
         );
-      } catch (_) {
-        // Ignore if scheduling failed; the inbox entry is already added above.
-      }
+      } catch (_) {}
 
-      // 4. Show the medication reminder dialog only when activating a reminder.
       if (mounted) {
         _showMedicationReminderPopup(
           context,

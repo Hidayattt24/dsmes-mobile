@@ -484,7 +484,20 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
-      final formattedSched = schedule.length == 5 ? '$schedule:00' : schedule;
+      final now = DateTime.now();
+      final nowTimeStr =
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:00';
+
+      final cleanSched = schedule.trim();
+      final formattedSched =
+          cleanSched.isEmpty
+              ? nowTimeStr
+              : (cleanSched.contains(':')
+                  ? (cleanSched.split(':').length == 2
+                      ? '$cleanSched:00'
+                      : cleanSched)
+                  : '$cleanSched:00');
+
       final reminderRepo = _ref.read(reminderRepositoryProvider);
       final reminders = await reminderRepo.list();
 
@@ -540,6 +553,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       state = state.copyWith(isSubmitting: false);
       await loadData();
       _ref.read(historyProvider.notifier).refresh();
+      _ref.read(homeDashboardProvider.notifier).refresh();
       return true;
     } catch (e) {
       state = state.copyWith(

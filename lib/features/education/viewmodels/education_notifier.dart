@@ -252,7 +252,15 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
     try {
       final repo = ref.read(educationRepositoryProvider);
       await repo.submitReview(arg, rating: rating, note: note);
-      ref.invalidate(educationDetailProvider(arg));
+      if (state.hasValue) {
+        state = AsyncValue.data(
+          state.value!.copyWith(
+            isCompleted: true,
+            readStatus: 'Selesai',
+            readProgress: 1.0,
+          ),
+        );
+      }
       ref.invalidate(educationListProvider);
     } catch (e) {
       rethrow;
