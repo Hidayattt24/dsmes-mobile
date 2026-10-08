@@ -134,6 +134,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   }
 
   Future<void> _markComplete() async {
+    // 1. Tandai artikel selesai dibaca
     try {
       await ref
           .read(educationDetailProvider(widget.articleId).notifier)
@@ -144,21 +145,37 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
           _hasMarkedComplete = true;
         });
       }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menandai artikel. Silakan coba lagi.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      final article = ref.read(educationDetailProvider(widget.articleId)).value;
-      final articleTitle = article?.title ?? 'Artikel Edukasi';
+    // 2. Tampilkan dialog ulasan
+    final article = ref.read(educationDetailProvider(widget.articleId)).value;
+    final articleTitle = article?.title ?? 'Artikel Edukasi';
 
-      final result = await EducationReviewDialog.show(
-        context,
-        articleTitle: articleTitle,
-      );
+    final result = await EducationReviewDialog.show(
+      context,
+      articleTitle: articleTitle,
+    );
 
-      if (result != null && mounted) {
-        final rating = result['rating'] as int? ?? 5;
-        final note = result['note'] as String? ?? '';
+    if (!mounted) return;
 
+    // 3. Simpan ulasan jika diisi, atau tampilkan konfirmasi selesai
+    if (result != null) {
+      final rating = result['rating'] as int? ?? 5;
+      final note = result['note'] as String? ?? '';
+
+      try {
         await ref
             .read(educationDetailProvider(widget.articleId).notifier)
             .submitReview(rating: rating, note: note);
@@ -174,24 +191,24 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
             ),
           );
         }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Artikel edukasi berhasil ditandai selesai! 🎉'),
-            backgroundColor: AppColors.primaryContainer,
-            duration: Duration(seconds: 2),
-          ),
-        );
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal mengirim ulasan. Silakan coba lagi.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal menandai artikel. Silakan coba lagi.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Artikel edukasi berhasil ditandai selesai! 🎉'),
+          backgroundColor: AppColors.primaryContainer,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
