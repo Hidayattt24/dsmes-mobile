@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/route_names.dart';
 import '../../core/services/firebase_messaging_service.dart';
+import '../../core/services/local_notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../data/repositories/device_token_repository.dart';
@@ -63,6 +64,9 @@ class _AppShellState extends ConsumerState<AppShell>
       );
       // 3. Sync local alarms for active reminders
       ref.read(reminderListProvider);
+      // 4. Check any pending notifications that launched the app from terminated state
+      firebaseMessagingService.checkInitialMessage();
+      LocalNotificationService.instance.checkAppLaunchNotification();
     });
   }
 

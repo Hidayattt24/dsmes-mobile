@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/network/auth_interceptor.dart';
 import '../../core/network/dio_client.dart';
+import '../../core/services/local_notification_service.dart';
 import '../../features/onboarding/models/onboarding_form_state.dart';
 
 abstract class IAuthRepository {
@@ -454,6 +455,11 @@ class AuthRepository implements IAuthRepository {
     // same device starts fresh (no stale onboarding/biometric flags).
     await _storage.delete(key: AppConstants.keyOnboardingComplete);
     await _storage.delete(key: AppConstants.keyBiometricEnabled);
+    try {
+      await LocalNotificationService.instance.cancelAllNotifications();
+    } catch (_) {
+      // Ignore failure during local notification cleanup
+    }
   }
 }
 

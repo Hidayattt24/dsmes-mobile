@@ -21,8 +21,6 @@ class SplashGateScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionAsync = ref.watch(sessionRestoreProvider);
 
-    final completedAsync = ref.watch(hasCompletedPreTestProvider);
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: sessionAsync.when(
@@ -48,6 +46,10 @@ class SplashGateScreen extends ConsumerWidget {
             });
             return const _SplashLoading();
           }
+
+          // Only watch questionnaire eligibility after session is confirmed restored
+          final completedAsync = ref.watch(hasCompletedPreTestProvider);
+
           return completedAsync.when(
             loading: () => const _SplashLoading(),
             error: (_, _) {

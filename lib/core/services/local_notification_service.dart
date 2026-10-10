@@ -82,6 +82,22 @@ class LocalNotificationService {
     debugPrint('[REMINDER][NOTIFICATION] initialize complete');
   }
 
+  /// Checks if the application was launched by tapping a local notification from terminated state
+  Future<void> checkAppLaunchNotification() async {
+    try {
+      final details =
+          await _notificationsPlugin.getNotificationAppLaunchDetails();
+      if (details != null && details.didNotificationLaunchApp) {
+        final response = details.notificationResponse;
+        if (response != null) {
+          _onNotificationResponse(response);
+        }
+      }
+    } catch (e) {
+      debugPrint('[REMINDER][NOTIFICATION] checkAppLaunchNotification error: $e');
+    }
+  }
+
   Future<void> _onNotificationResponse(NotificationResponse response) async {
     final payload = response.payload;
     if (payload == null || payload.isEmpty) return;
@@ -89,13 +105,17 @@ class LocalNotificationService {
     try {
       if (payload.startsWith('{')) {
         final data = jsonDecode(payload) as Map<String, dynamic>;
-        if (data['type'] == 'education') {
-          final articleId = data['article_id'] as String?;
-          if (articleId != null && articleId.isNotEmpty) {
-            appNavigatorKey.currentContext?.go(
-              '${RouteNames.educationDetail}/$articleId',
-            );
-          }
+        final type = data['type'] as String?;
+        final articleId = data['article_id'] as String?;
+
+        if (type == 'education' && articleId != null && articleId.isNotEmpty) {
+          appNavigatorKey.currentContext?.go(
+            '${RouteNames.educationDetail}/$articleId',
+          );
+        } else if (type == 'reminder') {
+          appNavigatorKey.currentContext?.go(RouteNames.reminders);
+        } else if (type == 'blood_sugar') {
+          appNavigatorKey.currentContext?.go(RouteNames.bloodSugarEntry);
         }
       } else {
         // Plain string articleId fallback
