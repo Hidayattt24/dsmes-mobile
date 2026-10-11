@@ -38,13 +38,29 @@ class FoodMasterModel {
 
   factory FoodMasterModel.fromJson(Map<String, dynamic> json) {
     final String rawManufacturer = json['manufacturer'] as String? ?? '';
+    String rawServing = json['serving_size'] as String? ?? '1 porsi';
+    if (rawServing.toLowerCase().contains('bdd')) {
+      rawServing = rawServing
+          .replaceAll(RegExp(r'\(Berat Dapat Dimakan\)', caseSensitive: false), '')
+          .replaceAll(RegExp(r'BDD', caseSensitive: false), '')
+          .replaceAll(RegExp(r'Per\s*', caseSensitive: false), '')
+          .trim();
+      if (rawServing.isEmpty || rawServing == '100 g' || rawServing == '100g') {
+        rawServing = '100 g';
+      }
+    }
+
     String basis = json['nutrition_basis'] as String? ?? '';
     if (basis.isEmpty) {
-      final String m = rawManufacturer.trim().toLowerCase();
-      if (m.isEmpty || m == 'tidak diketahui' || m == 'tidak ada' || m == '-') {
+      final s = rawServing.trim().toLowerCase();
+      if (s.isEmpty || s == '0' || s == '0 g' || s == '0 ml' || s == '0.00 g') {
+        basis = 'UNVERIFIED';
+      } else if (s.contains('100 g') || s.contains('100g') || s.contains('100 gram')) {
         basis = 'PER_100G';
-      } else {
+      } else if (s.contains('kemasan') || s.contains('bungkus') || s.contains('botol')) {
         basis = 'PER_PACKAGE';
+      } else {
+        basis = 'PER_SERVING';
       }
     }
 
@@ -52,7 +68,7 @@ class FoodMasterModel {
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       manufacturer: rawManufacturer,
-      servingSize: json['serving_size'] as String? ?? '1 porsi',
+      servingSize: rawServing,
       energyKcal: (json['energy_kcal'] as num?)?.toDouble() ?? (json['calories'] as num?)?.toDouble() ?? 0.0,
       proteinG: (json['protein_g'] as num?)?.toDouble() ?? (json['protein'] as num?)?.toDouble() ?? 0.0,
       carbohydrateG: (json['carbohydrate_g'] as num?)?.toDouble() ?? (json['carbs_g'] as num?)?.toDouble() ?? 0.0,

@@ -214,7 +214,7 @@ class DailyHistorySummary extends StatelessWidget {
                         children: [
                           Text(
                             item.activityType == 'meal'
-                                ? formatMealTitle(item.title)
+                                ? item.title
                                 : item.title,
                             style: AppTextStyles.labelLg.copyWith(
                               fontWeight: FontWeight.bold,
@@ -223,7 +223,9 @@ class DailyHistorySummary extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${item.subtitle} • $formattedTime',
+                            item.activityType == 'meal'
+                                ? '${item.displaySubtitle} • ${item.value} ${item.unit} • $formattedTime'
+                                : '${item.displaySubtitle} • $formattedTime',
                             style: AppTextStyles.bodyMd.copyWith(
                               fontSize: 11,
                               color: AppColors.onSurfaceVariant,
@@ -232,7 +234,24 @@ class DailyHistorySummary extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (item.status.isNotEmpty)
+                    if (item.activityType == 'meal')
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                        ),
+                        child: Text(
+                          '${item.value} kcal',
+                          style: AppTextStyles.labelMd.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      )
+                    else if (item.status.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(

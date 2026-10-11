@@ -94,26 +94,49 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
     setSearchQuery(query);
   }
 
-  void toggleFoodSelection(String foodId) {
+  void toggleFoodSelection(String foodId, [double portionMultiplier = 1.0]) {
     final updated = Set<String>.from(state.selectedFoodIds);
+    final multipliers = Map<String, double>.from(state.foodPortionMultipliers);
     if (updated.contains(foodId)) {
       updated.remove(foodId);
+      multipliers.remove(foodId);
     } else {
       updated.add(foodId);
+      multipliers[foodId] = portionMultiplier;
     }
-    state = state.copyWith(selectedFoodIds: updated);
+    state = state.copyWith(
+      selectedFoodIds: updated,
+      foodPortionMultipliers: multipliers,
+    );
   }
 
-  void addFoodToLog(String foodId) {
+  void addFoodToLog(String foodId, [double portionMultiplier = 1.0]) {
     final updated = Set<String>.from(state.selectedFoodIds);
     updated.add(foodId);
-    state = state.copyWith(selectedFoodIds: updated);
+    final multipliers = Map<String, double>.from(state.foodPortionMultipliers);
+    multipliers[foodId] = portionMultiplier;
+    state = state.copyWith(
+      selectedFoodIds: updated,
+      foodPortionMultipliers: multipliers,
+    );
   }
 
   void removeFoodFromLog(String foodId) {
     final updated = Set<String>.from(state.selectedFoodIds);
     updated.remove(foodId);
-    state = state.copyWith(selectedFoodIds: updated);
+    final multipliers = Map<String, double>.from(state.foodPortionMultipliers);
+    multipliers.remove(foodId);
+    state = state.copyWith(
+      selectedFoodIds: updated,
+      foodPortionMultipliers: multipliers,
+    );
+  }
+
+  void resetSelection() {
+    state = state.copyWith(
+      selectedFoodIds: {},
+      foodPortionMultipliers: {},
+    );
   }
 
   Future<bool> saveMealLogs() async {
@@ -121,12 +144,18 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
     try {
       final repo = ref.read(foodRepositoryProvider);
       for (final id in state.selectedFoodIds) {
+        final multiplier = state.foodPortionMultipliers[id] ?? 1.0;
         await repo.logMeal(
           foodId: id,
           mealType: state.selectedMealType,
-          portionMultiplier: 1.0,
+          portionMultiplier: multiplier,
         );
       }
+      // Reset selected foods so next entry starts fresh at 0
+      state = state.copyWith(
+        selectedFoodIds: {},
+        foodPortionMultipliers: {},
+      );
       // Refresh the dashboard so the Daily Calories Card shows updated values.
       await ref.read(homeDashboardProvider.notifier).refresh();
       return true;

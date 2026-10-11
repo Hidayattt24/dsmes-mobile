@@ -317,6 +317,10 @@ class _HomeViewState extends ConsumerState<HomeView> {
           consumed: state.consumedCalories,
           remaining: state.remainingCalories,
           target: state.dailyCalorieTarget,
+          nutritionSummary: isSelectedToday ? state.nutritionSummary : null,
+          hasRecord: isSelectedToday
+              ? (state.hasMealsToday || state.consumedCalories > 0)
+              : false,
           isToday: isSelectedToday,
           onRecordFoodPressed: () => context.push(RouteNames.mealEntry),
           onViewHistoryPressed:
@@ -475,7 +479,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${act.activityTypeLabel} • ${act.value} ${act.unit}',
+                              act.activityType == 'meal'
+                                  ? '${act.displaySubtitle} • ${act.value} ${act.unit}'
+                                  : '${act.activityTypeLabel} • ${act.value} ${act.unit}',
                               style: AppTextStyles.bodyMd.copyWith(
                                 color: AppColors.onSurfaceVariant,
                                 fontSize: 12,

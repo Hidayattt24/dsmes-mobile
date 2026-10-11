@@ -87,7 +87,9 @@ class FoodRepository implements IFoodRepository {
         formattedType = 'sarapan';
       } else if (lower.contains('malam')) {
         formattedType = 'makan_malam';
-      } else if (lower.contains('camilan') || lower.contains('snack')) {
+      } else if (lower.contains('camilan') ||
+          lower.contains('cemilan') ||
+          lower.contains('snack')) {
         formattedType = 'camilan';
       }
 

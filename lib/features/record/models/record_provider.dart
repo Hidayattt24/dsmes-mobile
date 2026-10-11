@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../data/repositories/blood_sugar_repository.dart';
+import '../../../data/repositories/food_repository.dart';
 import '../../../data/repositories/history_repository.dart';
 import '../../../data/repositories/measurement_repository.dart';
 import '../../../data/repositories/reminder_repository.dart';
 import '../../home/history/models/history_item_model.dart';
 import '../../home/history/viewmodels/history_provider.dart';
+import '../../home/meal/models/nutrition_summary_model.dart';
 import '../../home/viewmodels/home_dashboard_notifier.dart';
 import '../../home/reminders/models/reminder_model.dart';
 import 'record_entry.dart';
@@ -31,6 +33,7 @@ class RecordPageState {
   final bool isMedicationTaken;
   final List<TimelineRecordItem> todayTimelineItems;
   final List<HistoryItemModel> allHistoryItems;
+  final DailyNutritionSummary? dailyNutritionSummary;
   final bool isLoading;
   final bool isSubmitting;
   final String? errorMessage;
@@ -53,6 +56,7 @@ class RecordPageState {
     this.isMedicationTaken = false,
     this.todayTimelineItems = const [],
     this.allHistoryItems = const [],
+    this.dailyNutritionSummary,
     this.isLoading = false,
     this.isSubmitting = false,
     this.errorMessage,
@@ -81,6 +85,8 @@ class RecordPageState {
     bool? isMedicationTaken,
     List<TimelineRecordItem>? todayTimelineItems,
     List<HistoryItemModel>? allHistoryItems,
+    DailyNutritionSummary? dailyNutritionSummary,
+    bool clearDailyNutritionSummary = false,
     bool? isLoading,
     bool? isSubmitting,
     String? errorMessage,
@@ -104,6 +110,9 @@ class RecordPageState {
       isMedicationTaken: isMedicationTaken ?? this.isMedicationTaken,
       todayTimelineItems: todayTimelineItems ?? this.todayTimelineItems,
       allHistoryItems: allHistoryItems ?? this.allHistoryItems,
+      dailyNutritionSummary: clearDailyNutritionSummary
+          ? null
+          : (dailyNutritionSummary ?? this.dailyNutritionSummary),
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -121,19 +130,25 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     try {
       final historyRepo = _ref.read(historyRepositoryProvider);
       final reminderRepo = _ref.read(reminderRepositoryProvider);
+      final foodRepo = _ref.read(foodRepositoryProvider);
+      final targetDate = state.selectedDate ?? DateTime.now();
 
       final results = await Future.wait([
         historyRepo.getPatientHistory(page: 1, limit: 100),
         reminderRepo.list(),
+        foodRepo
+            .getDailyNutritionSummary(date: targetDate)
+            .then<DailyNutritionSummary?>((s) => s)
+            .catchError((_) => null),
       ]);
 
       final historyResult = results[0] as HistoryListResult;
       final reminders = results[1] as List<ReminderModel>;
+      final nutritionSummary = results[2] as DailyNutritionSummary?;
 
       final allItems = historyResult.items;
 
       // Build timeline from history
-      final targetDate = state.selectedDate ?? DateTime.now();
       final todayItems = _buildTimelineItems(allItems, targetDate);
 
       // Compute summary for target date
@@ -201,6 +216,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
         isMedicationTaken: isMedTaken,
         todayTimelineItems: todayItems,
         allHistoryItems: allItems,
+        dailyNutritionSummary: nutritionSummary,
         isLoading: false,
       );
     } catch (e) {
@@ -285,9 +301,11 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       final icon = _iconForType(item.activityType);
       final (outer, inner) = _colorsForType(item.activityType);
 
-      String subtitle = item.subtitle;
+      String subtitle = item.displaySubtitle;
       if (item.activityType == 'blood_sugar') {
         subtitle = '${item.value} mg/dL • ${item.subtitle}';
+      } else if (item.activityType == 'meal') {
+        subtitle = '${item.displaySubtitle} • ${item.value} ${item.unit}';
       }
 
       final badgeText = _badgeForActivity(item.activityType, item.status);
@@ -295,10 +313,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       return TimelineRecordItem(
         id: item.id,
         type: _recordTypeFromActivity(item.activityType),
-        title:
-            item.activityType == 'meal'
-                ? _formatMealTitle(item.title)
-                : item.title,
+        title: item.title,
         subtitle: subtitle,
         time: _formatTime(item.parsedMeasuredAt),
         dateText: _formatDate(item.parsedMeasuredAt!),
@@ -403,7 +418,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     }
   }
 
-  void setSelectedDate(DateTime date) {
+  Future<void> setSelectedDate(DateTime date) async {
     final dateAgg = _computeTodaySummary(state.allHistoryItems, date);
     final filtered = _buildTimelineItems(state.allHistoryItems, date);
     state = state.copyWith(
@@ -412,6 +427,16 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       totalCount: 4,
       todayTimelineItems: filtered,
     );
+
+    try {
+      final foodRepo = _ref.read(foodRepositoryProvider);
+      final summary = await foodRepo.getDailyNutritionSummary(date: date);
+      if (state.selectedDate == date) {
+        state = state.copyWith(dailyNutritionSummary: summary);
+      }
+    } catch (_) {
+      // Ignore non-critical summary load error
+    }
   }
 
   void setSelectedFilter(RecordType filter) {

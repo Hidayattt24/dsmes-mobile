@@ -61,6 +61,13 @@ class HistoryItemModel {
     return title;
   }
 
+  String get displaySubtitle {
+    if (activityType == 'meal') {
+      return formatMealTitle(subtitle);
+    }
+    return subtitle;
+  }
+
   String get activityTypeLabel {
     if (isBloodSugarItem) return 'Gula Darah';
     switch (activityType) {
@@ -116,8 +123,9 @@ String formatMealTitle(String title) {
     case 'dinner':
       return 'Makan Malam';
     case 'camilan':
+    case 'cemilan':
     case 'snack':
-      return 'Camilan';
+      return 'Cemilan';
     default:
       return title;
   }

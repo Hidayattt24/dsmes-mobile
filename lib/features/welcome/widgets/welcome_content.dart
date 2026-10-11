@@ -3,101 +3,104 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_button.dart';
 
+/// Page indicator + primary "Mulai" and secondary "Masuk" actions.
 class WelcomeContent extends StatelessWidget {
-  const WelcomeContent({super.key});
+  const WelcomeContent({
+    super.key,
+    required this.count,
+    required this.current,
+    required this.isLast,
+    required this.onNext,
+  });
+
+  final int count;
+  final int current;
+  final bool isLast;
+  final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xl, bottom: AppSpacing.lg),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Title
-          Text.rich(
-            TextSpan(
-              text: 'Selamat Datang di\n',
-              style: AppTextStyles.poppinsHeadline.copyWith(
-                fontSize: 24,
-                height: 1.3,
-                color: AppColors.onSurface,
-              ),
-              children: [
-                TextSpan(
-                  text: 'DIBA',
-                  style: AppTextStyles.poppinsHeadline.copyWith(
-                    fontSize: 24,
-                    height: 1.3,
-                    color: AppColors.primaryContainer,
-                  ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < count; i++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: i == current ? 24 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: i == current
+                      ? AppColors.primaryContainer
+                      : AppColors.primaryContainer.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(99),
                 ),
-              ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 28),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryContainer,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              elevation: 0,
             ),
-            textAlign: TextAlign.center,
+            onPressed: isLast ? () => context.go(RouteNames.signup) : onNext,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Row(
+                key: ValueKey(isLast),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isLast ? 'Mulai Sekarang' : 'Lanjut',
+                    style: AppTextStyles.poppinsButton.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          // Subtitle
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primaryContainer,
+              side: BorderSide(
+                color: AppColors.primaryContainer.withValues(alpha: 0.25),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+            onPressed: () => context.go(RouteNames.login),
             child: Text(
-              'Dukungan kepatuhan dan manajemen mandiri diabetes yang dipersonalisasi untuk kesehatan Anda yang lebih baik.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyLg.copyWith(
-                color: AppColors.onSurfaceVariant,
+              'Saya sudah punya akun',
+              style: AppTextStyles.poppinsButton.copyWith(
+                color: AppColors.primaryContainer,
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          // Primary button - Mulai
-          AppButton(
-            label: 'Mulai',
-            trailingIcon: Icons.arrow_forward,
-            height: 56,
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            onPressed: () => context.go(RouteNames.signup),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          // Login link
-          InkWell(
-            onTap: () => context.go(RouteNames.login),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Sudah memiliki akun? ',
-                  style: AppTextStyles.labelLg.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  'Masuk',
-                  style: AppTextStyles.labelLg.copyWith(
-                    color: AppColors.primaryContainer,
-                    fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppColors.primaryContainer.withValues(alpha: 0.3),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          // Footer indicator
-          Container(
-            width: 48,
-            height: 6,
-            decoration: BoxDecoration(
-              color: AppColors.outlineVariant.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

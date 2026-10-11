@@ -52,6 +52,34 @@ class FoodCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (food.manufacturer.trim().isNotEmpty &&
+                    food.manufacturer.trim().toLowerCase() != 'tidak diketahui' &&
+                    food.manufacturer.trim().toLowerCase() != 'tidak ada' &&
+                    food.manufacturer.trim() != '-') ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.storefront_outlined,
+                        size: 13,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          food.manufacturer.trim(),
+                          style: AppTextStyles.labelSm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '${food.servingSize} · ${food.calories} kcal',

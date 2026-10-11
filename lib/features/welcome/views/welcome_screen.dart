@@ -1,12 +1,60 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../widgets/welcome_content.dart';
 import '../widgets/welcome_illustration.dart';
+
+const _slides = <WelcomeSlide>[
+  WelcomeSlide(
+    icon: Icons.water_drop_rounded,
+    color: Color(0xFF00695C),
+    title: 'Pantau Gula Darah\nLebih Mudah',
+    description:
+        'Catat hasil cek gula darah kapan saja dan lihat tren harian Anda dalam grafik yang jelas.',
+    chips: [
+      (Icons.show_chart_rounded, '115 mg/dL'),
+      (Icons.check_circle_rounded, 'Normal'),
+      (Icons.schedule_rounded, 'Sebelum Makan'),
+    ],
+  ),
+  WelcomeSlide(
+    icon: Icons.restaurant_rounded,
+    color: Color(0xFFD97706),
+    title: 'Atur Pola Makan\nSesuai Target',
+    description:
+        'Catat asupan makanan dan pantau kalori serta nutrisi harian agar tetap dalam batas aman.',
+    chips: [
+      (Icons.local_fire_department_rounded, '572 kcal'),
+      (Icons.eco_rounded, 'Serat 5g'),
+      (Icons.rice_bowl_rounded, 'Sarapan'),
+    ],
+  ),
+  WelcomeSlide(
+    icon: Icons.directions_walk_rounded,
+    color: Color(0xFF286B33),
+    title: 'Aktif Bergerak,\nMinum Obat Teratur',
+    description:
+        'Pengingat obat dan catatan aktivitas fisik membantu Anda tetap konsisten setiap hari.',
+    chips: [
+      (Icons.medication_rounded, 'Metformin'),
+      (Icons.notifications_active_rounded, '07.00'),
+      (Icons.timer_rounded, '30 menit'),
+    ],
+  ),
+  WelcomeSlide(
+    icon: Icons.menu_book_rounded,
+    color: Color(0xFF0284C7),
+    title: 'Belajar & Konsultasi\nBersama DIBA',
+    description:
+        'Materi edukasi diabetes dan kuesioner siap mendampingi perjalanan sehat Anda.',
+    chips: [
+      (Icons.article_rounded, 'Edukasi'),
+      (Icons.health_and_safety_rounded, 'Didampingi Nakes'),
+    ],
+  ),
+];
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -15,194 +63,155 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _slideAnimation;
-  late Animation<double> _fadeAnimation;
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  final _pageController = PageController();
+  int _page = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _slideAnimation = Tween<double>(begin: 40, end: 0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Cubic(0.16, 1.0, 0.3, 1.0),
-      ),
-    );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0, 0.6, curve: Curves.easeIn),
-      ),
-    );
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _controller.forward();
-    });
-  }
+  bool get _isLast => _page == _slides.length - 1;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Stack(
-        children: [
-          // Background mesh gradient
-          const _BackgroundMesh(),
-          // Decorative blurred circles
-          ..._buildDecorativeCircles(),
-          // Main content
-          SafeArea(
-            child: Column(
-              children: [
-                // Top illustration area
-                const Expanded(
-                  child: WelcomeIllustration(),
-                ),
-                // Bottom bento card
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(0, _slideAnimation.value),
-                      child: Opacity(
-                        opacity: _fadeAnimation.value,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: const _BottomCard(),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+  void _next() {
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
     );
   }
 
-  List<Widget> _buildDecorativeCircles() {
-    return const [
-      Positioned(
-        top: 80,
-        right: -40,
-        width: 200,
-        height: 200,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Color(0x1A286b33),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-      Positioned(
-        bottom: 300,
-        left: -60,
-        width: 280,
-        height: 280,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Color(0x1A00695c),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-    ];
-  }
-}
-
-class _BackgroundMesh extends StatelessWidget {
-  const _BackgroundMesh();
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment.topLeft,
-          radius: 0.8,
-          colors: [
-            Color(0xFFE6F7F4),
-            Colors.transparent,
-          ],
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.topRight,
-            radius: 0.6,
-            colors: [
-              Color(0xFFF0FAF6),
-              Colors.transparent,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top bar: brand + skip
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 12, 0),
+                child: Row(
+                  children: [
+                    Image.asset('assets/images/logo.png', height: 32),
+                    const Spacer(),
+                    AnimatedOpacity(
+                      opacity: _isLast ? 0 : 1,
+                      duration: const Duration(milliseconds: 200),
+                      child: TextButton(
+                        onPressed: _isLast
+                            ? null
+                            : () => _pageController.animateToPage(
+                                  _slides.length - 1,
+                                  duration: const Duration(milliseconds: 500),
+                                  curve: Curves.easeOutCubic,
+                                ),
+                        child: Text(
+                          'Lewati',
+                          style: AppTextStyles.labelLg.copyWith(
+                            color: const Color(0xFF718096),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Slides
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _slides.length,
+                  onPageChanged: (i) => setState(() => _page = i),
+                  itemBuilder: (context, i) => _SlideView(
+                    slide: _slides[i],
+                    controller: _pageController,
+                    index: i,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                child: WelcomeContent(
+                  count: _slides.length,
+                  current: _page,
+                  isLast: _isLast,
+                  onNext: _next,
+                ),
+              ),
             ],
           ),
         ),
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius: 0.7,
-              colors: [
-                Color(0xFFEAF3EE),
-                Colors.transparent,
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
 }
 
-class _BottomCard extends StatelessWidget {
-  const _BottomCard();
+class _SlideView extends StatelessWidget {
+  const _SlideView({
+    required this.slide,
+    required this.controller,
+    required this.index,
+  });
+
+  final WelcomeSlide slide;
+  final PageController controller;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest.withValues(alpha: 0.8),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(48),
-          topRight: Radius.circular(48),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A00695c),
-            blurRadius: 16,
-            offset: Offset(0, 4),
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        // Parallax/fade based on scroll position for a smooth transition.
+        double delta = 0;
+        if (controller.hasClients && controller.position.haveDimensions) {
+          delta = (controller.page ?? 0) - index;
+        }
+        final opacity = (1 - delta.abs()).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: opacity,
+          child: Transform.translate(
+            offset: Offset(delta * 40, 0),
+            child: child,
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(48),
-          topRight: Radius.circular(48),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.page),
-            child: WelcomeContent(),
-          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: [
+            Expanded(child: WelcomeIllustration(slide: slide)),
+            const SizedBox(height: 16),
+            Text(
+              slide.title,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.poppinsHeadline.copyWith(
+                fontSize: 24,
+                height: 1.3,
+                color: AppColors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              slide.description,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMd.copyWith(
+                color: const Color(0xFF718096),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );

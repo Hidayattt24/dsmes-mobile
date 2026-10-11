@@ -37,6 +37,26 @@ class FoodItem {
 
   int get calories => energyKcal.round();
 
+  bool get isPer100g =>
+      nutritionBasis == 'PER_100G' ||
+      servingSize.toLowerCase().contains('100 g') ||
+      servingSize.toLowerCase().contains('100g') ||
+      servingSize.toLowerCase().contains('100 gram');
+
+  bool get isPerPackage => nutritionBasis == 'PER_PACKAGE';
+
+  bool get isPerServing =>
+      nutritionBasis == 'PER_SERVING' ||
+      (!isPer100g && !isPerPackage && !isUnverified);
+
+  bool get isUnverified =>
+      nutritionBasis == 'UNVERIFIED' ||
+      servingSize.trim() == '0' ||
+      servingSize.trim() == '0 g' ||
+      servingSize.trim() == '0.00 g' ||
+      servingSize.trim() == '0 ml' ||
+      servingSize.trim().isEmpty;
+
   factory FoodItem.fromFoodMasterModel(FoodMasterModel model, {String mealType = 'Makan Siang'}) {
     final String cleanServingSize = model.servingSize.trim().isNotEmpty
         ? model.servingSize.trim()
@@ -76,6 +96,7 @@ class MealEntryState {
   final String searchQuery;
   final List<FoodItem> recommendedFoods;
   final Set<String> selectedFoodIds;
+  final Map<String, double> foodPortionMultipliers;
   final List<String> recentSearches;
   final bool isLoading;
   final bool isMoreLoading;
@@ -87,6 +108,7 @@ class MealEntryState {
     this.searchQuery = '',
     this.recommendedFoods = const [],
     this.selectedFoodIds = const {},
+    this.foodPortionMultipliers = const {},
     this.recentSearches = const ['Nasi Goreng', 'Ayam Bakar', 'Tempe Goreng', 'Tahu Goreng'],
     this.isLoading = false,
     this.isMoreLoading = false,
@@ -98,7 +120,8 @@ class MealEntryState {
     int total = 0;
     for (final id in selectedFoodIds) {
       final food = recommendedFoods.where((f) => f.id == id).firstOrNull;
-      if (food != null) total += food.calories;
+      final multiplier = foodPortionMultipliers[id] ?? 1.0;
+      if (food != null) total += (food.energyKcal * multiplier).round();
     }
     return total;
   }
@@ -112,6 +135,7 @@ class MealEntryState {
     String? searchQuery,
     List<FoodItem>? recommendedFoods,
     Set<String>? selectedFoodIds,
+    Map<String, double>? foodPortionMultipliers,
     List<String>? recentSearches,
     bool? isLoading,
     bool? isMoreLoading,
@@ -123,6 +147,7 @@ class MealEntryState {
       searchQuery: searchQuery ?? this.searchQuery,
       recommendedFoods: recommendedFoods ?? this.recommendedFoods,
       selectedFoodIds: selectedFoodIds ?? this.selectedFoodIds,
+      foodPortionMultipliers: foodPortionMultipliers ?? this.foodPortionMultipliers,
       recentSearches: recentSearches ?? this.recentSearches,
       isLoading: isLoading ?? this.isLoading,
       isMoreLoading: isMoreLoading ?? this.isMoreLoading,
