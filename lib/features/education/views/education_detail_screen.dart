@@ -529,16 +529,56 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
               children: [
                 SizedBox(
                   width: double.infinity,
-                  height: 200,
-                  child: AppSmartImage(
-                    imageUrl: article.imageUrl,
-                    fit: BoxFit.cover,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
-                    ),
-                    fallbackIcon: Icons.menu_book_rounded,
-                  ),
+                  height: 180,
+                  child: article.imageUrl.trim().isEmpty
+                      ? Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.primaryContainer.withValues(alpha: 0.35),
+                                AppColors.primary.withValues(alpha: 0.12),
+                                AppColors.surfaceContainerLowest,
+                              ],
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
+                          ),
+                          child: Center(
+                            child: Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.menu_book_rounded,
+                                size: 32,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        )
+                      : AppSmartImage(
+                          imageUrl: article.imageUrl,
+                          fit: BoxFit.cover,
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(16),
+                            bottomRight: Radius.circular(16),
+                          ),
+                          fallbackIcon: Icons.menu_book_rounded,
+                        ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(

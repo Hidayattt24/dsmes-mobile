@@ -21,12 +21,12 @@ class BloodSugarEntryState {
 
   String get normalRangeText {
     return switch (measurementType) {
-      'fasting' => 'Rentang acuan normal: 70–100 mg/dL (Puasa)',
-      'before_meal' => 'Rentang acuan normal: 80–120 mg/dL (Sebelum Makan)',
-      'after_meal' => 'Rentang acuan normal: < 140 mg/dL (2 Jam Sesudah Makan)',
+      'fasting' => 'Rentang acuan normal: 80–130 mg/dL (Puasa)',
+      'before_meal' => 'Rentang acuan normal: 80–130 mg/dL (Sebelum Makan)',
+      'after_meal' => 'Rentang acuan normal: < 180 mg/dL (2 Jam Sesudah Makan)',
       'before_bed' => 'Rentang acuan normal: 100–140 mg/dL (Sebelum Tidur)',
       'random' => 'Rentang acuan normal: < 140 mg/dL (Sewaktu)',
-      _ => 'Rentang acuan normal: 80–120 mg/dL',
+      _ => 'Rentang acuan normal: 80–130 mg/dL',
     };
   }
 

@@ -5,6 +5,7 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/network/auth_interceptor.dart';
+import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
@@ -402,13 +403,8 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
                         color: AppColors.outline,
                       ),
                       title: const Text('Kebijakan Privasi'),
-                      trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                      onTap: () {
-                        AppSnackbar.showInfo(
-                          context,
-                          'Menampilkan dokumen Kebijakan Privasi.',
-                        );
-                      },
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: () => context.push(RouteNames.privacyPolicy),
                     ),
                     const Divider(height: 1),
                     ListTile(
@@ -417,13 +413,8 @@ class _SecurityPrivacyScreenState extends ConsumerState<SecurityPrivacyScreen> {
                         color: AppColors.outline,
                       ),
                       title: const Text('Syarat & Ketentuan Penggunaan'),
-                      trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                      onTap: () {
-                        AppSnackbar.showInfo(
-                          context,
-                          'Menampilkan dokumen Syarat & Ketentuan.',
-                        );
-                      },
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: () => context.push(RouteNames.termsConditions),
                     ),
                   ],
                 ),

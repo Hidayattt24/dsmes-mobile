@@ -44,9 +44,8 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       }
 
       state = merged;
-
-      // Auto-trigger system pop-ups for unread incoming notifications.
-      _triggerIncomingPopups(backendItems);
+      // Note: System push notifications are delivered in real-time via FCM.
+      // We do not re-trigger status-bar alerts for historical unread items on every launch.
     } catch (_) {
       // Silently ignore network/auth failures (e.g. app opened pre-login).
     }

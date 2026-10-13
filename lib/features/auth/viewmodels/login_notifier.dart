@@ -114,13 +114,11 @@ class LoginNotifier extends Notifier<LoginFormState> {
         ref.read(deviceTokenRepositoryProvider),
       );
 
-      // The splash gate may have cached an unauthenticated result before this
-      // login. Re-evaluate it after the new tokens have been saved.
-      ref.invalidate(sessionRestoreProvider);
-
-      // Reset questionnaire state for the logged-in account so the Pre-Test
-      // guard reflects THIS user (not a previous session's data).
-      ref.invalidate(preTestHistoryProvider);
+      // Refresh the session and pretest states so they resolve immediately
+      // before navigation, preventing any race condition where an old unauthenticated
+      // state bounces the user back to the welcome screen.
+      final _ = await ref.refresh(sessionRestoreProvider.future);
+      final __ = await ref.refresh(preTestHistoryProvider.future);
       ref.invalidate(allQuestionnaireHistoryProvider);
       ref.invalidate(questionnaireListProvider);
       ref.read(quizSubmissionProvider.notifier).reset();

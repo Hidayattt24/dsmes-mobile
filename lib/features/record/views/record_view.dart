@@ -146,15 +146,8 @@ class _RecordViewState extends ConsumerState<RecordView> {
       final notifId = medicationName.hashCode.abs();
 
       try {
-        await LocalNotificationService.instance.showNotification(
-          id: notifId,
-          title: 'Pengingat Minum Obat Diaktifkan ⏰',
-          body:
-              'Pengingat untuk $medicationName ($dosage) jam $schedule WIB telah aktif!',
-        );
-
         await LocalNotificationService.instance.scheduleDailyNotification(
-          id: notifId + 1,
+          id: notifId,
           title: 'Waktunya Minum Obat! 💊',
           body: 'Jangan lupa diminum: $medicationName ($dosage)',
           hour: hour,
@@ -674,9 +667,6 @@ class _MedicationReminderDialogState
                 : widget.schedule)
             : '${widget.schedule}:00';
 
-    final parts = widget.schedule.split(':');
-    final hour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
-    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
     final notifId = widget.medicationName.hashCode.abs();
 
     if (val) {
@@ -691,27 +681,9 @@ class _MedicationReminderDialogState
               notes: 'Belum diminum',
               activeDays: const [1, 2, 3, 4, 5, 6, 7],
             );
-
-        // System Notification Pop-up & Alarm Schedule
-        await LocalNotificationService.instance.showNotification(
-          id: notifId,
-          title: 'Pengingat Minum Obat Diaktifkan ⏰',
-          body:
-              'Pengingat untuk ${widget.medicationName} (${widget.dosage}) jam ${widget.schedule} WIB telah aktif!',
-        );
-
-        await LocalNotificationService.instance.scheduleDailyNotification(
-          id: notifId + 1,
-          title: 'Waktunya Minum Obat! 💊',
-          body:
-              'Jangan lupa diminum: ${widget.medicationName} (${widget.dosage})',
-          hour: hour,
-          minute: minute,
-        );
       } catch (_) {}
     } else {
       await LocalNotificationService.instance.cancelNotification(notifId);
-      await LocalNotificationService.instance.cancelNotification(notifId + 1);
     }
   }
 

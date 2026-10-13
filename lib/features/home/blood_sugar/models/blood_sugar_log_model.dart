@@ -36,7 +36,7 @@ class BloodSugarLogModel {
   });
 
   String get formattedTimeAndType {
-    final dt = DateTime.tryParse(measuredAt);
+    final dt = DateTime.tryParse(measuredAt)?.toLocal();
     if (dt == null) return '$measurementTypeLabel • $referenceRangeText';
 
     final now = DateTime.now();
@@ -62,14 +62,14 @@ class BloodSugarLogModel {
       measurementType: json['measurement_time_type'] as String? ?? 'random',
       measurementTypeLabel: json['measurement_time_label'] as String? ?? 'Sewaktu',
       measuredAt: json['measured_at'] as String? ?? '',
-      status: json['status'] as String? ?? 'normal',
-      classificationLabel: json['classification_label'] as String? ?? 'Normal',
+      status: json['status'] as String? ?? json['category'] as String? ?? 'normal',
+      classificationLabel: json['classification_label'] as String? ?? json['category_label'] as String? ?? 'Normal',
       severity: json['severity'] as String? ?? 'normal',
       referenceMin: (json['reference_min'] as num?)?.toInt() ?? 70,
       referenceMax: (json['reference_max'] as num?)?.toInt() ?? 140,
-      referenceRangeText: json['reference_range_text'] as String? ?? '< 140 mg/dL',
+      referenceRangeText: json['reference_range_text'] as String? ?? json['reference_range'] as String? ?? '< 140 mg/dL',
       recommendation: json['recommendation'] as String? ?? '',
-      colorIndicator: json['color_indicator'] as String? ?? '#10B981',
+      colorIndicator: json['color_indicator'] as String? ?? json['color'] as String? ?? '#10B981',
       createdAt: json['created_at'] as String? ?? '',
       updatedAt: json['updated_at'] as String? ?? '',
     );

@@ -309,11 +309,11 @@ class BloodSugarEntryScreen extends ConsumerWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Gula Darah: ${result.glucoseValue} mg/dL (${result.classificationLabel})\n${result.recommendation}',
+                                  'Gula Darah: ${result.glucoseValue} mg/dL (${result.classificationLabel})',
                                 ),
                                 backgroundColor: AppColors.primaryContainer,
                                 behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 4),
+                                duration: const Duration(seconds: 2),
                               ),
                             );
                             Navigator.of(context).pop(result);

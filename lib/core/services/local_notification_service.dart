@@ -68,11 +68,19 @@ class LocalNotificationService {
           enableVibration: true,
         );
         await androidImplementation.createNotificationChannel(channel);
-        final notificationsGranted =
-            await androidImplementation.requestNotificationsPermission();
-        debugPrint(
-          '[REMINDER][NOTIFICATION] permissions notifications=$notificationsGranted',
-        );
+
+        // Safely request permission only if supported/safe, never crash background isolate
+        try {
+          final notificationsGranted =
+              await androidImplementation.requestNotificationsPermission();
+          debugPrint(
+            '[REMINDER][NOTIFICATION] permissions notifications=$notificationsGranted',
+          );
+        } catch (permError) {
+          debugPrint(
+            '[REMINDER][NOTIFICATION] requestNotificationsPermission skipped: $permError',
+          );
+        }
       }
     } catch (e) {
       debugPrint('[REMINDER][NOTIFICATION] initialize skipped/failed: $e');
@@ -134,10 +142,11 @@ class LocalNotificationService {
     required String title,
     required String body,
     String? payload,
+    String? tag,
   }) async {
     await initialize();
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'dsmes_reminders_channel',
       'Pengingat DIBA',
       channelDescription: 'Saluran notifikasi pengingat harian diabetes DIBA',
@@ -148,6 +157,7 @@ class LocalNotificationService {
       enableVibration: true,
       icon: 'ic_stat_diba',
       color: AppColors.primary,
+      tag: tag,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -156,7 +166,7 @@ class LocalNotificationService {
       presentSound: true,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -169,41 +179,33 @@ class LocalNotificationService {
         notificationDetails,
         payload: payload,
       );
-      debugPrint('[REMINDER][NOTIFICATION] showNotification SUCCESS id=$id');
+      debugPrint('[REMINDER][NOTIFICATION] showNotification SUCCESS id=$id tag=$tag');
     } catch (e, stack) {
       debugPrint(
         '[REMINDER][NOTIFICATION][ERROR] primary show failed: $e\n$stack',
       );
-      // Fallback without explicit icon (uses initialization default icon)
+      // Secondary fallback without sound/vibration if policy blocks
       try {
-        const fallbackDetails = NotificationDetails(
-          android: AndroidNotificationDetails(
-            'dsmes_reminders_channel',
-            'Pengingat DIBA',
-            channelDescription:
-                'Saluran notifikasi pengingat harian diabetes DIBA',
-            importance: Importance.max,
-            priority: Priority.high,
-            showWhen: true,
-            playSound: true,
-            enableVibration: true,
-            color: AppColors.primary,
-          ),
-          iOS: iosDetails,
+        final fallbackAndroid = AndroidNotificationDetails(
+          'dsmes_reminders_channel',
+          'Pengingat DIBA',
+          channelDescription: 'Saluran notifikasi pengingat harian diabetes DIBA',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          icon: 'ic_stat_diba',
+          color: AppColors.primary,
+          tag: tag,
         );
         await _notificationsPlugin.show(
           id,
           title,
           body,
-          fallbackDetails,
+          NotificationDetails(android: fallbackAndroid),
           payload: payload,
-        );
-        debugPrint(
-          '[REMINDER][NOTIFICATION] fallback showNotification SUCCESS id=$id',
         );
       } catch (fallbackError) {
         debugPrint(
-          '[REMINDER][NOTIFICATION][FATAL] fallback failed: $fallbackError',
+          '[REMINDER][NOTIFICATION][FATAL] fallback show failed: $fallbackError',
         );
       }
     }
@@ -221,10 +223,11 @@ class LocalNotificationService {
     required String body,
     required int hour,
     required int minute,
+    String? tag,
   }) async {
     await initialize();
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'dsmes_reminders_channel',
       'Pengingat DIBA',
       channelDescription: 'Saluran notifikasi pengingat harian diabetes DIBA',
@@ -234,11 +237,12 @@ class LocalNotificationService {
       enableVibration: true,
       icon: 'ic_stat_diba',
       color: AppColors.primary,
+      tag: tag,
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
+      iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -298,10 +302,11 @@ class LocalNotificationService {
     required int weekday,
     required int hour,
     required int minute,
+    String? tag,
   }) async {
     await initialize();
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'dsmes_reminders_channel',
       'Pengingat DIBA',
       channelDescription: 'Saluran notifikasi pengingat harian diabetes DIBA',
@@ -311,10 +316,11 @@ class LocalNotificationService {
       enableVibration: true,
       icon: 'ic_stat_diba',
       color: AppColors.primary,
+      tag: tag,
     );
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
-      iOS: DarwinNotificationDetails(
+      iOS: const DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,

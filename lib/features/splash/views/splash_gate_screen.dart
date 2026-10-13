@@ -10,42 +10,65 @@ import '../../../data/repositories/auth_repository.dart';
 import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 
 /// Transient gate shown while the mandatory Pre-Test completion status is being
-/// resolved. Once resolved it routes the user to Home (if the Pre-Test is done)
+/// resolved. Once resolved it routes the user smoothly to Home (if the Pre-Test is done)
 /// or to the Pre-Test intro (if it is still required).
-///
-/// This removes the previous "loading window" where a user could reach a
-/// protected route (e.g. /home) before `hasCompletedPreTestProvider` resolved,
-/// bypassing the mandatory Pre-Test.
-class SplashGateScreen extends ConsumerWidget {
+class SplashGateScreen extends ConsumerStatefulWidget {
   const SplashGateScreen({super.key});
 
-  void _goIfOnSplash(BuildContext context, String route) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted &&
-          GoRouterState.of(context).matchedLocation == RouteNames.splash) {
-        context.go(route);
-      }
-    });
+  @override
+  ConsumerState<SplashGateScreen> createState() => _SplashGateScreenState();
+}
+
+class _SplashGateScreenState extends ConsumerState<SplashGateScreen> {
+  DateTime? _initTime;
+  static const _minSplashDuration = Duration(milliseconds: 1100);
+  bool _isNavigating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTime = DateTime.now();
+  }
+
+  void _navigateSmoothly(String route) {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    final elapsed = DateTime.now().difference(_initTime ?? DateTime.now());
+    final remaining = _minSplashDuration - elapsed;
+
+    Future.delayed(
+      remaining.isNegative ? Duration.zero : remaining,
+      () {
+        if (mounted &&
+            GoRouterState.of(context).matchedLocation == RouteNames.splash) {
+          context.go(route);
+        }
+      },
+    );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final sessionAsync = ref.watch(sessionRestoreProvider);
 
     sessionAsync.when(
+      skipLoadingOnReload: false,
+      skipLoadingOnRefresh: false,
       loading: () {},
-      error: (_, _) => _goIfOnSplash(context, RouteNames.welcome),
+      error: (_, _) => _navigateSmoothly(RouteNames.welcome),
       data: (loggedIn) {
         if (!loggedIn) {
-          _goIfOnSplash(context, RouteNames.welcome);
+          _navigateSmoothly(RouteNames.welcome);
           return;
         }
         // Only watch questionnaire eligibility after session is confirmed restored
         ref.watch(hasCompletedPreTestProvider).when(
+              skipLoadingOnReload: false,
+              skipLoadingOnRefresh: false,
               loading: () {},
-              error: (_, _) => _goIfOnSplash(context, RouteNames.preTestIntro),
-              data: (completed) => _goIfOnSplash(
-                context,
+              error: (_, _) => _navigateSmoothly(RouteNames.preTestIntro),
+              data: (completed) => _navigateSmoothly(
                 completed ? RouteNames.home : RouteNames.preTestIntro,
               ),
             );
@@ -97,44 +120,50 @@ class _SplashContentState extends State<_SplashContent>
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Column(
+      child: Stack(
         children: [
-          const Spacer(),
-          FadeTransition(
-            opacity: _fade,
-            child: ScaleTransition(
-              scale: _scale,
-              child: Image.asset(
-                'assets/images/splash_logo.png',
-                width: 160,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          const Spacer(),
-          FadeTransition(
-            opacity: _fade,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 40),
+          // Center: Logo and loading indicator perfectly grouped at the exact center
+          Center(
+            child: FadeTransition(
+              opacity: _fade,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.4,
-                      color: AppColors.primaryContainer,
+                  ScaleTransition(
+                    scale: _scale,
+                    child: Image.asset(
+                      'assets/images/splash_logo.png',
+                      width: 160,
+                      fit: BoxFit.contain,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Diabetes Self-Management Education & Support',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.labelSm.copyWith(
-                      color: const Color(0xFF718096),
+                  const SizedBox(height: 28),
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.6,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+          // Bottom Footer Tagline
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 32,
+            child: FadeTransition(
+              opacity: _fade,
+              child: Text(
+                'Diabetes Self-Management Education & Support',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.labelSm.copyWith(
+                  color: const Color(0xFF718096),
+                  fontSize: 12,
+                ),
               ),
             ),
           ),

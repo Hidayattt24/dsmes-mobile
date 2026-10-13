@@ -39,13 +39,38 @@ class FeaturedArticleCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             child: Stack(
               children: [
-                // Background Image
+                // Background Image or Elegant DIBA Teal Gradient Fallback
                 Positioned.fill(
-                  child: AppSmartImage(
-                    imageUrl: article.imageUrl,
-                    fit: BoxFit.cover,
-                    fallbackIcon: Icons.menu_book_rounded,
-                  ),
+                  child: article.imageUrl.trim().isEmpty
+                      ? Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF004D40), // Darker teal
+                                Color(0xFF00695C), // Primary DIBA teal
+                                Color(0xFF00796B),
+                              ],
+                            ),
+                          ),
+                          child: Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Icon(
+                                Icons.menu_book_rounded,
+                                size: 88,
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
+                            ),
+                          ),
+                        )
+                      : AppSmartImage(
+                          imageUrl: article.imageUrl,
+                          fit: BoxFit.cover,
+                          fallbackIcon: Icons.menu_book_rounded,
+                        ),
                 ),
                 // Gradient Overlay
                 Positioned.fill(

@@ -57,26 +57,6 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     ];
     state = AsyncValue.data(current);
     unawaited(_syncLocalAlarms(current));
-
-    final timeShort = scheduledTime.length >= 5
-        ? scheduledTime.substring(0, 5)
-        : scheduledTime;
-
-    final (title, _) = NotificationCopywriter.getInteractiveCopy(
-      rawTitle: activityName,
-      rawDescription: notes,
-      type: NotificationType.medication,
-      iconName: iconName,
-      activityName: activityName,
-    );
-
-    unawaited(
-      LocalNotificationService.instance.showNotification(
-        id: newReminder.id.hashCode.abs(),
-        title: '$title ⏰',
-        body: 'Pengingat $activityName jam $timeShort WIB telah aktif!',
-      ),
-    );
   }
 
   Future<void> updateReminder(
@@ -136,12 +116,16 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     try {
       for (final item in reminders) {
         final baseId = item.id.hashCode.abs();
+        final tag = 'reminder_${item.id}';
+
+        // Always cancel existing alarms for this reminder across all day IDs first
+        // to prevent duplicate ghost alarms when editing schedules or day sets.
+        await LocalNotificationService.instance.cancelNotification(baseId);
+        for (int d = 1; d <= 7; d++) {
+          await LocalNotificationService.instance.cancelNotification(baseId + d);
+        }
+
         if (!item.isActive) {
-          // Cancel alarms for inactive reminder
-          await LocalNotificationService.instance.cancelNotification(baseId);
-          for (int d = 1; d <= 7; d++) {
-            await LocalNotificationService.instance.cancelNotification(baseId + d);
-          }
           continue;
         }
 
@@ -162,6 +146,7 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
         if (days.isEmpty || days.length == 7) {
           await LocalNotificationService.instance.scheduleDailyNotification(
             id: baseId,
+            tag: tag,
             title: title,
             body: body,
             hour: hour,
@@ -171,6 +156,7 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
           for (final day in days) {
             await LocalNotificationService.instance.scheduleWeeklyNotification(
               id: baseId + day,
+              tag: tag,
               title: title,
               body: body,
               weekday: day,

@@ -111,12 +111,14 @@ class AppSmartImage extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      color: fallbackColor ?? AppColors.surfaceContainerHigh,
+      decoration: BoxDecoration(
+        color: fallbackColor ?? AppColors.primaryContainer.withValues(alpha: 0.18),
+      ),
       child: Center(
         child: Icon(
           fallbackIcon,
-          size: (height != null && height! < 100) ? 32 : 48,
-          color: AppColors.outline,
+          size: (height != null && height! < 100) ? 32 : 44,
+          color: AppColors.primary,
         ),
       ),
     );

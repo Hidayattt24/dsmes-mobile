@@ -69,6 +69,10 @@ abstract final class RouteNames {
   static const String nameHelpCenter = 'help-center';
   static const String about = '/about';
   static const String nameAbout = 'about';
+  static const String privacyPolicy = '/privacy-policy';
+  static const String namePrivacyPolicy = 'privacy-policy';
+  static const String termsConditions = '/terms-conditions';
+  static const String nameTermsConditions = 'terms-conditions';
   static const String aiChat = '/ai-chat';
   static const String nameAiChat = 'ai-chat';
 }

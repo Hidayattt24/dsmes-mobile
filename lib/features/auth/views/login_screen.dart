@@ -377,14 +377,15 @@ class _LoginFooter extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GestureDetector(
-                onTap: () {},
+                onTap: () => context.push(RouteNames.privacyPolicy),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Text(
                     'Kebijakan Privasi',
                     style: AppTextStyles.bodyMd.copyWith(
-                      color: AppColors.outline.withValues(alpha: 0.6),
+                      color: AppColors.outline.withValues(alpha: 0.8),
                       fontSize: 12,
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -400,14 +401,15 @@ class _LoginFooter extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () {},
+                onTap: () => context.push(RouteNames.termsConditions),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Text(
                     'Syarat & Ketentuan',
                     style: AppTextStyles.bodyMd.copyWith(
-                      color: AppColors.outline.withValues(alpha: 0.6),
+                      color: AppColors.outline.withValues(alpha: 0.8),
                       fontSize: 12,
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),

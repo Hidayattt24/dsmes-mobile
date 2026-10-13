@@ -22,6 +22,8 @@ import '../../features/questionnaire/views/pre_test_intro_screen.dart';
 import '../../features/questionnaire/views/questionnaire_questions_screen.dart';
 import '../../features/questionnaire/views/questionnaire_result_screen.dart';
 import '../../features/settings/views/about_screen.dart';
+import '../../features/settings/views/privacy_policy_screen.dart';
+import '../../features/settings/views/terms_conditions_screen.dart';
 import '../../features/settings/views/edit_body_metrics_screen.dart';
 import '../../features/settings/views/edit_sociodemographic_screen.dart';
 import '../../features/settings/views/help_center_screen.dart';
@@ -44,6 +46,8 @@ const _publicRoutes = <String>{
   RouteNames.preTestQuestions,
   RouteNames.preTestResult,
   RouteNames.accountCreatedSuccess,
+  RouteNames.privacyPolicy,
+  RouteNames.termsConditions,
 };
 
 /// DSMES Aceh App Router.
@@ -108,7 +112,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.welcome,
         name: RouteNames.nameWelcome,
         pageBuilder:
-            (context, state) => _buildSlideTransition(
+            (context, state) => _buildFadeTransition(
               state: state,
               child: const WelcomeScreen(),
             ),
@@ -218,7 +222,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.splash,
         name: RouteNames.nameSplash,
         pageBuilder:
-            (context, state) => _buildSlideTransition(
+            (context, state) => _buildFadeTransition(
               state: state,
               child: const SplashGateScreen(),
             ),
@@ -241,7 +245,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: RouteNames.nameHome,
         pageBuilder:
             (context, state) =>
-                _buildSlideTransition(state: state, child: const AppShell()),
+                _buildFadeTransition(state: state, child: const AppShell()),
       ),
 
       // ── Notifications ──────────────────────────────────────────────────
@@ -384,6 +388,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 _buildSlideTransition(state: state, child: const AboutScreen()),
       ),
       GoRoute(
+        path: RouteNames.privacyPolicy,
+        name: RouteNames.namePrivacyPolicy,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const PrivacyPolicyScreen(),
+            ),
+      ),
+      GoRoute(
+        path: RouteNames.termsConditions,
+        name: RouteNames.nameTermsConditions,
+        pageBuilder:
+            (context, state) => _buildSlideTransition(
+              state: state,
+              child: const TermsConditionsScreen(),
+            ),
+      ),
+      GoRoute(
         path: RouteNames.aiChat,
         name: RouteNames.nameAiChat,
         pageBuilder:
@@ -408,7 +430,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
-/// Slide-from-right page transition (consistent across all routes).
+/// Smooth cross-fade transition for root screens (Splash, Welcome, Home).
+CustomTransitionPage<void> _buildFadeTransition({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 350),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOut,
+        ),
+        child: child,
+      );
+    },
+  );
+}
+
+/// Slide-from-right page transition (consistent across sub-routes).
 CustomTransitionPage<void> _buildSlideTransition({
   required GoRouterState state,
   required Widget child,

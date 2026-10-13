@@ -171,8 +171,15 @@ class FirebaseMessagingService {
       activityName: activityName,
     );
 
+    final reminderId = message.data['reminder_id'];
+    final notifId = reminderId != null
+        ? reminderId.hashCode.abs()
+        : message.messageId.hashCode.abs();
+    final notifTag = reminderId != null ? 'reminder_$reminderId' : null;
+
     await LocalNotificationService.instance.showNotification(
-      id: message.messageId.hashCode.abs(),
+      id: notifId,
+      tag: notifTag,
       title: title,
       body: body,
       payload: jsonEncode({
