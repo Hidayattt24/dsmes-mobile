@@ -235,6 +235,7 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
         description: description,
         type: type,
         customTimestamp: '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} WIB',
+        showSystemPopup: false,
       );
       _scheduledTimers.remove(timerId);
     });

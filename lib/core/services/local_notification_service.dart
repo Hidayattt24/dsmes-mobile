@@ -158,6 +158,7 @@ class LocalNotificationService {
       icon: 'ic_stat_diba',
       color: AppColors.primary,
       tag: tag,
+      onlyAlertOnce: true,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -195,6 +196,7 @@ class LocalNotificationService {
           icon: 'ic_stat_diba',
           color: AppColors.primary,
           tag: tag,
+          onlyAlertOnce: true,
         );
         await _notificationsPlugin.show(
           id,
@@ -238,6 +240,7 @@ class LocalNotificationService {
       icon: 'ic_stat_diba',
       color: AppColors.primary,
       tag: tag,
+      onlyAlertOnce: true,
     );
 
     final notificationDetails = NotificationDetails(
@@ -317,6 +320,7 @@ class LocalNotificationService {
       icon: 'ic_stat_diba',
       color: AppColors.primary,
       tag: tag,
+      onlyAlertOnce: true,
     );
     final notificationDetails = NotificationDetails(
       android: androidDetails,

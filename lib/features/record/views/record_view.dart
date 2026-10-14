@@ -140,20 +140,9 @@ class _RecordViewState extends ConsumerState<RecordView> {
     //    reminder: immediate confirmation pop-up + daily scheduled alarm.
     //    No pop-up/dialog is shown when the status is updated to consumed.
     if (!isTaken) {
-      final parts = schedule.split(':');
-      final hour = parts.isNotEmpty ? (int.tryParse(parts[0]) ?? 8) : 8;
-      final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-      final notifId = medicationName.hashCode.abs();
-
-      try {
-        await LocalNotificationService.instance.scheduleDailyNotification(
-          id: notifId,
-          title: 'Waktunya Minum Obat! 💊',
-          body: 'Jangan lupa diminum: $medicationName ($dosage)',
-          hour: hour,
-          minute: minute,
-        );
-      } catch (_) {}
+      // Alarm is already scheduled by ReminderListNotifier._syncLocalAlarms
+      // (triggered by refresh() above); scheduling again here would create
+      // a duplicate notification.
 
       if (mounted) {
         _showMedicationReminderPopup(
