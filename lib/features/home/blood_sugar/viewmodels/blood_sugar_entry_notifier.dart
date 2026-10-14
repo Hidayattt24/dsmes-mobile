@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../../../core/sync/sync_queue_item.dart';
+import '../../../../core/sync/sync_queue_manager.dart';
 import '../../../../data/repositories/blood_sugar_repository.dart';
 import '../../viewmodels/home_dashboard_notifier.dart';
 import '../../history/viewmodels/history_provider.dart';
@@ -72,6 +75,8 @@ class BloodSugarEntryNotifier extends Notifier<BloodSugarEntryState> {
       state.selectedTime.minute,
     );
 
+    final clientId = const Uuid().v4();
+
     try {
       final repo = ref.read(bloodSugarRepositoryProvider);
       final result = await repo.logBloodSugar(
@@ -85,6 +90,49 @@ class BloodSugarEntryNotifier extends Notifier<BloodSugarEntryState> {
       ref.read(historyProvider.notifier).refresh();
       return result;
     } catch (e) {
+      // Offline fallback: enqueue persistent sync item and return optimistic record
+      try {
+        final syncItem = SyncQueueItem(
+          clientId: clientId,
+          userId: '',
+          dataType: SyncDataType.bloodSugar,
+          endpoint: '/patient/blood-sugar',
+          method: 'POST',
+          payload: {
+            'glucose_value': val,
+            'measurement_time_type': state.measurementType,
+            'measured_at': measuredDateTime.toUtc().toIso8601String(),
+            'client_id': clientId,
+          },
+          createdAt: DateTime.now(),
+        );
+        await ref.read(syncQueueManagerProvider.notifier).enqueue(syncItem);
+
+        final localLog = BloodSugarLogModel(
+          id: clientId,
+          patientId: '',
+          glucoseValue: val,
+          measurementType: state.measurementType,
+          measurementTypeLabel: state.measurementTypeLabel,
+          measuredAt: measuredDateTime.toIso8601String(),
+          status: 'pending_sync',
+          classificationLabel: 'Menunggu Sinkronisasi',
+          severity: 'normal',
+          referenceMin: 70,
+          referenceMax: 140,
+          referenceRangeText: '70 - 140 mg/dL',
+          recommendation: 'Tersimpan lokal di perangkat.',
+          colorIndicator: '#F59E0B',
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+
+        state = state.copyWith(isSubmitting: false, clearError: true);
+        ref.read(homeDashboardProvider.notifier).refresh();
+        ref.read(historyProvider.notifier).refresh();
+        return localLog;
+      } catch (_) {}
+
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: e.toString().replaceFirst('Exception: ', ''),

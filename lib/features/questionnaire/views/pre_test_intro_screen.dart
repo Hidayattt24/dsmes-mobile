@@ -6,6 +6,7 @@ import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_error_state.dart';
 import '../models/questionnaire_detail_model.dart';
 import '../viewmodels/questionnaire_notifier.dart';
 import 'questionnaire_questions_screen.dart';
@@ -423,60 +424,15 @@ class _PreTestErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.page),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.signal_wifi_statusbar_connected_no_internet_4_rounded,
-              size: 72,
-              color: AppColors.outline,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Gagal Memuat Pre-Test',
-              style: AppTextStyles.headlineMd.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message.isNotEmpty
-                  ? message
-                  : 'Tidak dapat memuat Pre-Test. Periksa koneksi internet Anda.',
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            SizedBox(
-              width: 200,
-              height: 48,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(
-                  'Coba Lagi',
-                  style: AppTextStyles.poppinsButton.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: AppErrorState(
+          title: 'Gagal Memuat Pre-Test',
+          message: message.isNotEmpty
+              ? message
+              : 'Tidak dapat memuat data Pre-Test. Periksa koneksi internet atau tunggu server pulih.',
+          onRetry: onRetry,
         ),
       ),
     );

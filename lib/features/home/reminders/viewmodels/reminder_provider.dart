@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/services/local_notification_service.dart';
+import '../../../../core/storage/offline_cache_manager.dart';
 import '../../../../data/repositories/reminder_repository.dart';
 import '../../../notifications/helpers/notification_copywriter.dart';
 import '../../../notifications/models/notification_item.dart';
@@ -16,15 +17,42 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
   }
 
   Future<List<ReminderModel>> _fetchReminders() async {
-    final repo = ref.read(reminderRepositoryProvider);
-    final reminders = await repo.list();
-    debugPrint('[REMINDER][PARSE] received=${reminders.length}');
-    debugPrint('[REMINDER] returning=${reminders.length}');
+    final cacheManager = ref.read(offlineCacheManagerProvider);
 
-    // Sync all active reminders with device local alarm scheduler
-    unawaited(_syncLocalAlarms(reminders));
+    try {
+      final repo = ref.read(reminderRepositoryProvider);
+      final reminders = await repo.list();
+      debugPrint('[REMINDER][PARSE] received=${reminders.length}');
+      debugPrint('[REMINDER] returning=${reminders.length}');
 
-    return reminders;
+      // Persist to encrypted offline cache
+      await cacheManager.saveCache(
+        OfflineCacheManager.keyReminders,
+        reminders.map((e) => e.toJson()).toList(),
+      );
+
+      // Sync all active reminders with device local alarm scheduler
+      unawaited(_syncLocalAlarms(reminders));
+
+      return reminders;
+    } catch (e) {
+      // Graceful offline fallback: load from local cache
+      try {
+        final cached = await cacheManager.getCache(OfflineCacheManager.keyReminders);
+        if (cached is List && cached.isNotEmpty) {
+          final cachedReminders = cached
+              .whereType<Map<String, dynamic>>()
+              .map(ReminderModel.fromJson)
+              .toList();
+
+          unawaited(_syncLocalAlarms(cachedReminders));
+          return cachedReminders;
+        }
+      } catch (_) {}
+
+      // Empty fallback rather than throwing error that breaks UI
+      return const <ReminderModel>[];
+    }
   }
 
   Future<void> refresh() async {

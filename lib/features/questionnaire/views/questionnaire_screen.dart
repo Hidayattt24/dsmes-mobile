@@ -68,11 +68,7 @@ class QuestionnaireScreen extends ConsumerWidget {
                 // ── Unified Questionnaire List ───────────────────────────
                 listAsync.when(
                   loading: () => const QuestionnaireSkeleton(),
-                  error: (err, _) => _ErrorCard(
-                    message: 'Gagal memuat kuesioner',
-                    onRetry: () =>
-                        ref.read(questionnaireListProvider.notifier).refresh(),
-                  ),
+                  error: (err, _) => const QuestionnaireEmptyState(),
                   data: (result) {
                     if (result.items.isEmpty) {
                       return const QuestionnaireEmptyState();
@@ -107,11 +103,8 @@ class QuestionnaireScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.sm),
                 historyAsync.when(
                   loading: () => const _SkeletonCard(height: 100),
-                  error: (err, _) => _ErrorCard(
-                    message: 'Gagal memuat riwayat',
-                    onRetry: () =>
-                        ref.read(allQuestionnaireHistoryProvider.notifier).refresh(),
-                  ),
+                  error: (err, _) =>
+                      const QuestionnaireHistorySection(history: []),
                   data: (history) =>
                       QuestionnaireHistorySection(history: history),
                 ),
@@ -139,44 +132,6 @@ class _SkeletonCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-      ),
-    );
-  }
-}
-
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.errorContainer.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline_rounded,
-              color: AppColors.error, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: AppTextStyles.bodyMd.copyWith(
-                fontSize: 13,
-                color: AppColors.error,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Coba Lagi'),
-          ),
-        ],
       ),
     );
   }

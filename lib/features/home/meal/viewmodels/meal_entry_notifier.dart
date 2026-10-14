@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../../../core/sync/sync_queue_item.dart';
+import '../../../../core/sync/sync_queue_manager.dart';
 import '../../../../data/repositories/food_repository.dart';
 import '../../../../features/home/viewmodels/home_dashboard_notifier.dart';
 import '../models/food_item.dart';
@@ -160,7 +163,39 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
       await ref.read(homeDashboardProvider.notifier).refresh();
       return true;
     } catch (e) {
-      return false;
+      // Offline fallback: enqueue each meal item to persistent sync queue
+      try {
+        final syncManager = ref.read(syncQueueManagerProvider.notifier);
+        for (final id in state.selectedFoodIds) {
+          final clientId = const Uuid().v4();
+          final multiplier = state.foodPortionMultipliers[id] ?? 1.0;
+          await syncManager.enqueue(
+            SyncQueueItem(
+              clientId: clientId,
+              userId: '',
+              dataType: SyncDataType.meal,
+              endpoint: '/patient/meals',
+              method: 'POST',
+              payload: {
+                'food_id': id,
+                'meal_type': state.selectedMealType,
+                'portion_multiplier': multiplier,
+                'client_id': clientId,
+              },
+              createdAt: DateTime.now(),
+            ),
+          );
+        }
+
+        state = state.copyWith(
+          selectedFoodIds: {},
+          foodPortionMultipliers: {},
+        );
+        await ref.read(homeDashboardProvider.notifier).refresh();
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
   }
 }

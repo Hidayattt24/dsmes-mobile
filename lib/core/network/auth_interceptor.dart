@@ -1,8 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
+import '../router/app_router.dart';
+import '../router/route_names.dart';
 
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   return const FlutterSecureStorage();
@@ -42,10 +46,16 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    final isAlreadyRetried = err.requestOptions.extra['retried'] == true;
+    final isRefreshRoute = err.requestOptions.path.contains('/auth/refresh');
+    final isAuthRoute =
+        err.requestOptions.path.contains('/auth/login') ||
+        err.requestOptions.path.contains('/auth/register');
+
     if (err.response?.statusCode == 401 &&
-        !err.requestOptions.path.contains('/auth/login') &&
-        !err.requestOptions.path.contains('/auth/register') &&
-        !err.requestOptions.path.contains('/auth/refresh')) {
+        !isAlreadyRetried &&
+        !isRefreshRoute &&
+        !isAuthRoute) {
       final storage = _ref.read(secureStorageProvider);
 
       // 1. Check if token was already refreshed by another concurrent request
@@ -61,7 +71,7 @@ class AuthInterceptor extends Interceptor {
         return _retryRequest(err.requestOptions, currentToken, handler);
       }
 
-      // 2. Otherwise coordinate a single refresh attempt
+      // 2. Otherwise coordinate a single-flight refresh attempt across all concurrent 401s
       try {
         final refreshFuture = _refreshFuture ??= _refresh();
         final newAccessToken = await refreshFuture;
@@ -85,6 +95,9 @@ class AuthInterceptor extends Interceptor {
     String token,
     ErrorInterceptorHandler handler,
   ) async {
+    final extra = Map<String, dynamic>.from(requestOptions.extra);
+    extra['retried'] = true; // Guard against infinite retry loop
+
     final options = Options(
       method: requestOptions.method,
       headers: Map<String, dynamic>.from(requestOptions.headers)
@@ -94,7 +107,7 @@ class AuthInterceptor extends Interceptor {
       validateStatus: requestOptions.validateStatus,
       receiveTimeout: requestOptions.receiveTimeout,
       sendTimeout: requestOptions.sendTimeout,
-      extra: requestOptions.extra,
+      extra: extra,
     );
 
     final dio = Dio(
@@ -156,12 +169,43 @@ class AuthInterceptor extends Interceptor {
       );
       return newAccessToken;
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+      // ONLY definitive 401 on /auth/refresh indicates session is truly dead.
+      // Temporary network disruptions, timeouts, or 5xx MUST preserve stored tokens!
+      if (e.response?.statusCode == 401) {
         await storage.delete(key: AppConstants.keyAuthToken);
         await storage.delete(key: AppConstants.keyRefreshToken);
+        await storage.delete(key: AppConstants.keyUserId);
+        // Do NOT delete keyOnboardingComplete or keyPreTestCompleted!
+        _triggerSessionExpiredNavigation();
         return null;
       }
       rethrow;
     }
+  }
+
+  void _triggerSessionExpiredNavigation() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = appNavigatorKey.currentContext;
+      if (context != null && context.mounted) {
+        try {
+          final loc = GoRouterState.of(context).matchedLocation;
+          if (loc != RouteNames.welcome &&
+              loc != RouteNames.login &&
+              loc != RouteNames.splash) {
+            context.go(RouteNames.welcome);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Sesi Anda telah berakhir. Silakan masuk kembali.',
+                ),
+                backgroundColor: Color(0xFFD97706),
+              ),
+            );
+          }
+        } catch (_) {
+          // Ignore if navigator is not mounted during headless tests
+        }
+      }
+    });
   }
 }

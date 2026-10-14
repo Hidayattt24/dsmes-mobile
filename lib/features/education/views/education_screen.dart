@@ -129,49 +129,6 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
       );
     }
 
-    // Show error state
-    if (educationListAsync.hasError && !educationListAsync.hasValue) {
-      return Scaffold(
-        backgroundColor: AppColors.surface,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.wifi_off_rounded,
-                  size: 56,
-                  color: AppColors.outline,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Gagal memuat artikel',
-                  style: AppTextStyles.headlineMd.copyWith(
-                    color: AppColors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Periksa koneksi internet Anda lalu coba lagi.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => ref.invalidate(educationListProvider),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Coba Lagi'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: RefreshIndicator(

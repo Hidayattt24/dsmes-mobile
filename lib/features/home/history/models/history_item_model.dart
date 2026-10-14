@@ -107,6 +107,28 @@ class HistoryItemModel {
       metadata: json['metadata'] as Map<String, dynamic>? ?? {},
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'patient_id': patientId,
+      'activity_type': activityType,
+      'title': title,
+      'subtitle': subtitle,
+      'category': category,
+      'value': value,
+      'unit': unit,
+      'status': status,
+      'notes': notes,
+      'measured_at': measuredAt,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'recorded_by': recordedBy,
+      'icon': icon,
+      'color': color,
+      'metadata': metadata,
+    };
+  }
 }
 
 String formatMealTitle(String title) {

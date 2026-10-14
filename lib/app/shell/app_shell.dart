@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/network/dio_client.dart';
+import '../../core/network/server_status_notifier.dart';
 import '../../core/router/route_names.dart';
+import '../../core/security/app_lock_manager.dart';
 import '../../core/services/firebase_messaging_service.dart';
 import '../../core/services/local_notification_service.dart';
+import '../../core/sync/sync_queue_manager.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/server_status_banner.dart';
 import '../../data/repositories/device_token_repository.dart';
 import '../../features/education/views/education_screen.dart';
+import '../../features/home/history/viewmodels/history_provider.dart';
 import '../../features/home/reminders/viewmodels/reminder_provider.dart';
 import '../../features/questionnaire/views/questionnaire_screen.dart';
+import '../../features/record/models/record_provider.dart';
 import '../../features/settings/views/settings_screen.dart';
 import '../../features/home/views/home_view.dart';
 import '../../features/record/views/record_view.dart';
@@ -76,11 +83,27 @@ class _AppShellState extends ConsumerState<AppShell>
     super.dispose();
   }
 
+  void _triggerAutoSync() {
+    final dio = ref.read(dioClientProvider);
+    ref.read(syncQueueManagerProvider.notifier).processQueue(dio).then((count) {
+      if (count > 0 && mounted) {
+        ref.read(homeDashboardProvider.notifier).refresh();
+        ref.read(historyProvider.notifier).refresh();
+        ref.read(reminderListProvider.notifier).refresh();
+        ref.read(recordProvider.notifier).loadData();
+      }
+    }).catchError((_) {});
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.paused) {
+      ref.read(appLockProvider.notifier).onAppPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      ref.read(appLockProvider.notifier).onAppResumed();
       ref.read(notificationsProvider.notifier).loadFromBackend();
       ref.read(reminderListProvider.notifier).refresh();
+      _triggerAutoSync();
     }
   }
 
@@ -112,6 +135,19 @@ class _AppShellState extends ConsumerState<AppShell>
 
   @override
   Widget build(BuildContext context) {
+    // Auto-sync listener: when connection changes from offline/serverDown to online, flush queue
+    ref.listen<ServerStatusState>(serverStatusProvider, (previous, next) {
+      if (previous?.health != ServerHealth.online &&
+          next.health == ServerHealth.online) {
+        _triggerAutoSync();
+      }
+    });
+
+    final isLocked = ref.watch(appLockProvider.select((s) => s.isLocked));
+    if (isLocked) {
+      return const AppLockScreen();
+    }
+
     final unreadNotificationCount = ref.watch(
       notificationsProvider.select(
         (list) => list.where((n) => n.isUnread).length,
@@ -154,7 +190,16 @@ class _AppShellState extends ConsumerState<AppShell>
                     },
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                // Global Non-blocking Server / Offline Status Banner
+                ServerStatusBanner(
+                  onRetry: () {
+                    _triggerAutoSync();
+                    ref.read(homeDashboardProvider.notifier).refresh();
+                    ref.read(notificationsProvider.notifier).loadFromBackend();
+                    ref.read(reminderListProvider.notifier).refresh();
+                  },
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 // Active Tab Page View
                 Expanded(
                   child: AnimatedSwitcher(

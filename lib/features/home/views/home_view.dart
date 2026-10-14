@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_error_state.dart';
 import '../blood_sugar/widgets/blood_sugar_card.dart';
 import '../dashboard/widgets/daily_calories_card.dart';
 import '../dashboard/widgets/weekly_calendar_card.dart';
@@ -126,120 +127,10 @@ class _HomeViewState extends ConsumerState<HomeView> {
     );
   }
 
-  Widget _buildReminderErrorState(Object error) {
-    final message = error is ApiException ? error.message : error.toString();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
-          child: Text(
-            'Pengingat Hari Ini',
-            style: AppTextStyles.headlineMd.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.onSurface,
-              fontSize: 18,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.errorContainer.withValues(alpha: 0.35),
-            borderRadius: AppRadius.card,
-            border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.notifications_off_outlined,
-                color: AppColors.error,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pengingat belum dapat dimuat',
-                      style: AppTextStyles.labelMd.copyWith(
-                        color: AppColors.onErrorContainer,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      message,
-                      style: AppTextStyles.bodyMd.copyWith(
-                        color: AppColors.onErrorContainer,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    TextButton(
-                      onPressed:
-                          () =>
-                              ref.read(reminderListProvider.notifier).refresh(),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text('Coba lagi'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildErrorState(String errorMsg) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              color: Colors.red,
-              size: 48,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Gagal memuat data dashboard',
-              style: AppTextStyles.labelLg.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              errorMsg,
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed:
-                  () => ref.read(homeDashboardProvider.notifier).refresh(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppErrorState(
+      message: errorMsg,
+      onRetry: () => ref.read(homeDashboardProvider.notifier).refresh(),
     );
   }
 
@@ -251,6 +142,10 @@ class _HomeViewState extends ConsumerState<HomeView> {
     AsyncValue<List<ReminderModel>> remindersAsync,
   ) {
     final dash = state.dashboardData;
+    if (dash == null) {
+      return _buildErrorState(state.errorMessage ?? 'Gagal memuat profil dashboard.');
+    }
+
     final latestBs = state.latestBloodSugar;
     final isSelectedToday =
         _selectedDate.day == now.day &&
@@ -262,25 +157,55 @@ class _HomeViewState extends ConsumerState<HomeView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (dash != null) ...[
-          Text(
-            '${dash.greetingText} ${dash.displayName}!',
-            style: AppTextStyles.poppinsHeadline.copyWith(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.onSurface,
+        if (state.isFromCache) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: const EdgeInsets.only(bottom: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: AppRadius.card,
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.offline_pin_rounded,
+                  size: 16,
+                  color: Color(0xFF4B5563),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Menampilkan data offline tersimpan'
+                    '${state.lastCachedAt != null ? ' (${state.lastCachedAt!.hour.toString().padLeft(2, '0')}:${state.lastCachedAt!.minute.toString().padLeft(2, '0')} WIB)' : ''}.',
+                    style: AppTextStyles.bodySm.copyWith(
+                      color: const Color(0xFF374151),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            dash.motivationalMessage,
-            style: AppTextStyles.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
         ],
+        Text(
+          '${dash.greetingText} ${dash.displayName}!',
+          style: AppTextStyles.poppinsHeadline.copyWith(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: AppColors.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          dash.motivationalMessage,
+          style: AppTextStyles.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
 
         WeeklyCalendarCard(
           selectedDate: _selectedDate,
@@ -330,7 +255,12 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
         remindersAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (error, _) => _buildReminderErrorState(error),
+          error: (_, __) => ReminderSection(
+            reminders: const [],
+            emptyMessage: 'Belum ada pengingat hari ini.',
+            onViewAllPressed: () => context.push(RouteNames.reminders),
+            onReminderTapped: (id) {},
+          ),
           data: (reminders) {
             final todayReminders =
                 reminders
@@ -404,15 +334,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
           error:
-              (err, _) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'Gagal memuat aktivitas',
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ),
+              (_, __) => const HistoryEmptyState(),
           data: (historyState) {
             if (historyState.allItems.isEmpty) {
               return const HistoryEmptyState();

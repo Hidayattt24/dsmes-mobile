@@ -1,7 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../../core/constants/app_constants.dart';
+import '../../../core/network/auth_interceptor.dart';
+import '../../../core/storage/offline_cache_manager.dart';
+import '../../../core/sync/sync_queue_item.dart';
+import '../../../core/sync/sync_queue_manager.dart';
 import '../../../data/repositories/questionnaire_repository.dart';
 import '../models/questionnaire_detail_model.dart';
 import '../models/quiz_attempt_model.dart';
@@ -143,10 +149,40 @@ class PreTestHistoryNotifier
   @override
   Future<List<MyHistoryItemModel>> build() => _fetch();
 
-  Future<List<MyHistoryItemModel>> _fetch() {
-    return ref
-        .read(questionnaireRepositoryProvider)
-        .getMyHistory(type: 'PRE_TEST');
+  Future<List<MyHistoryItemModel>> _fetch() async {
+    final storage = ref.read(secureStorageProvider);
+    try {
+      final items = await ref
+          .read(questionnaireRepositoryProvider)
+          .getMyHistory(type: 'PRE_TEST');
+      if (items.isNotEmpty) {
+        await storage.write(
+          key: AppConstants.keyPreTestCompleted,
+          value: 'true',
+        );
+      }
+      return items;
+    } catch (e) {
+      final cached = await storage.read(key: AppConstants.keyPreTestCompleted);
+      if (cached == 'true') {
+        return [
+          MyHistoryItemModel(
+            attemptId: 'cached_pre_test',
+            questionnaireId: 'pre_test',
+            questionnaireTitle: 'Pre-Test',
+            type: 'PRE_TEST',
+            score: 100,
+            passed: true,
+            totalQuestions: 10,
+            correctCount: 10,
+            incorrectCount: 0,
+            percentage: 100,
+            completedAt: DateTime.now(),
+          ),
+        ];
+      }
+      rethrow;
+    }
   }
 
   Future<void> refresh() async {
@@ -177,8 +213,30 @@ class AllHistoryNotifier
   @override
   Future<List<MyHistoryItemModel>> build() => _fetch();
 
-  Future<List<MyHistoryItemModel>> _fetch() {
-    return ref.read(questionnaireRepositoryProvider).getMyHistory();
+  Future<List<MyHistoryItemModel>> _fetch() async {
+    final cacheManager = ref.read(offlineCacheManagerProvider);
+    try {
+      final items =
+          await ref.read(questionnaireRepositoryProvider).getMyHistory();
+      await cacheManager.saveCache(
+        OfflineCacheManager.keyQuestionnaireHistory,
+        items.map((e) => e.toJson()).toList(),
+      );
+      return items;
+    } catch (_) {
+      try {
+        final cached = await cacheManager.getCache(
+          OfflineCacheManager.keyQuestionnaireHistory,
+        );
+        if (cached is List && cached.isNotEmpty) {
+          return cached
+              .whereType<Map<String, dynamic>>()
+              .map(MyHistoryItemModel.fromJson)
+              .toList();
+        }
+      } catch (_) {}
+      return const <MyHistoryItemModel>[];
+    }
   }
 
   Future<void> refresh() async {
@@ -218,12 +276,31 @@ class QuestionnaireListNotifier
     return _fetch();
   }
 
-  Future<PaginatedQuestionnaireResult> _fetch() {
+  Future<PaginatedQuestionnaireResult> _fetch() async {
     _fetching = true;
-    return ref
-        .read(questionnaireRepositoryProvider)
-        .getPatientQuestionnaireList(perPage: 100)
-        .whenComplete(() => _fetching = false);
+    final cacheManager = ref.read(offlineCacheManagerProvider);
+    try {
+      final result = await ref
+          .read(questionnaireRepositoryProvider)
+          .getPatientQuestionnaireList(perPage: 100);
+      await cacheManager.saveCache(
+        OfflineCacheManager.keyQuestionnairesList,
+        result.toJson(),
+      );
+      return result;
+    } catch (_) {
+      try {
+        final cached = await cacheManager.getCache(
+          OfflineCacheManager.keyQuestionnairesList,
+        );
+        if (cached is Map<String, dynamic>) {
+          return PaginatedQuestionnaireResult.fromJson(cached);
+        }
+      } catch (_) {}
+      return const PaginatedQuestionnaireResult(items: [], total: 0);
+    } finally {
+      _fetching = false;
+    }
   }
 
   /// Explicit refresh (pull-to-refresh / retry).
@@ -306,8 +383,87 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
           );
       state = state.copyWith(isLoading: false, result: result);
 
+      if (isPreTest && result != null) {
+        await ref
+            .read(secureStorageProvider)
+            .write(key: AppConstants.keyPreTestCompleted, value: 'true');
+      }
+
       return result;
     } catch (e) {
+      // Offline fallback: enqueue persistent sync item
+      try {
+        final clientId = const Uuid().v4();
+        final syncItem = SyncQueueItem(
+          clientId: clientId,
+          userId: '',
+          dataType: SyncDataType.questionnaire,
+          endpoint: '/patient/questionnaires/$questionnaireId/submit',
+          method: 'POST',
+          payload: {
+            'answers': answers.entries.map((entry) {
+              if (isPreTest) {
+                return {
+                  'question_id': entry.key,
+                  'selected_value': int.tryParse(entry.value) ?? 1,
+                };
+              }
+              return {
+                'question_id': entry.key,
+                'option_id': entry.value,
+              };
+            }).toList(),
+            'duration_seconds': durationSeconds,
+            'client_id': clientId,
+          },
+          createdAt: DateTime.now(),
+        );
+        await ref.read(syncQueueManagerProvider.notifier).enqueue(syncItem);
+
+        if (isPreTest) {
+          int totalLikert = 0;
+          for (final val in answers.values) {
+            totalLikert += int.tryParse(val) ?? 1;
+          }
+          String selfEffCat;
+          if (totalLikert <= 40) {
+            selfEffCat = 'Low Self-Efficacy';
+          } else if (totalLikert <= 60) {
+            selfEffCat = 'Moderate Self-Efficacy';
+          } else if (totalLikert <= 80) {
+            selfEffCat = 'Good Self-Efficacy';
+          } else {
+            selfEffCat = 'Very High Self-Efficacy';
+          }
+
+          final localResult = QuizSubmitResultModel(
+            attemptId: clientId,
+            questionnaireId: questionnaireId,
+            score: totalLikert,
+            passed: false, // NOT officially confirmed until server confirms
+            totalQuestions: answers.length,
+            correctCount: answers.length,
+            selfEfficacyCategory: '$selfEffCat (Tersimpan Offline)',
+          );
+
+          state = state.copyWith(isLoading: false, result: localResult);
+          return localResult;
+        } else {
+          final pendingResult = QuizSubmitResultModel(
+            attemptId: clientId,
+            questionnaireId: questionnaireId,
+            score: 0,
+            passed: false,
+            totalQuestions: answers.length,
+            correctCount: 0,
+            selfEfficacyCategory: 'Menunggu Sinkronisasi Server',
+          );
+
+          state = state.copyWith(isLoading: false, result: pendingResult);
+          return pendingResult;
+        }
+      } catch (_) {}
+
       state = state.copyWith(
         isLoading: false,
         errorMessage: e.toString().replaceFirst('Exception: ', ''),

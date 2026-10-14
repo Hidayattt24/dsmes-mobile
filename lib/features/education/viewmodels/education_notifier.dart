@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/storage/offline_cache_manager.dart';
 import '../../../data/repositories/education_repository.dart';
 import '../models/education_article.dart';
 
@@ -12,9 +13,26 @@ class EducationCategoriesNotifier extends AutoDisposeAsyncNotifier<List<String>>
   FutureOr<List<String>> build() => _fetch();
 
   Future<List<String>> _fetch() async {
-    final repo = ref.read(educationRepositoryProvider);
-    final names = await repo.getCategories();
-    return ['Semua', ...names];
+    final cacheManager = ref.read(offlineCacheManagerProvider);
+    try {
+      final repo = ref.read(educationRepositoryProvider);
+      final names = await repo.getCategories();
+      await cacheManager.saveCache(
+        OfflineCacheManager.keyEducationCategories,
+        names,
+      );
+      return ['Semua', ...names];
+    } catch (_) {
+      try {
+        final cached = await cacheManager.getCache(
+          OfflineCacheManager.keyEducationCategories,
+        );
+        if (cached is List && cached.isNotEmpty) {
+          return ['Semua', ...cached.cast<String>()];
+        }
+      } catch (_) {}
+      return const ['Semua'];
+    }
   }
 
   Future<void> refresh() async {
@@ -36,8 +54,37 @@ class EducationListNotifier extends AutoDisposeAsyncNotifier<List<EducationArtic
   }
 
   Future<List<EducationArticle>> _fetchArticles({String? categoryId}) async {
-    final repo = ref.read(educationRepositoryProvider);
-    return repo.getArticles(categoryId: categoryId);
+    final cacheManager = ref.read(offlineCacheManagerProvider);
+    try {
+      final repo = ref.read(educationRepositoryProvider);
+      final articles = await repo.getArticles(categoryId: categoryId);
+      if (categoryId == null || categoryId == 'Semua' || categoryId.isEmpty) {
+        await cacheManager.saveCache(
+          OfflineCacheManager.keyEducationArticles,
+          articles.map((e) => e.toJson()).toList(),
+        );
+      }
+      return articles;
+    } catch (_) {
+      try {
+        final cached = await cacheManager.getCache(
+          OfflineCacheManager.keyEducationArticles,
+        );
+        if (cached is List && cached.isNotEmpty) {
+          final list = cached
+              .whereType<Map<String, dynamic>>()
+              .map(EducationArticle.fromJson)
+              .toList();
+          if (categoryId != null &&
+              categoryId.isNotEmpty &&
+              categoryId != 'Semua') {
+            return list.where((a) => a.category == categoryId).toList();
+          }
+          return list;
+        }
+      } catch (_) {}
+      return const <EducationArticle>[];
+    }
   }
 
   Future<void> filterByCategory(String categoryId) async {
@@ -120,8 +167,23 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
   }
 
   Future<EducationArticle> _fetchDetail(String articleId) async {
-    final repo = ref.read(educationRepositoryProvider);
-    return repo.getArticleDetail(articleId);
+    final cacheManager = ref.read(offlineCacheManagerProvider);
+    final cacheKey = '${OfflineCacheManager.keyEducationDetailPrefix}$articleId';
+
+    try {
+      final repo = ref.read(educationRepositoryProvider);
+      final article = await repo.getArticleDetail(articleId);
+      await cacheManager.saveCache(cacheKey, article.toJson());
+      return article;
+    } catch (e) {
+      try {
+        final cached = await cacheManager.getCache(cacheKey);
+        if (cached is Map<String, dynamic>) {
+          return EducationArticle.fromJson(cached);
+        }
+      } catch (_) {}
+      rethrow;
+    }
   }
 
   Future<void> refresh() async {

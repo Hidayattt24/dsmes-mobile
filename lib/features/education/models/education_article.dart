@@ -32,6 +32,18 @@ class ArticleSectionData {
       steps: stepsList.map((s) => ArticleStepData.fromJson(s)).toList(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'section_order': sectionOrder,
+      'section_title': title,
+      'section_type': type,
+      'content_text': content,
+      'image_url': imageUrl,
+      'steps': steps.map((s) => s.toJson()).toList(),
+    };
+  }
 }
 
 @immutable
@@ -52,6 +64,14 @@ class ArticleStepData {
       stepOrder: json['step_order'] ?? 0,
       stepText: json['step_text'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'step_order': stepOrder,
+      'step_text': stepText,
+    };
   }
 }
 
@@ -244,6 +264,27 @@ class EducationArticle {
       videoDuration: 'Edukasi Video',
       channelName: 'DIBA Official',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'category_name': category,
+      'estimated_read_minutes': int.tryParse(readTime.split(' ').first) ?? 5,
+      'author_name': author,
+      'created_at': date,
+      'read_count': views,
+      'banner_image_url': imageUrl,
+      'summary': quoteText,
+      'content': bodyParagraphs.isNotEmpty ? bodyParagraphs.first : '',
+      'sections': sections.map((s) => s.toJson()).toList(),
+      'is_bookmarked': isBookmarked,
+      'is_completed': isCompleted,
+      'youtube_watched': isYoutubeWatched,
+      'article_read': isArticleRead,
+      'youtube_link': videoUrl ?? '',
+    };
   }
 }
 

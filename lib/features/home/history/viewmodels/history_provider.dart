@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/storage/offline_cache_manager.dart';
 import '../../../../data/repositories/history_repository.dart';
 import '../models/history_item_model.dart';
 
@@ -68,21 +69,67 @@ class HistoryNotifier extends AsyncNotifier<HistoryState> {
   }
 
   Future<HistoryState> _fetchData({int page = 1}) async {
-    final repo = ref.read(historyRepositoryProvider);
-    final result = await repo.getPatientHistory(page: page, limit: 100);
+    final cacheManager = ref.read(offlineCacheManagerProvider);
 
-    final allItems = result.items;
-    final aggregates = _groupByDate(allItems);
+    try {
+      final repo = ref.read(historyRepositoryProvider);
+      final result = await repo.getPatientHistory(page: page, limit: 100);
 
-    return HistoryState(
-      allItems: allItems,
-      dailyAggregates: aggregates,
-      isLoading: false,
-      totalItems: result.total,
-      currentPage: result.page,
-      totalPages: result.totalPages,
-      hasMore: result.page < result.totalPages,
-    );
+      final allItems = result.items;
+      final aggregates = _groupByDate(allItems);
+
+      // Persist to encrypted offline cache
+      if (page == 1) {
+        await cacheManager.saveCache(
+          OfflineCacheManager.keyHistory,
+          allItems.map((e) => e.toJson()).toList(),
+        );
+      }
+
+      return HistoryState(
+        allItems: allItems,
+        dailyAggregates: aggregates,
+        isLoading: false,
+        totalItems: result.total,
+        currentPage: result.page,
+        totalPages: result.totalPages,
+        hasMore: result.page < result.totalPages,
+      );
+    } catch (e) {
+      // Graceful offline fallback: load from local cache
+      try {
+        final cached = await cacheManager.getCache(OfflineCacheManager.keyHistory);
+        if (cached is List && cached.isNotEmpty) {
+          final cachedItems = cached
+              .whereType<Map<String, dynamic>>()
+              .map(HistoryItemModel.fromJson)
+              .toList();
+          final aggregates = _groupByDate(cachedItems);
+
+          return HistoryState(
+            allItems: cachedItems,
+            dailyAggregates: aggregates,
+            isLoading: false,
+            totalItems: cachedItems.length,
+            currentPage: 1,
+            totalPages: 1,
+            hasMore: false,
+            errorMessage: null, // Clear error so UI renders cached data seamlessly
+          );
+        }
+      } catch (_) {}
+
+      // If cache is empty, return empty history state rather than breaking the screen
+      return const HistoryState(
+        allItems: [],
+        dailyAggregates: {},
+        isLoading: false,
+        totalItems: 0,
+        currentPage: 1,
+        totalPages: 1,
+        hasMore: false,
+      );
+    }
   }
 
   Map<String, DailyHistoryAggregate> _groupByDate(List<HistoryItemModel> items) {

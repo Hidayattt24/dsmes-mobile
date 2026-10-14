@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/route_names.dart';
 import '../../../core/services/firebase_messaging_service.dart';
+import '../../../core/storage/offline_cache_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -37,46 +38,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _fetchLatestProfile();
   }
 
+  void _applyProfileData(Map<String, dynamic> profile) {
+    final h = (profile['height_cm'] as num?)?.toDouble();
+    final w = (profile['weight_kg'] as num?)?.toDouble();
+    final act = profile['physical_activity_level'] as String?;
+    final target = (profile['daily_calorie_target'] as num?)?.toInt();
+
+    final bmi = (profile['bmi'] as num?)?.toDouble();
+    final bmiCategory = profile['bmi_category'] as String?;
+    final recommendations =
+        profile['recommendations'] as Map<String, dynamic>?;
+
+    _userName = (profile['full_name'] as String?) ?? '';
+    _avatarUrl = (profile['profile_photo_url'] as String?) ?? '';
+    _averageBloodSugar =
+        (profile['average_blood_sugar'] as num?)?.toDouble();
+
+    if (h != null || w != null) {
+      ref.read(bodyMetricsProvider.notifier).updateBodyMetrics(
+            heightCm: h ?? 170,
+            weightKg: w ?? 65,
+            activityLevel: act ?? 'Ringan',
+            calculatedTdee: target,
+            bmiVal: bmi,
+            bmiCatVal: bmiCategory,
+            recommendations: recommendations,
+          );
+    }
+  }
+
   Future<void> _fetchLatestProfile() async {
+    final cacheManager = ref.read(offlineCacheManagerProvider);
+
+    // 1. Instant hydration from local encrypted cache
+    try {
+      final cachedProfile = await cacheManager.getCache(
+        OfflineCacheManager.keyDashboardProfile,
+      );
+      if (cachedProfile is Map<String, dynamic> && mounted) {
+        setState(() {
+          _applyProfileData(cachedProfile);
+        });
+      }
+    } catch (_) {}
+
+    // 2. Fetch fresh profile from network if online
     try {
       final authRepo = ref.read(authRepositoryProvider);
       final profile = await authRepo.getPatientProfile();
-      final h = (profile['height_cm'] as num?)?.toDouble();
-      final w = (profile['weight_kg'] as num?)?.toDouble();
-      final act = profile['physical_activity_level'] as String?;
-      final target = (profile['daily_calorie_target'] as num?)?.toInt();
-
-      final bmi = (profile['bmi'] as num?)?.toDouble();
-      final bmiCategory = profile['bmi_category'] as String?;
-      final recommendations =
-          profile['recommendations'] as Map<String, dynamic>?;
+      await cacheManager.saveCache(
+        OfflineCacheManager.keyDashboardProfile,
+        profile,
+      );
 
       if (mounted) {
-        _userName = (profile['full_name'] as String?) ?? '';
-        _avatarUrl = (profile['profile_photo_url'] as String?) ?? '';
-        _averageBloodSugar =
-            (profile['average_blood_sugar'] as num?)?.toDouble();
-
-        if (h != null || w != null) {
-          ref
-              .read(bodyMetricsProvider.notifier)
-              .updateBodyMetrics(
-                heightCm: h ?? 170,
-                weightKg: w ?? 65,
-                activityLevel: act ?? 'Ringan',
-                calculatedTdee: target,
-                bmiVal: bmi,
-                bmiCatVal: bmiCategory,
-                recommendations: recommendations,
-              );
-        }
+        setState(() {
+          _applyProfileData(profile);
+        });
         ref.invalidate(homeDashboardProvider);
-        setState(() {});
       }
     } catch (e) {
-      // Log the failure so it is not silently swallowed; settings still render
-      // with default/empty values.
-      debugPrint('Settings: failed to load latest profile: $e');
+      debugPrint('Settings: failed to load latest profile from network: $e');
     }
   }
 
@@ -115,6 +137,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // Continue logout even when token cleanup cannot reach the backend.
       }
       final authRepo = ref.read(authRepositoryProvider);
+      await ref.read(offlineCacheManagerProvider).clearAllCache(preservePendingQueue: true);
       await authRepo.logout();
       ref.read(bodyMetricsProvider.notifier).reset();
       ref.read(aiChatProvider.notifier).reset();

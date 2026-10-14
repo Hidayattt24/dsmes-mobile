@@ -403,20 +403,21 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
-                      Icons.error_outline_rounded,
+                      Icons.cloud_off_rounded,
                       size: 56,
                       color: AppColors.outline,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Gagal memuat artikel',
+                      'Artikel Belum Tersedia Offline',
                       style: AppTextStyles.headlineMd.copyWith(
                         color: AppColors.onSurface,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Periksa koneksi internet Anda lalu coba lagi.',
+                      'Konten lengkap artikel ini belum sempat diunduh ke perangkat. Hubungkan ke internet untuk memuatnya.',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,

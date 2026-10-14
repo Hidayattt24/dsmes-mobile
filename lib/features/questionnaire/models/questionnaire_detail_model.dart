@@ -212,6 +212,23 @@ class PatientQuestionnaireItemModel {
       score: json['score'] as int?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'type': type,
+      'description': description,
+      'education_id': educationId,
+      'education_title': educationTitle,
+      'question_count': questionCount,
+      'passing_score': passingScore,
+      'difficulty': difficulty,
+      'status': status,
+      'is_completed': isCompleted,
+      'score': score,
+    };
+  }
 }
 
 /// Paginated list wrapper for `PatientQuestionnaireItemModel`.
@@ -235,5 +252,12 @@ class PaginatedQuestionnaireResult {
           .toList(),
       total: total,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'data': items.map((e) => e.toJson()).toList(),
+      'total': total,
+    };
   }
 }

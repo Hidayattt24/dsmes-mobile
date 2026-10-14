@@ -19,6 +19,17 @@ class BloodSugarEntryState {
     this.errorMessage,
   });
 
+  String get measurementTypeLabel {
+    return switch (measurementType) {
+      'fasting' => 'Puasa',
+      'before_meal' => 'Sebelum Makan',
+      'after_meal' => '2 Jam Sesudah Makan',
+      'before_bed' => 'Sebelum Tidur',
+      'random' => 'Sewaktu',
+      _ => 'Sewaktu',
+    };
+  }
+
   String get normalRangeText {
     return switch (measurementType) {
       'fasting' => 'Rentang acuan normal: 80–130 mg/dL (Puasa)',

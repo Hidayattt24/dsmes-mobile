@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/route_names.dart';
+import '../../../core/storage/offline_cache_manager.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_error_state.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 
@@ -23,6 +25,7 @@ class _SplashGateScreenState extends ConsumerState<SplashGateScreen> {
   DateTime? _initTime;
   static const _minSplashDuration = Duration(milliseconds: 1100);
   bool _isNavigating = false;
+  Object? _connectionError;
 
   @override
   void initState() {
@@ -67,13 +70,42 @@ class _SplashGateScreenState extends ConsumerState<SplashGateScreen> {
               skipLoadingOnReload: false,
               skipLoadingOnRefresh: false,
               loading: () {},
-              error: (_, _) => _navigateSmoothly(RouteNames.preTestIntro),
+              error: (err, _) async {
+                final cacheManager = ref.read(offlineCacheManagerProvider);
+                final cachedProfile = await cacheManager
+                    .getCache(OfflineCacheManager.keyDashboardProfile);
+                if (cachedProfile != null) {
+                  _navigateSmoothly(RouteNames.home);
+                } else if (mounted) {
+                  setState(() {
+                    _connectionError = err;
+                  });
+                }
+              },
               data: (completed) => _navigateSmoothly(
                 completed ? RouteNames.home : RouteNames.preTestIntro,
               ),
             );
       },
     );
+
+    if (_connectionError != null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: AppErrorState(
+            error: _connectionError,
+            title: 'Koneksi Server Terputus',
+            message:
+                'Tidak dapat memuat status akun. Periksa koneksi internet atau tunggu server pulih.',
+            onRetry: () {
+              setState(() => _connectionError = null);
+              ref.invalidate(preTestHistoryProvider);
+            },
+          ),
+        ),
+      );
+    }
 
     // Always white, regardless of the system light/dark theme.
     return const AnnotatedRegion<SystemUiOverlayStyle>(

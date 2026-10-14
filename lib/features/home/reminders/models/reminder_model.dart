@@ -81,9 +81,12 @@ class ReminderModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'activity_name': activityName,
+      'reminder_type': reminderType,
       'category': category,
       'scheduled_time': scheduledTime,
+      'is_active': isActive,
       'notes': notes,
       'icon_name': iconName,
       'repeat_interval_days': repeatIntervalDays,

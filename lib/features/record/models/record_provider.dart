@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/storage/offline_cache_manager.dart';
+import '../../../core/sync/sync_queue_item.dart';
+import '../../../core/sync/sync_queue_manager.dart';
 import '../../../data/repositories/blood_sugar_repository.dart';
 import '../../../data/repositories/food_repository.dart';
 import '../../../data/repositories/history_repository.dart';
@@ -220,6 +224,103 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
         isLoading: false,
       );
     } catch (e) {
+      // Graceful offline fallback: load history and reminders from local cache
+      try {
+        final cacheManager = _ref.read(offlineCacheManagerProvider);
+        final cachedHistory =
+            await cacheManager.getCache(OfflineCacheManager.keyHistory);
+        final cachedReminders =
+            await cacheManager.getCache(OfflineCacheManager.keyReminders);
+
+        List<HistoryItemModel> allItems = [];
+        if (cachedHistory is List) {
+          allItems = cachedHistory
+              .whereType<Map<String, dynamic>>()
+              .map(HistoryItemModel.fromJson)
+              .toList();
+        }
+
+        List<ReminderModel> reminders = [];
+        if (cachedReminders is List) {
+          reminders = cachedReminders
+              .whereType<Map<String, dynamic>>()
+              .map(ReminderModel.fromJson)
+              .toList();
+        }
+
+        if (allItems.isNotEmpty || reminders.isNotEmpty) {
+          final targetDate = state.selectedDate ?? DateTime.now();
+          final todayItems = _buildTimelineItems(allItems, targetDate);
+          final todayAgg = _computeTodaySummary(allItems, targetDate);
+
+          final medReminder =
+              reminders.where((r) => r.category == 'medis_obat').toList();
+          String medName = '-';
+          String medDosage = '';
+          String medSchedule = '';
+          bool isMedTaken = false;
+
+          final targetDateStr = _dateKey(targetDate);
+          final medLogs = allItems
+              .where((item) => item.activityType == 'medication')
+              .toList();
+
+          if (medLogs.isNotEmpty) {
+            final latestMed = medLogs.first;
+            if (latestMed.title.isNotEmpty) medName = latestMed.title;
+            if (latestMed.notes.isNotEmpty) {
+              medDosage = latestMed.notes;
+            } else if (latestMed.subtitle.isNotEmpty &&
+                !['selesai', 'pending', 'terlewat']
+                    .contains(latestMed.subtitle)) {
+              medDosage = latestMed.subtitle;
+            }
+            if (latestMed.parsedMeasuredAt != null) {
+              final dt = latestMed.parsedMeasuredAt!;
+              medSchedule =
+                  '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+            }
+          } else if (medReminder.isNotEmpty) {
+            medName = medReminder.first.activityName;
+            medSchedule = medReminder.first.formattedTime;
+            medDosage = medReminder.first.notes;
+          }
+
+          for (final item in medLogs) {
+            final dt = item.parsedMeasuredAt;
+            if (dt == null) continue;
+            if (_dateKey(dt) != targetDateStr) continue;
+            if (item.status == 'selesai' || item.status == 'Sudah Minum') {
+              isMedTaken = true;
+            }
+          }
+
+          state = RecordPageState(
+            selectedDate: state.selectedDate ?? DateTime.now(),
+            selectedFilter: state.selectedFilter,
+            completedCount: todayAgg.completedCount,
+            totalCount: todayAgg.totalCount > 0 ? todayAgg.totalCount : 4,
+            bloodSugarValue: todayAgg.bloodSugarValue,
+            bloodSugarSubtitle: todayAgg.bloodSugarSubtitle,
+            foodValue: todayAgg.foodValue,
+            foodSubtitle: todayAgg.foodSubtitle,
+            activityName: todayAgg.activityName,
+            activityDuration: todayAgg.activityDuration,
+            activityIntensity: todayAgg.activityIntensity,
+            medicationName: medName,
+            medicationDosage: medDosage,
+            medicationSchedule: medSchedule,
+            isMedicationTaken: isMedTaken,
+            todayTimelineItems: todayItems,
+            allHistoryItems: allItems,
+            dailyNutritionSummary: null,
+            isLoading: false,
+            errorMessage: null, // Clear error since data is loaded from cache
+          );
+          return;
+        }
+      } catch (_) {}
+
       state = state.copyWith(isLoading: false, errorMessage: _formatError(e));
     }
   }
@@ -309,6 +410,12 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       }
 
       final badgeText = _badgeForActivity(item.activityType, item.status);
+      Color? badgeBgColor;
+      Color? badgeTextColor;
+      if (badgeText == 'Menunggu Sinkronisasi') {
+        badgeBgColor = const Color(0xFFFEF3C7);
+        badgeTextColor = const Color(0xFFB45309);
+      }
 
       return TimelineRecordItem(
         id: item.id,
@@ -321,6 +428,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
         dotOuterColor: outer,
         dotInnerColor: inner,
         badgeText: badgeText,
+        badgeBgColor: badgeBgColor,
+        badgeTextColor: badgeTextColor,
       );
     }).toList();
   }
@@ -354,17 +463,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
   String _formatMealTitle(String title) => formatMealTitle(title);
 
   String? _badgeForActivity(String activityType, String status) {
-    if (activityType == 'medication') {
-      switch (status) {
-        case 'selesai':
-          return 'Sudah Minum';
-        case 'pending':
-          return 'Belum Minum';
-        case 'terlewat':
-          return 'Terlewat';
-        default:
-          return status;
-      }
+    if (status == 'pending' || status == 'pending_sync') {
+      return 'Menunggu Sinkronisasi';
     }
     if (activityType == 'activity') {
       if (status == 'Completed') return 'Selesai';
@@ -449,6 +549,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     required DateTime measuredAt,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true);
+    final clientId = const Uuid().v4();
+
     try {
       final repo = _ref.read(bloodSugarRepositoryProvider);
       await repo.logBloodSugar(
@@ -461,6 +563,64 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       _ref.read(historyProvider.notifier).refresh();
       return true;
     } catch (e) {
+      // Offline fallback: enqueue into persistent SyncQueueManager and update timeline optimistically
+      try {
+        final syncItem = SyncQueueItem(
+          clientId: clientId,
+          userId: '',
+          dataType: SyncDataType.bloodSugar,
+          endpoint: '/patient/blood-sugar',
+          method: 'POST',
+          payload: {
+            'glucose_value': glucoseValue,
+            'measurement_time_type': measurementType,
+            'measured_at': measuredAt.toUtc().toIso8601String(),
+            'client_id': clientId,
+          },
+          createdAt: DateTime.now(),
+        );
+        await _ref.read(syncQueueManagerProvider.notifier).enqueue(syncItem);
+
+        final optimisticItem = HistoryItemModel(
+          id: clientId,
+          patientId: '',
+          activityType: 'blood_sugar',
+          title: 'Pencatatan Gula Darah',
+          subtitle: '$measurementType • Menunggu Sinkronisasi',
+          category: 'pending',
+          value: glucoseValue.toString(),
+          unit: 'mg/dL',
+          status: 'pending_sync',
+          notes: '',
+          measuredAt: measuredAt.toIso8601String(),
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+
+        final updatedHistory = [optimisticItem, ...state.allHistoryItems];
+        final targetDate = state.selectedDate ?? DateTime.now();
+        final todayItems = _buildTimelineItems(updatedHistory, targetDate);
+        final todayAgg = _computeTodaySummary(updatedHistory, targetDate);
+
+        final cacheManager = _ref.read(offlineCacheManagerProvider);
+        await cacheManager.saveCache(
+          OfflineCacheManager.keyHistory,
+          updatedHistory.map((e) => e.toJson()).toList(),
+        );
+
+        state = state.copyWith(
+          isSubmitting: false,
+          bloodSugarValue: todayAgg.bloodSugarValue,
+          bloodSugarSubtitle: todayAgg.bloodSugarSubtitle,
+          completedCount: todayAgg.completedCount,
+          todayTimelineItems: todayItems,
+          allHistoryItems: updatedHistory,
+          clearError: true,
+        );
+        _ref.read(historyProvider.notifier).refresh();
+        return true;
+      } catch (_) {}
+
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: _formatError(e),
@@ -476,6 +636,9 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     String notes = '',
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true);
+    final clientId = const Uuid().v4();
+    final loggedAtStr = DateTime.now().toUtc().toIso8601String();
+
     try {
       final dio = _ref.read(dioClientProvider);
       await dio.post(
@@ -485,7 +648,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
           'duration_minutes': duration,
           'intensity': intensity,
           'notes': notes,
-          'logged_at': DateTime.now().toUtc().toIso8601String(),
+          'logged_at': loggedAtStr,
         },
       );
       state = state.copyWith(isSubmitting: false);
@@ -493,6 +656,68 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       _ref.read(historyProvider.notifier).refresh();
       return true;
     } catch (e) {
+      // Offline fallback: enqueue persistent sync item and update timeline optimistically
+      try {
+        final syncItem = SyncQueueItem(
+          clientId: clientId,
+          userId: '',
+          dataType: SyncDataType.activity,
+          endpoint: '/patient/activities/log',
+          method: 'POST',
+          payload: {
+            'activity_name': activityName,
+            'duration_minutes': duration,
+            'intensity': intensity,
+            'notes': notes,
+            'logged_at': loggedAtStr,
+            'client_id': clientId,
+          },
+          createdAt: DateTime.now(),
+        );
+        await _ref.read(syncQueueManagerProvider.notifier).enqueue(syncItem);
+
+        final optimisticItem = HistoryItemModel(
+          id: clientId,
+          patientId: '',
+          activityType: 'activity',
+          title: activityName,
+          subtitle: '$duration Menit ($intensity) • Menunggu Sinkronisasi',
+          category: intensity,
+          value: duration.toString(),
+          unit: 'menit',
+          status: 'pending_sync',
+          notes: notes,
+          measuredAt: DateTime.now().toIso8601String(),
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+          metadata: {'activity_minutes': duration},
+        );
+
+        final updatedHistory = [optimisticItem, ...state.allHistoryItems];
+        final targetDate = state.selectedDate ?? DateTime.now();
+        final todayItems = _buildTimelineItems(updatedHistory, targetDate);
+        final todayAgg = _computeTodaySummary(updatedHistory, targetDate);
+
+        final cacheManager = _ref.read(offlineCacheManagerProvider);
+        await cacheManager.saveCache(
+          OfflineCacheManager.keyHistory,
+          updatedHistory.map((e) => e.toJson()).toList(),
+        );
+
+        state = state.copyWith(
+          isSubmitting: false,
+          activityName: todayAgg.activityName,
+          activityDuration: todayAgg.activityDuration,
+          activityIntensity: todayAgg.activityIntensity,
+          completedCount: todayAgg.completedCount,
+          todayTimelineItems: todayItems,
+          allHistoryItems: updatedHistory,
+          clearError: true,
+        );
+        _ref.read(historyProvider.notifier).refresh();
+        return true;
+      } catch (_) {}
+
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: _formatError(e),
@@ -508,6 +733,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     required bool isTaken,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true);
+    final clientId = const Uuid().v4();
+
     try {
       final now = DateTime.now();
       final nowTimeStr =
@@ -581,6 +808,64 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       _ref.read(homeDashboardProvider.notifier).refresh();
       return true;
     } catch (e) {
+      // Offline fallback: enqueue persistent medication sync item
+      try {
+        final logDateStr = DateTime.now().toIso8601String().substring(0, 10);
+        final syncItem = SyncQueueItem(
+          clientId: clientId,
+          userId: '',
+          dataType: SyncDataType.medication,
+          endpoint: '/patient/medications/log',
+          method: 'POST',
+          payload: {
+            'reminder_id': medicationName,
+            'status': isTaken ? 'selesai' : 'pending',
+            'log_date': logDateStr,
+            'client_id': clientId,
+          },
+          createdAt: DateTime.now(),
+        );
+        await _ref.read(syncQueueManagerProvider.notifier).enqueue(syncItem);
+
+        final optimisticItem = HistoryItemModel(
+          id: clientId,
+          patientId: '',
+          activityType: 'medication',
+          title: medicationName,
+          subtitle: '$dosage • Menunggu Sinkronisasi',
+          category: 'medis_obat',
+          value: dosage,
+          unit: 'mg',
+          status: 'pending_sync',
+          notes: dosage,
+          measuredAt: DateTime.now().toIso8601String(),
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+        );
+
+        final updatedHistory = [optimisticItem, ...state.allHistoryItems];
+        final targetDate = state.selectedDate ?? DateTime.now();
+        final todayItems = _buildTimelineItems(updatedHistory, targetDate);
+
+        final cacheManager = _ref.read(offlineCacheManagerProvider);
+        await cacheManager.saveCache(
+          OfflineCacheManager.keyHistory,
+          updatedHistory.map((e) => e.toJson()).toList(),
+        );
+
+        state = state.copyWith(
+          isSubmitting: false,
+          medicationName: medicationName,
+          medicationDosage: dosage,
+          isMedicationTaken: isTaken,
+          todayTimelineItems: todayItems,
+          allHistoryItems: updatedHistory,
+          clearError: true,
+        );
+        _ref.read(historyProvider.notifier).refresh();
+        return true;
+      } catch (_) {}
+
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: _formatError(e),

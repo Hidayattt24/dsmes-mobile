@@ -74,4 +74,25 @@ class BloodSugarLogModel {
       updatedAt: json['updated_at'] as String? ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'patient_id': patientId,
+      'glucose_value': glucoseValue,
+      'measurement_time_type': measurementType,
+      'measurement_time_label': measurementTypeLabel,
+      'measured_at': measuredAt,
+      'status': status,
+      'classification_label': classificationLabel,
+      'severity': severity,
+      'reference_min': referenceMin,
+      'reference_max': referenceMax,
+      'reference_range_text': referenceRangeText,
+      'recommendation': recommendation,
+      'color_indicator': colorIndicator,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
+  }
 }

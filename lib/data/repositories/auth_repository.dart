@@ -451,10 +451,8 @@ class AuthRepository implements IAuthRepository {
     await _storage.delete(key: AppConstants.keyAuthToken);
     await _storage.delete(key: AppConstants.keyRefreshToken);
     await _storage.delete(key: AppConstants.keyUserId);
-    // Clear session-scoped preferences so a different user logging in on the
-    // same device starts fresh (no stale onboarding/biometric flags).
-    await _storage.delete(key: AppConstants.keyOnboardingComplete);
-    await _storage.delete(key: AppConstants.keyBiometricEnabled);
+    // Keep keyOnboardingComplete, keyBiometricEnabled, and keyPreTestCompleted
+    // so returning users or session expiries do not wipe offline progress/preferences.
     try {
       await LocalNotificationService.instance.cancelAllNotifications();
     } catch (_) {

@@ -129,6 +129,22 @@ class MyHistoryItemModel {
           DateTime.now(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'attempt_id': attemptId,
+      'questionnaire_id': questionnaireId,
+      'questionnaire_title': questionnaireTitle,
+      'type': type,
+      'score': score,
+      'passed': passed,
+      'total_questions': totalQuestions,
+      'correct_count': correctCount,
+      'incorrect_count': incorrectCount,
+      'percentage': percentage,
+      'completed_at': completedAt.toIso8601String(),
+    };
+  }
 }
 
 /// Detailed question analysis item for review screen (matches web admin).

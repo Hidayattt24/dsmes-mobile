@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/storage/offline_cache_manager.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/blood_sugar_repository.dart';
 import '../../../data/repositories/food_repository.dart';
@@ -14,6 +15,8 @@ class HomeDashboardState {
   final DailyNutritionSummary? nutritionSummary;
   final bool isLoading;
   final String? errorMessage;
+  final bool isFromCache;
+  final DateTime? lastCachedAt;
 
   const HomeDashboardState({
     this.dashboardData,
@@ -22,6 +25,8 @@ class HomeDashboardState {
     this.nutritionSummary,
     this.isLoading = true,
     this.errorMessage,
+    this.isFromCache = false,
+    this.lastCachedAt,
   });
 
   int get consumedCalories => nutritionSummary?.consumedCaloriesRounded ?? 0;
@@ -45,6 +50,8 @@ class HomeDashboardState {
     DailyNutritionSummary? nutritionSummary,
     bool? isLoading,
     String? errorMessage,
+    bool? isFromCache,
+    DateTime? lastCachedAt,
     bool clearError = false,
   }) {
     return HomeDashboardState(
@@ -54,6 +61,8 @@ class HomeDashboardState {
       nutritionSummary: nutritionSummary ?? this.nutritionSummary,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      isFromCache: isFromCache ?? this.isFromCache,
+      lastCachedAt: lastCachedAt ?? this.lastCachedAt,
     );
   }
 }
@@ -70,6 +79,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
       final authRepo = ref.read(authRepositoryProvider);
       final bloodSugarRepo = ref.read(bloodSugarRepositoryProvider);
       final foodRepo = ref.read(foodRepositoryProvider);
+      final cacheManager = ref.read(offlineCacheManagerProvider);
 
       final results = await Future.wait([
         authRepo.getPatientProfile(),
@@ -78,6 +88,16 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
 
       final profileJson = results[0] as Map<String, dynamic>;
       final bloodSugarLogs = results[1] as List<BloodSugarLogModel>;
+
+      // Persist to encrypted offline cache for safe offline usage
+      await cacheManager.saveCache(
+        OfflineCacheManager.keyDashboardProfile,
+        profileJson,
+      );
+      await cacheManager.saveCache(
+        OfflineCacheManager.keyBloodSugarLogs,
+        bloodSugarLogs.map((e) => e.toJson()).toList(),
+      );
 
       // Fetch the nutrition summary independently so a failure of this endpoint
       // does not break the whole dashboard — the card simply shows empty state.
@@ -96,8 +116,50 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
         bloodSugarLogs: bloodSugarLogs,
         nutritionSummary: nutritionSummary,
         isLoading: false,
+        isFromCache: false,
+        lastCachedAt: DateTime.now(),
       );
     } catch (e) {
+      // Graceful degradation: Load from local offline cache
+      try {
+        final cacheManager = ref.read(offlineCacheManagerProvider);
+        final cachedProfile = await cacheManager.getCache(
+          OfflineCacheManager.keyDashboardProfile,
+        );
+        final cachedLogsRaw = await cacheManager.getCache(
+          OfflineCacheManager.keyBloodSugarLogs,
+        );
+        final lastSync = await cacheManager.getLastSyncTime(
+          OfflineCacheManager.keyDashboardProfile,
+        );
+
+        if (cachedProfile is Map<String, dynamic>) {
+          final dashboardData = HomeDashboardModel.fromJson(cachedProfile);
+          List<BloodSugarLogModel> bloodSugarLogs = [];
+          if (cachedLogsRaw is List) {
+            bloodSugarLogs = cachedLogsRaw
+                .whereType<Map<String, dynamic>>()
+                .map(BloodSugarLogModel.fromJson)
+                .toList();
+          }
+          final latestBs =
+              bloodSugarLogs.isNotEmpty ? bloodSugarLogs.first : null;
+
+          return HomeDashboardState(
+            dashboardData: dashboardData,
+            latestBloodSugar: latestBs,
+            bloodSugarLogs: bloodSugarLogs,
+            nutritionSummary: null,
+            isLoading: false,
+            isFromCache: true,
+            lastCachedAt: lastSync,
+            errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          );
+        }
+      } catch (_) {
+        // Fall through to error state if cache retrieval also fails
+      }
+
       return HomeDashboardState(
         nutritionSummary: nutritionSummary,
         isLoading: false,
