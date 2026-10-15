@@ -8,6 +8,9 @@ class NotificationModel {
   final bool isRead;
   final String notifType;
   final String? articleId;
+  final String? iconName;
+  final String? activityName;
+  final String? category;
 
   const NotificationModel({
     required this.id,
@@ -17,6 +20,9 @@ class NotificationModel {
     required this.isRead,
     required this.notifType,
     this.articleId,
+    this.iconName,
+    this.activityName,
+    this.category,
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +34,9 @@ class NotificationModel {
       isRead: json['is_read'] as bool? ?? false,
       notifType: json['notif_type'] as String? ?? 'reminder',
       articleId: json['article_id'] as String?,
+      iconName: json['icon_name'] as String?,
+      activityName: json['activity_name'] as String?,
+      category: json['category'] as String?,
     );
   }
 }

@@ -30,6 +30,8 @@ class AuthInterceptor extends Interceptor {
         path.contains('/auth/forgot-password') ||
         path.contains('/auth/verify-otp') ||
         path.contains('/auth/reset-password') ||
+        path.contains('/auth/forgot-password/check-phone') ||
+        path.contains('/auth/reset-password-by-phone') ||
         path.contains('/auth/refresh');
 
     if (!isPublicAuth) {
@@ -60,8 +62,7 @@ class AuthInterceptor extends Interceptor {
 
       // 1. Check if token was already refreshed by another concurrent request
       final currentToken = await storage.read(key: AppConstants.keyAuthToken);
-      final authHeader =
-          err.requestOptions.headers['Authorization'] as String?;
+      final authHeader = err.requestOptions.headers['Authorization'] as String?;
       final sentToken = authHeader?.replaceFirst('Bearer ', '').trim();
 
       if (currentToken != null &&
@@ -133,9 +134,7 @@ class AuthInterceptor extends Interceptor {
 
   Future<String?> _refresh() async {
     final storage = _ref.read(secureStorageProvider);
-    final refreshToken = await storage.read(
-      key: AppConstants.keyRefreshToken,
-    );
+    final refreshToken = await storage.read(key: AppConstants.keyRefreshToken);
     if (refreshToken == null || refreshToken.isEmpty) {
       return null;
     }

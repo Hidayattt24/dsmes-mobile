@@ -80,20 +80,25 @@ class _Step18ActivityState extends ConsumerState<Step18Activity> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ActivityDropdownBottomSheet(
-        selectedTitle: currentSelected,
-        onSelect: (opt) {
-          ref.read(onboardingProvider.notifier).onActivitySelected(opt.title);
-          Navigator.of(context).pop();
-        },
-      ),
+      builder:
+          (context) => _ActivityDropdownBottomSheet(
+            selectedTitle: currentSelected,
+            onSelect: (opt) {
+              ref
+                  .read(onboardingProvider.notifier)
+                  .onActivitySelected(opt.title);
+              Navigator.of(context).pop();
+            },
+          ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(onboardingProvider.notifier);
-    final selectedTitle = ref.watch(onboardingProvider.select((s) => s.activityLevel));
+    final selectedTitle = ref.watch(
+      onboardingProvider.select((s) => s.activityLevel),
+    );
     final selectedOpt = _findOption(selectedTitle);
 
     return Column(
@@ -115,12 +120,16 @@ class _Step18ActivityState extends ConsumerState<Step18Activity> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: selectedOpt != null
-                  ? AppColors.primaryContainer.withValues(alpha: 0.25)
-                  : AppColors.surfaceContainerLowest,
+              color:
+                  selectedOpt != null
+                      ? AppColors.primaryContainer.withValues(alpha: 0.25)
+                      : AppColors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: selectedOpt != null ? AppColors.primary : AppColors.outlineVariant,
+                color:
+                    selectedOpt != null
+                        ? AppColors.primary
+                        : AppColors.outlineVariant,
                 width: selectedOpt != null ? 1.8 : 1,
               ),
               boxShadow: [
@@ -162,7 +171,8 @@ class _Step18ActivityState extends ConsumerState<Step18Activity> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        selectedOpt?.description ?? 'Klik untuk memilih level aktivitas...',
+                        selectedOpt?.description ??
+                            'Klik untuk memilih level aktivitas...',
                         style: AppTextStyles.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
                           fontSize: 12.5,
@@ -182,7 +192,7 @@ class _Step18ActivityState extends ConsumerState<Step18Activity> {
                   ),
                   child: const Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.primary,
+                    color: AppColors.onPrimary,
                     size: 22,
                   ),
                 ),
@@ -213,7 +223,7 @@ class _Step18ActivityState extends ConsumerState<Step18Activity> {
                     const Icon(
                       Icons.lightbulb_outline_rounded,
                       size: 16,
-                      color: AppColors.primary,
+                      color: AppColors.onPrimary,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -253,33 +263,44 @@ class _Step18ActivityState extends ConsumerState<Step18Activity> {
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           child: Row(
-            children: activityLevelOptions.map((opt) {
-              final isSelected = selectedOpt?.title == opt.title;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  selected: isSelected,
-                  showCheckmark: false,
-                  avatar: Text(opt.emoji, style: const TextStyle(fontSize: 14)),
-                  label: Text(opt.title),
-                  labelStyle: AppTextStyles.labelSm.copyWith(
-                    color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  ),
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.surfaceContainerLow,
-                  side: BorderSide(
-                    color: isSelected ? AppColors.primary : AppColors.outlineVariant,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  onSelected: (_) {
-                    notifier.onActivitySelected(opt.title);
-                  },
-                ),
-              );
-            }).toList(),
+            children:
+                activityLevelOptions.map((opt) {
+                  final isSelected = selectedOpt?.title == opt.title;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: isSelected,
+                      showCheckmark: false,
+                      avatar: Text(
+                        opt.emoji,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      label: Text(opt.title),
+                      labelStyle: AppTextStyles.labelSm.copyWith(
+                        color:
+                            isSelected
+                                ? AppColors.onPrimary
+                                : AppColors.onSurface,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w500,
+                      ),
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surfaceContainerLow,
+                      side: BorderSide(
+                        color:
+                            isSelected
+                                ? AppColors.primary
+                                : AppColors.outlineVariant,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      onSelected: (_) {
+                        notifier.onActivitySelected(opt.title);
+                      },
+                    ),
+                  );
+                }).toList(),
           ),
         ),
       ],
@@ -334,7 +355,7 @@ class _ActivityDropdownBottomSheet extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.directions_run_rounded,
-                    color: AppColors.primary,
+                    color: AppColors.onPrimary,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -362,12 +383,17 @@ class _ActivityDropdownBottomSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(AppSpacing.md),
                 physics: const BouncingScrollPhysics(),
                 itemCount: activityLevelOptions.length,
-                separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+                separatorBuilder:
+                    (_, _) => const SizedBox(height: AppSpacing.sm),
                 itemBuilder: (context, index) {
                   final opt = activityLevelOptions[index];
-                  final isSelected = selectedTitle != null &&
-                      (selectedTitle!.trim().toLowerCase() == opt.title.trim().toLowerCase() ||
-                          selectedTitle!.toLowerCase().contains(opt.title.toLowerCase()));
+                  final isSelected =
+                      selectedTitle != null &&
+                      (selectedTitle!.trim().toLowerCase() ==
+                              opt.title.trim().toLowerCase() ||
+                          selectedTitle!.toLowerCase().contains(
+                            opt.title.toLowerCase(),
+                          ));
 
                   return InkWell(
                     onTap: () => onSelect(opt),
@@ -375,12 +401,20 @@ class _ActivityDropdownBottomSheet extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primaryContainer.withValues(alpha: 0.3)
-                            : AppColors.surfaceContainerLow,
+                        color:
+                            isSelected
+                                ? AppColors.primaryContainer.withValues(
+                                  alpha: 0.3,
+                                )
+                                : AppColors.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.4),
+                          color:
+                              isSelected
+                                  ? AppColors.primary
+                                  : AppColors.outlineVariant.withValues(
+                                    alpha: 0.4,
+                                  ),
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -389,20 +423,31 @@ class _ActivityDropdownBottomSheet extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(opt.emoji, style: const TextStyle(fontSize: 20)),
+                              Text(
+                                opt.emoji,
+                                style: const TextStyle(fontSize: 20),
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   opt.title,
                                   style: AppTextStyles.labelLg.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: isSelected ? AppColors.primary : AppColors.onSurface,
+                                    color:
+                                        isSelected
+                                            ? AppColors.primary
+                                            : AppColors.onSurface,
                                   ),
                                 ),
                               ),
                               Icon(
-                                isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                                color: isSelected ? AppColors.primary : AppColors.outlineVariant,
+                                isSelected
+                                    ? Icons.check_circle_rounded
+                                    : Icons.circle_outlined,
+                                color:
+                                    isSelected
+                                        ? AppColors.primary
+                                        : AppColors.outlineVariant,
                                 size: 22,
                               ),
                             ],
@@ -417,17 +462,25 @@ class _ActivityDropdownBottomSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                                color: AppColors.outlineVariant.withValues(
+                                  alpha: 0.5,
+                                ),
                               ),
                             ),
                             child: Row(
                               children: [
-                                const Text('💡 ', style: TextStyle(fontSize: 12)),
+                                const Text(
+                                  '💡 ',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                                 Expanded(
                                   child: Text(
                                     'Contoh: ${opt.example}',

@@ -27,12 +27,52 @@ class ActivePreTestNotifier
   Future<QuestionnaireDetailModel> build() => _fetch();
 
   Future<QuestionnaireDetailModel> _fetch() {
-    return ref.read(questionnaireRepositoryProvider).getActivePreTest();
+    return ref.read(questionnaireRepositoryProvider).getActivePreTest().then((
+      result,
+    ) {
+      if (result.type != 'PRE_TEST' ||
+          result.scope != 'APPLICATION' ||
+          result.educationId != null) {
+        throw StateError('Server returned invalid application Pre-Test');
+      }
+      return result;
+    });
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_fetch);
+  }
+}
+
+// ── Pre-Test by Education ─────────────────────────────────────────────────────
+
+/// Loads a Pre-Test for a given education material.
+/// Returns null (AsyncData(null)) if no Pre-Test linked to the education.
+final preTestByEducationProvider = AutoDisposeAsyncNotifierProviderFamily<
+  PreTestByEducationNotifier,
+  QuestionnaireDetailModel?,
+  String
+>(PreTestByEducationNotifier.new);
+
+class PreTestByEducationNotifier
+    extends AutoDisposeFamilyAsyncNotifier<QuestionnaireDetailModel?, String> {
+  @override
+  Future<QuestionnaireDetailModel?> build(String educationId) async {
+    if (educationId.isEmpty) return null;
+    try {
+      final result = await ref
+          .read(questionnaireRepositoryProvider)
+          .getActivePreTest(educationId: educationId);
+      if (result.type != 'PRE_TEST' ||
+          result.scope != 'EDUCATION' ||
+          result.educationId != educationId) {
+        throw StateError('Server returned invalid education Pre-Test');
+      }
+      return result;
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -154,7 +194,7 @@ class PreTestHistoryNotifier
     try {
       final items = await ref
           .read(questionnaireRepositoryProvider)
-          .getMyHistory(type: 'PRE_TEST');
+          .getMyHistory(type: 'PRE_TEST', scope: 'APPLICATION');
       if (items.isNotEmpty) {
         await storage.write(
           key: AppConstants.keyPreTestCompleted,
@@ -163,24 +203,8 @@ class PreTestHistoryNotifier
       }
       return items;
     } catch (e) {
-      final cached = await storage.read(key: AppConstants.keyPreTestCompleted);
-      if (cached == 'true') {
-        return [
-          MyHistoryItemModel(
-            attemptId: 'cached_pre_test',
-            questionnaireId: 'pre_test',
-            questionnaireTitle: 'Pre-Test',
-            type: 'PRE_TEST',
-            score: 100,
-            passed: true,
-            totalQuestions: 10,
-            correctCount: 10,
-            incorrectCount: 0,
-            percentage: 100,
-            completedAt: DateTime.now(),
-          ),
-        ];
-      }
+      // Do not unlock Home from a stale local flag. The server must confirm
+      // completion of the application Pre-Test.
       rethrow;
     }
   }
@@ -297,7 +321,7 @@ class QuestionnaireListNotifier
           return PaginatedQuestionnaireResult.fromJson(cached);
         }
       } catch (_) {}
-      return const PaginatedQuestionnaireResult(items: [], total: 0);
+      rethrow;
     } finally {
       _fetching = false;
     }
@@ -401,18 +425,20 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
           endpoint: '/patient/questionnaires/$questionnaireId/submit',
           method: 'POST',
           payload: {
-            'answers': answers.entries.map((entry) {
-              if (isPreTest) {
-                return {
-                  'question_id': entry.key,
-                  'selected_value': int.tryParse(entry.value) ?? 1,
-                };
-              }
-              return {
-                'question_id': entry.key,
-                'option_id': entry.value,
-              };
-            }).toList(),
+            'answers':
+                answers.entries.map((entry) {
+                  if (isPreTest) {
+                    final value = int.tryParse(entry.value);
+                    return {
+                      'question_id': entry.key,
+                      if (value != null && value >= 1 && value <= 5)
+                        'selected_value': value
+                      else
+                        'option_id': entry.value,
+                    };
+                  }
+                  return {'question_id': entry.key, 'option_id': entry.value};
+                }).toList(),
             'duration_seconds': durationSeconds,
             'client_id': clientId,
           },

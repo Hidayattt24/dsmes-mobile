@@ -13,6 +13,7 @@ import '../viewmodels/questionnaire_notifier.dart';
 import 'pre_test_intro_screen.dart';
 import 'questionnaire_questions_screen.dart';
 import 'questionnaire_review_screen.dart';
+import '../widgets/questionnaire_action_button.dart';
 
 class PreTestResultData {
   const PreTestResultData({
@@ -38,6 +39,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
     required this.questionnaireTitle,
     this.isPreTest = false,
     this.returnToHome = false,
+    this.returnToEducationId,
     this.initialResult,
   });
 
@@ -45,20 +47,22 @@ class QuestionnaireResultScreen extends ConsumerWidget {
   final String questionnaireTitle;
   final bool isPreTest;
   final bool returnToHome;
+  final String? returnToEducationId;
   final QuizSubmitResultModel? initialResult;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final submittedResult = initialResult;
     final attemptQuery =
-        initialResult == null
+        submittedResult == null
             ? null
             : AttemptDetailQuery(
               questionnaireId: questionnaireId,
-              attemptId: initialResult!.attemptId,
+              attemptId: submittedResult.attemptId,
             );
     final detailAsync =
-        initialResult != null
-            ? ref.watch(attemptDetailByIdProvider(attemptQuery!))
+        submittedResult != null && attemptQuery != null
+            ? ref.watch(attemptDetailByIdProvider(attemptQuery))
             : ref.watch(myAttemptDetailProvider(questionnaireId));
     final questionnaireAsync = ref.watch(
       questionnaireDetailProvider(questionnaireId),
@@ -79,7 +83,13 @@ class QuestionnaireResultScreen extends ConsumerWidget {
       shadowColor: AppColors.primaryContainer.withValues(alpha: 0.1),
       automaticallyImplyLeading: false,
       title: Text(
-        isPreTest ? 'Kuesioner Selesai' : 'Hasil Post-Test',
+        returnToEducationId != null
+            ? (isPreTest
+                ? 'Pre-Test Edukasi Selesai'
+                : 'Post-Test Edukasi Selesai')
+            : isPreTest
+            ? 'Kuesioner Selesai'
+            : 'Hasil Post-Test',
         style: AppTextStyles.headlineMd.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.bold,
@@ -94,13 +104,14 @@ class QuestionnaireResultScreen extends ConsumerWidget {
       body: detailAsync.when(
         loading:
             () =>
-                initialResult != null
+                submittedResult != null
                     ? _ResultBodyFromSubmit(
-                      result: initialResult!,
+                      result: submittedResult,
                       questionnaireId: questionnaireId,
                       questionnaireTitle: questionnaireTitle,
                       isPreTest: isPreTest,
                       returnToHome: returnToHome,
+                      returnToEducationId: returnToEducationId,
                       imageUrls: imageUrls,
                     )
                     : const Center(
@@ -110,21 +121,22 @@ class QuestionnaireResultScreen extends ConsumerWidget {
                     ),
         error:
             (err, _) =>
-                initialResult != null
+                submittedResult != null
                     ? _ResultBodyFromSubmit(
-                      result: initialResult!,
+                      result: submittedResult,
                       questionnaireId: questionnaireId,
                       questionnaireTitle: questionnaireTitle,
                       isPreTest: isPreTest,
                       returnToHome: returnToHome,
+                      returnToEducationId: returnToEducationId,
                       imageUrls: imageUrls,
                     )
                     : _ResultErrorView(
                       message: err.toString().replaceFirst('Exception: ', ''),
                       onRetry:
                           () => ref.invalidate(
-                            initialResult != null
-                                ? attemptDetailByIdProvider(attemptQuery!)
+                            submittedResult != null && attemptQuery != null
+                                ? attemptDetailByIdProvider(attemptQuery)
                                 : myAttemptDetailProvider(questionnaireId),
                           ),
                     ),
@@ -135,6 +147,7 @@ class QuestionnaireResultScreen extends ConsumerWidget {
               questionnaireTitle: questionnaireTitle,
               isPreTest: isPreTest,
               returnToHome: returnToHome,
+              returnToEducationId: returnToEducationId,
               imageUrls: imageUrls,
             ),
       ),
@@ -149,6 +162,7 @@ class _ResultBodyFromSubmit extends StatelessWidget {
     required this.questionnaireTitle,
     required this.isPreTest,
     required this.returnToHome,
+    this.returnToEducationId,
     required this.imageUrls,
   });
 
@@ -157,42 +171,51 @@ class _ResultBodyFromSubmit extends StatelessWidget {
   final String questionnaireTitle;
   final bool isPreTest;
   final bool returnToHome;
+  final String? returnToEducationId;
   final Map<String, String> imageUrls;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.page,
-        AppSpacing.lg,
-        AppSpacing.page,
-        AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          isPreTest
-              ? _PreTestSubmitResultContent(
-                result: result,
-                imageUrls: imageUrls,
-              )
-              : _PostTestResultContent(
-                score: result.score,
-                isPassed: result.passed,
-                totalQuestions: result.totalQuestions,
-                correctCount: result.correctCount,
-                incorrectCount: result.incorrectCount,
-              ),
-          const SizedBox(height: AppSpacing.xl),
-          _ResultBottomActions(
-            questionnaireId: questionnaireId,
-            questionnaireTitle: questionnaireTitle,
-            isPreTest: isPreTest,
-            returnToHome: returnToHome,
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              AppSpacing.lg,
+              AppSpacing.page,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                isPreTest
+                    ? _PreTestSubmitResultContent(
+                      result: result,
+                      imageUrls: imageUrls,
+                      hideScore: returnToHome,
+                      showCorrectAnswers: returnToEducationId != null,
+                    )
+                    : _PostTestResultContent(
+                      score: result.score,
+                      isPassed: result.passed,
+                      totalQuestions: result.totalQuestions,
+                      correctCount: result.correctCount,
+                      incorrectCount: result.incorrectCount,
+                    ),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+        _ResultBottomActions(
+          questionnaireId: questionnaireId,
+          questionnaireTitle: questionnaireTitle,
+          isPreTest: isPreTest,
+          returnToHome: returnToHome,
+          returnToEducationId: returnToEducationId,
+        ),
+      ],
     );
   }
 }
@@ -294,6 +317,7 @@ class _ResultBody extends ConsumerWidget {
     required this.questionnaireTitle,
     required this.isPreTest,
     required this.returnToHome,
+    this.returnToEducationId,
     required this.imageUrls,
   });
 
@@ -302,6 +326,7 @@ class _ResultBody extends ConsumerWidget {
   final String questionnaireTitle;
   final bool isPreTest;
   final bool returnToHome;
+  final String? returnToEducationId;
   final Map<String, String> imageUrls;
 
   @override
@@ -316,35 +341,46 @@ class _ResultBody extends ConsumerWidget {
     );
     final isPassed = detail.passed;
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.page,
-        AppSpacing.lg,
-        AppSpacing.page,
-        AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          isPreTest
-              ? _PreTestResultContent(detail: detail, imageUrls: imageUrls)
-              : _PostTestResultContent(
-                score: score,
-                isPassed: isPassed,
-                totalQuestions: totalQuestions,
-                correctCount: correctCount,
-                incorrectCount: incorrectCount,
-              ),
-          const SizedBox(height: AppSpacing.xl),
-          _ResultBottomActions(
-            questionnaireId: questionnaireId,
-            questionnaireTitle: questionnaireTitle,
-            isPreTest: isPreTest,
-            returnToHome: returnToHome,
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.page,
+              AppSpacing.lg,
+              AppSpacing.page,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                isPreTest
+                    ? _PreTestResultContent(
+                      detail: detail,
+                      imageUrls: imageUrls,
+                      hideScore: returnToHome,
+                      showCorrectAnswers: returnToEducationId != null,
+                    )
+                    : _PostTestResultContent(
+                      score: score,
+                      isPassed: isPassed,
+                      totalQuestions: totalQuestions,
+                      correctCount: correctCount,
+                      incorrectCount: incorrectCount,
+                    ),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+        _ResultBottomActions(
+          questionnaireId: questionnaireId,
+          questionnaireTitle: questionnaireTitle,
+          isPreTest: isPreTest,
+          returnToHome: returnToHome,
+          returnToEducationId: returnToEducationId,
+        ),
+      ],
     );
   }
 }
@@ -357,12 +393,14 @@ class _ResultBottomActions extends ConsumerWidget {
     required this.questionnaireTitle,
     required this.isPreTest,
     required this.returnToHome,
+    this.returnToEducationId,
   });
 
   final String questionnaireId;
   final String questionnaireTitle;
   final bool isPreTest;
   final bool returnToHome;
+  final String? returnToEducationId;
 
   void _openReview(BuildContext context) {
     Navigator.of(context).push(
@@ -384,7 +422,12 @@ class _ResultBottomActions extends ConsumerWidget {
     if (isPreTest) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => PreTestIntroScreen(initialPreTest: detail),
+          builder:
+              (_) => QuestionnaireQuestionsScreen(
+                questionnaire: detail,
+                isPreTest: true,
+                returnToEducationId: returnToEducationId,
+              ),
         ),
       );
     } else {
@@ -402,107 +445,109 @@ class _ResultBottomActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (!isPreTest) ...[
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.page,
+          AppSpacing.sm,
+          AppSpacing.page,
+          AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border(
+            top: BorderSide(
+              color: AppColors.outlineVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isPreTest) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: QuestionnaireActionButton(
+                  onPressed: () => _openReview(context),
+                  icon: Icons.visibility_outlined,
+                  label: 'Lihat Pembahasan Jawaban',
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+
             SizedBox(
               width: double.infinity,
               height: 48,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+              child: QuestionnaireActionButton(
+                onPressed: () => _retake(context, ref),
+                icon: Icons.replay_rounded,
+                label:
+                    isPreTest ? 'Kerjakan Ulang' : 'Kerjakan Ulang Post-Test',
+                variant: QuestionnaireActionVariant.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Primary: Lanjutkan ke Beranda / Kembali
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  alignment: Alignment.center,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                onPressed: () => _openReview(context),
-                icon: const Icon(Icons.visibility_outlined, size: 18),
+                onPressed: () async {
+                  if (returnToEducationId != null) {
+                    Navigator.of(context).pop();
+                  } else if (returnToHome) {
+                    await ref.read(preTestHistoryProvider.notifier).refresh();
+                    if (!context.mounted) return;
+                    context.go(RouteNames.home);
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                },
+                icon: Icon(
+                  returnToEducationId != null
+                      ? Icons.menu_book_rounded
+                      : returnToHome
+                      ? Icons.home_rounded
+                      : Icons.arrow_back_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 label: Text(
-                  'Lihat Pembahasan Jawaban',
+                  returnToEducationId != null
+                      ? 'Lanjut Baca Edukasi'
+                      : returnToHome
+                      ? 'Mulai Menggunakan Aplikasi'
+                      : 'Kembali',
                   style: AppTextStyles.poppinsButton.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.primary,
+                    fontSize: 15,
+                    color: Colors.white,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
           ],
-
-          // Secondary: Kerjakan Ulang
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: () => _retake(context, ref),
-              icon: const Icon(
-                Icons.replay_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-              label: Text(
-                isPreTest ? 'Kerjakan Ulang' : 'Kerjakan Ulang Post-Test',
-                style: AppTextStyles.poppinsButton.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Primary: Lanjutkan ke Beranda / Kembali
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: () async {
-                if (returnToHome) {
-                  await ref.read(preTestHistoryProvider.notifier).refresh();
-                  if (!context.mounted) return;
-                  context.go(RouteNames.home);
-                } else {
-                  Navigator.of(context).pop();
-                }
-              },
-              icon: Icon(
-                returnToHome ? Icons.home_rounded : Icons.arrow_back_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-              label: Text(
-                returnToHome ? 'Ke Beranda' : 'Kembali',
-                style: AppTextStyles.poppinsButton.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -700,23 +745,96 @@ class _PostTestResultContent extends StatelessWidget {
   }
 }
 
+class _ApplicationPreTestCompleteContent extends StatelessWidget {
+  const _ApplicationPreTestCompleteContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: AppSpacing.xl),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryContainer.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  size: 64,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                'Kuesioner Selesai',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.headlineLg.copyWith(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onSurface,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Terima kasih telah mengisi kuesioner awal. Selamat mencoba aplikasi DIBA.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyLg.copyWith(
+                  fontSize: 15,
+                  color: AppColors.onSurfaceVariant,
+                  height: 1.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Pre-Test result content ──────────────────────────────────────────────────
 
 class _PreTestResultContent extends StatelessWidget {
-  const _PreTestResultContent({required this.detail, required this.imageUrls})
-    : score = null,
-      selfEfficacyCategory = null;
+  const _PreTestResultContent({
+    required this.detail,
+    required this.imageUrls,
+    this.hideScore = false,
+    this.showCorrectAnswers = false,
+  }) : score = null,
+       selfEfficacyCategory = null;
 
   const _PreTestResultContent.fromSubmit({
     required this.score,
     required this.selfEfficacyCategory,
     required this.imageUrls,
+    this.hideScore = false,
+    this.showCorrectAnswers = false,
   }) : detail = null;
 
   final AttemptDetailModel? detail;
   final int? score;
   final String? selfEfficacyCategory;
   final Map<String, String> imageUrls;
+  final bool hideScore;
+  final bool showCorrectAnswers;
 
   @override
   Widget build(BuildContext context) {
@@ -765,51 +883,68 @@ class _PreTestResultContent extends StatelessWidget {
                   color: AppColors.onSurface,
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Total Skor Keyakinan Diri (DMSES)',
-                style: AppTextStyles.bodyLg.copyWith(
-                  fontSize: 14,
-                  color: AppColors.outline,
+              if (!hideScore) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  showCorrectAnswers
+                      ? 'Skor Pemahaman Pre-Test'
+                      : 'Total Skor Keyakinan Diri (DMSES)',
+                  style: AppTextStyles.bodyLg.copyWith(
+                    fontSize: 14,
+                    color: AppColors.outline,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                '${detail?.score ?? score ?? 0}',
-                style: AppTextStyles.headlineLg.copyWith(
-                  fontSize: 56,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  categoryLabel,
-                  style: AppTextStyles.labelLg.copyWith(
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '${detail?.score ?? score ?? 0}',
+                  style: AppTextStyles.headlineLg.copyWith(
+                    fontSize: 56,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'Nilai ini menggambarkan tingkat keyakinan Anda dalam mengelola diabetes. Tidak ada jawaban benar atau salah pada kuesioner ini.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMd.copyWith(
-                  fontSize: 13,
-                  color: AppColors.onSurfaceVariant,
-                  height: 1.5,
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    categoryLabel,
+                    style: AppTextStyles.labelLg.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  showCorrectAnswers
+                      ? 'Hasil ini menunjukkan pemahaman awal Anda sebelum membaca materi edukasi.'
+                      : 'Nilai ini menggambarkan tingkat keyakinan Anda dalam mengelola diabetes. Tidak ada jawaban benar atau salah pada kuesioner ini.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontSize: 13,
+                    color: AppColors.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Terima kasih telah mengisi kuesioner awal. Selamat mencoba aplikasi DIBA.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyLg.copyWith(
+                    fontSize: 15,
+                    color: AppColors.onSurfaceVariant,
+                    height: 1.6,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -831,6 +966,7 @@ class _PreTestResultContent extends StatelessWidget {
             _PreTestQuestionAnswerCard(
               item: item,
               imageUrl: imageUrls[item.id],
+              showCorrectAnswer: showCorrectAnswers,
             ),
             const SizedBox(height: AppSpacing.md),
           ],
@@ -846,10 +982,14 @@ class _PreTestSubmitResultContent extends StatelessWidget {
   const _PreTestSubmitResultContent({
     required this.result,
     required this.imageUrls,
+    this.hideScore = false,
+    this.showCorrectAnswers = false,
   });
 
   final QuizSubmitResultModel result;
   final Map<String, String> imageUrls;
+  final bool hideScore;
+  final bool showCorrectAnswers;
 
   @override
   Widget build(BuildContext context) {
@@ -857,6 +997,8 @@ class _PreTestSubmitResultContent extends StatelessWidget {
       score: result.score,
       selfEfficacyCategory: result.selfEfficacyCategory,
       imageUrls: imageUrls,
+      hideScore: hideScore,
+      showCorrectAnswers: showCorrectAnswers,
     );
   }
 }
@@ -892,10 +1034,15 @@ class _AnswerLoadingCard extends StatelessWidget {
 }
 
 class _PreTestQuestionAnswerCard extends StatelessWidget {
-  const _PreTestQuestionAnswerCard({required this.item, this.imageUrl});
+  const _PreTestQuestionAnswerCard({
+    required this.item,
+    this.imageUrl,
+    this.showCorrectAnswer = false,
+  });
 
   final QuestionAnalysisModel item;
   final String? imageUrl;
+  final bool showCorrectAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -970,6 +1117,26 @@ class _PreTestQuestionAnswerCard extends StatelessWidget {
               ],
             ),
           ),
+          if (showCorrectAnswer && item.correctAnswer.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Jawaban Benar: ${item.correctAnswer}',
+              style: AppTextStyles.bodyMd.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Colors.green.shade800,
+              ),
+            ),
+          ],
+          if (showCorrectAnswer && item.explanation.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Pembahasan: ${item.explanation}',
+              style: AppTextStyles.bodySm.copyWith(
+                color: AppColors.onSurfaceVariant,
+                height: 1.45,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -9,7 +9,7 @@ import '../widgets/welcome_illustration.dart';
 const _slides = <WelcomeSlide>[
   WelcomeSlide(
     icon: Icons.water_drop_rounded,
-    color: Color(0xFF00695C),
+    color: AppColors.primary,
     title: 'Pantau Gula Darah\nLebih Mudah',
     description:
         'Catat hasil cek gula darah kapan saja dan lihat tren harian Anda dalam grafik yang jelas.',
@@ -33,7 +33,7 @@ const _slides = <WelcomeSlide>[
   ),
   WelcomeSlide(
     icon: Icons.directions_walk_rounded,
-    color: Color(0xFF286B33),
+    color: AppColors.secondary,
     title: 'Aktif Bergerak,\nMinum Obat Teratur',
     description:
         'Pengingat obat dan catatan aktivitas fisik membantu Anda tetap konsisten setiap hari.',
@@ -108,9 +108,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       opacity: _isLast ? 0 : 1,
                       duration: const Duration(milliseconds: 200),
                       child: TextButton(
-                        onPressed: _isLast
-                            ? null
-                            : () => _pageController.animateToPage(
+                        onPressed:
+                            _isLast
+                                ? null
+                                : () => _pageController.animateToPage(
                                   _slides.length - 1,
                                   duration: const Duration(milliseconds: 500),
                                   curve: Curves.easeOutCubic,
@@ -132,11 +133,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   controller: _pageController,
                   itemCount: _slides.length,
                   onPageChanged: (i) => setState(() => _page = i),
-                  itemBuilder: (context, i) => _SlideView(
-                    slide: _slides[i],
-                    controller: _pageController,
-                    index: i,
-                  ),
+                  itemBuilder:
+                      (context, i) => _SlideView(
+                        slide: _slides[i],
+                        controller: _pageController,
+                        index: i,
+                      ),
                 ),
               ),
               Padding(

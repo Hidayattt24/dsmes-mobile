@@ -317,7 +317,7 @@ class _AccountCreatedSuccessScreenState
             color: AppColors.primaryContainer.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 24),
+          child: Icon(icon, color: AppColors.onPrimary, size: 24),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(

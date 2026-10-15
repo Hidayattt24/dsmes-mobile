@@ -18,25 +18,80 @@ class SurveyCardSection extends ConsumerWidget {
 
     return surveysAsync.when(
       loading: () => const _SurveyLoadingSkeleton(),
-      error: (_, __) => const SizedBox.shrink(),
+      error:
+          (_, __) => const _SurveyMessage(
+            icon: Icons.cloud_off_rounded,
+            title: 'Survey belum dapat dimuat',
+            message: 'Periksa koneksi internet lalu coba lagi.',
+          ),
       data: (surveys) {
         if (surveys.isEmpty) {
-          return const _SurveyEmptyState();
+          return const _SurveyMessage(
+            icon: Icons.poll_outlined,
+            title: 'Belum ada survey penelitian',
+            message:
+                'Saat ini belum waktunya pengisian survey aplikasi. Survey akan muncul saat tersedia.',
+          );
         }
 
         return Column(
-          children: surveys
-              .map(
-                (survey) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: _SingleSurveyCard(survey: survey),
-                ),
-              )
-              .toList(),
+          children:
+              surveys
+                  .map(
+                    (survey) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _SingleSurveyCard(survey: survey),
+                    ),
+                  )
+                  .toList(),
         );
       },
     );
   }
+}
+
+class _SurveyMessage extends StatelessWidget {
+  const _SurveyMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(AppSpacing.xl),
+    decoration: BoxDecoration(
+      color: AppColors.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      border: Border.all(
+        color: AppColors.outlineVariant.withValues(alpha: 0.35),
+      ),
+    ),
+    child: Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 36),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.titleMd.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.bodySm.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _SingleSurveyCard extends StatelessWidget {
@@ -53,17 +108,23 @@ class _SingleSurveyCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: hasSubmitted ? Colors.teal.shade50.withValues(alpha: 0.3) : AppColors.background,
+        color:
+            hasSubmitted
+                ? Colors.teal.shade50.withValues(alpha: 0.3)
+                : AppColors.background,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
-          color: hasSubmitted
-              ? Colors.teal.withValues(alpha: 0.5)
-              : AppColors.primary.withValues(alpha: 0.3),
+          color:
+              hasSubmitted
+                  ? Colors.teal.withValues(alpha: 0.5)
+                  : AppColors.primary.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: (hasSubmitted ? Colors.teal : AppColors.primary).withValues(alpha: 0.05),
+            color: (hasSubmitted ? Colors.teal : AppColors.primary).withValues(
+              alpha: 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -81,9 +142,10 @@ class _SingleSurveyCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: hasSubmitted
-                      ? Colors.teal.shade100
-                      : isSUS
+                  color:
+                      hasSubmitted
+                          ? Colors.teal.shade100
+                          : isSUS
                           ? Colors.blue.withValues(alpha: 0.1)
                           : AppColors.primaryContainer.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(AppRadius.md),
@@ -92,12 +154,13 @@ class _SingleSurveyCard extends StatelessWidget {
                   hasSubmitted
                       ? '✓ SUDAH DIISI'
                       : isSUS
-                          ? 'SURVEY SUS'
-                          : 'SURVEY KEPUASAN',
+                      ? 'SURVEY SUS'
+                      : 'SURVEY KEPUASAN',
                   style: AppTextStyles.labelSm.copyWith(
-                    color: hasSubmitted
-                        ? Colors.teal.shade800
-                        : isSUS
+                    color:
+                        hasSubmitted
+                            ? Colors.teal.shade800
+                            : isSUS
                             ? Colors.blue[800]
                             : AppColors.primary,
                     fontWeight: FontWeight.bold,
@@ -133,35 +196,46 @@ class _SingleSurveyCard extends StatelessWidget {
             width: double.infinity,
             height: 48,
             child: ElevatedButton.icon(
-              onPressed: hasSubmitted
-                  ? null
-                  : () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => SurveyQuestionsScreen(survey: survey),
-                        ),
-                      );
-                    },
+              onPressed:
+                  hasSubmitted
+                      ? null
+                      : () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder:
+                                (_) => SurveyQuestionsScreen(survey: survey),
+                          ),
+                        );
+                      },
               style: ElevatedButton.styleFrom(
-                backgroundColor: hasSubmitted ? Colors.teal.shade50 : AppColors.primary,
-                foregroundColor: hasSubmitted ? Colors.teal.shade700 : AppColors.onPrimary,
+                backgroundColor:
+                    hasSubmitted ? Colors.teal.shade50 : AppColors.primary,
+                foregroundColor:
+                    hasSubmitted ? Colors.teal.shade700 : AppColors.onPrimary,
                 disabledBackgroundColor: Colors.teal.shade50,
                 disabledForegroundColor: Colors.teal.shade700,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  side: hasSubmitted ? BorderSide(color: Colors.teal.shade200) : BorderSide.none,
+                  side:
+                      hasSubmitted
+                          ? BorderSide(color: Colors.teal.shade200)
+                          : BorderSide.none,
                 ),
               ),
               icon: Icon(
-                hasSubmitted ? Icons.check_circle_rounded : Icons.assignment_turned_in_rounded,
+                hasSubmitted
+                    ? Icons.check_circle_rounded
+                    : Icons.assignment_turned_in_rounded,
                 size: 20,
-                color: hasSubmitted ? Colors.teal.shade600 : AppColors.onPrimary,
+                color:
+                    hasSubmitted ? Colors.teal.shade600 : AppColors.onPrimary,
               ),
               label: Text(
                 hasSubmitted ? 'Sudah Selesai Diisi' : 'Mulai Survey',
                 style: AppTextStyles.labelLg.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: hasSubmitted ? Colors.teal.shade800 : AppColors.onPrimary,
+                  color:
+                      hasSubmitted ? Colors.teal.shade800 : AppColors.onPrimary,
                 ),
               ),
             ),
@@ -226,9 +300,7 @@ class _SurveyLoadingSkeleton extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }

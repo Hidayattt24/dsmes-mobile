@@ -175,9 +175,12 @@ class AboutScreen extends StatelessWidget {
                     _buildReferenceTile(
                       badge: 'Nasional (Indonesia)',
                       organization: 'PB PERKENI',
-                      title: 'Pedoman Pemantauan Glukosa Darah Mandiri (PGDM 2021)',
-                      description: 'Acuan rentang target glukosa darah puasa, sebelum makan, dan sewaktu.',
-                      url: 'https://pbperkeni.or.id/wp-content/uploads/2021/11/22-10-21-Website-Pedoman-Pemantauan-Glukosa-Darah-Mandiri-Ebook.pdf',
+                      title:
+                          'Pedoman Pemantauan Glukosa Darah Mandiri (PGDM 2021)',
+                      description:
+                          'Acuan rentang target glukosa darah puasa, sebelum makan, dan sewaktu.',
+                      url:
+                          'https://pbperkeni.or.id/wp-content/uploads/2021/11/22-10-21-Website-Pedoman-Pemantauan-Glukosa-Darah-Mandiri-Ebook.pdf',
                     ),
 
                     const Divider(height: 24),
@@ -187,7 +190,8 @@ class AboutScreen extends StatelessWidget {
                       badge: 'Internasional',
                       organization: 'ADA (American Diabetes Association)',
                       title: 'Standards of Care in Diabetes',
-                      description: 'Kriteria Diagnosis & Pengujian Glukosa Darah terkini.',
+                      description:
+                          'Kriteria Diagnosis & Pengujian Glukosa Darah terkini.',
                       url: 'https://diabetes.org/about-diabetes/diagnosis',
                     ),
                   ],
@@ -221,9 +225,10 @@ class AboutScreen extends StatelessWidget {
 
                     // Dataset Gizi Kaggle
                     InkWell(
-                      onTap: () => _launchExternalUrl(
-                        'https://www.kaggle.com/datasets/fritze/informasi-nilai-gizi-indonesia',
-                      ),
+                      onTap:
+                          () => _launchExternalUrl(
+                            'https://www.kaggle.com/datasets/fritze/informasi-nilai-gizi-indonesia',
+                          ),
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.sm),
@@ -231,7 +236,9 @@ class AboutScreen extends StatelessWidget {
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: AppColors.outlineVariant.withValues(alpha: 0.25),
+                            color: AppColors.outlineVariant.withValues(
+                              alpha: 0.25,
+                            ),
                           ),
                         ),
                         child: Row(
@@ -240,7 +247,9 @@ class AboutScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppColors.primaryContainer.withValues(alpha: 0.15),
+                                color: AppColors.primaryContainer.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
@@ -297,7 +306,9 @@ class AboutScreen extends StatelessWidget {
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppColors.outlineVariant.withValues(alpha: 0.25),
+                          color: AppColors.outlineVariant.withValues(
+                            alpha: 0.25,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -306,7 +317,9 @@ class AboutScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.tertiaryContainer.withValues(alpha: 0.15),
+                              color: AppColors.tertiaryContainer.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(

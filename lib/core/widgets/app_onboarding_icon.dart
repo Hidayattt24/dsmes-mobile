@@ -7,8 +7,8 @@ class AppOnboardingIcon extends StatelessWidget {
   const AppOnboardingIcon({
     super.key,
     required this.icon,
-    this.backgroundColor = AppColors.primaryFixed,
-    this.iconColor = AppColors.primary,
+    this.backgroundColor = AppColors.primaryContainer,
+    this.iconColor = AppColors.onPrimary,
     this.size = 64,
   });
 

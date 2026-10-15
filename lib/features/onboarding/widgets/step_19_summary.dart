@@ -55,7 +55,7 @@ class _CelebrationHeader extends StatelessWidget {
             child: Icon(
               Icons.check_circle_rounded,
               size: 48,
-              color: AppColors.primary,
+              color: AppColors.onPrimary,
             ),
           ),
         ),
@@ -93,9 +93,12 @@ class _CalorieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final res = state.calorieResult;
-    final int tdee = res != null
-        ? ((res['daily_calorie_target'] as num?)?.toInt() ?? (res['tdee'] as num?)?.toInt() ?? 2150)
-        : 2150;
+    final int tdee =
+        res != null
+            ? ((res['daily_calorie_target'] as num?)?.toInt() ??
+                (res['tdee'] as num?)?.toInt() ??
+                2150)
+            : 2150;
     final rec = res?['recommendations'] as Map<String, dynamic>?;
 
     Map<String, dynamic> getRecDetail(String key) {
@@ -159,7 +162,8 @@ class _CalorieCard extends StatelessWidget {
               color: AppColors.onPrimary.withValues(alpha: 0.85),
             ),
           ),
-          if (res != null && (res.containsKey('bmi') || res.containsKey('bmi_category'))) ...[
+          if (res != null &&
+              (res.containsKey('bmi') || res.containsKey('bmi_category'))) ...[
             const SizedBox(height: AppSpacing.md),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -445,10 +449,10 @@ class _InfoRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.primaryFixed.withValues(alpha: 0.2),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: AppColors.primary),
+            child: Icon(icon, size: 18, color: AppColors.onPrimary),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -487,7 +491,15 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.onPrimary),
+        ),
         const SizedBox(width: AppSpacing.xs),
         Text(
           title,
@@ -602,10 +614,10 @@ class _RecommendationItem extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: color,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: color),
+            child: Icon(icon, size: 18, color: AppColors.onPrimary),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -733,10 +745,10 @@ class _NextStepItem extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: color,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, size: 20, color: color),
+            child: Icon(icon, size: 20, color: AppColors.onPrimary),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
@@ -761,11 +773,7 @@ class _NextStepItem extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            Icons.check_circle_rounded,
-            size: 20,
-            color: color.withValues(alpha: 0.5),
-          ),
+          Icon(Icons.check_circle_rounded, size: 20, color: AppColors.success),
         ],
       ),
     );

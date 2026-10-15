@@ -60,7 +60,6 @@ class OnboardingFormState {
   final bool isLoading;
   final String? errorMessage;
 
-
   double get progressPercent => currentStep / 19;
 
   int get age {
@@ -96,10 +95,16 @@ class OnboardingFormState {
 
   double get estimatedTDEE {
     if (heightValue == 0 || weightValue == 0 || age == 0) return 0;
-    final double bmr = gender == 'Laki-laki'
-        ? 66.5 + (13.75 * weightValue) + (5.003 * heightValue) - (6.755 * age)
-        : 655.1 + (9.563 * weightValue) + (1.850 * heightValue) -
-            (4.676 * age);
+    final double bmr =
+        gender == 'Laki-laki'
+            ? 66.5 +
+                (13.75 * weightValue) +
+                (5.003 * heightValue) -
+                (6.755 * age)
+            : 655.1 +
+                (9.563 * weightValue) +
+                (1.850 * heightValue) -
+                (4.676 * age);
     return bmr * _activityFactor;
   }
 
@@ -197,7 +202,8 @@ class OnboardingFormState {
   }
 
   String get emailError {
-    if (email.trim().isNotEmpty && !_isValidEmail(email)) return 'Format email tidak valid';
+    if (email.trim().isNotEmpty && !_isValidEmail(email))
+      return 'Format email tidak valid';
     return '';
   }
 
@@ -206,7 +212,8 @@ class OnboardingFormState {
     final bool hasUpper = password.contains(RegExp(r'[A-Z]'));
     final bool hasLower = password.contains(RegExp(r'[a-z]'));
     final bool hasDigit = password.contains(RegExp(r'[0-9]'));
-    final int score = (hasUpper ? 1 : 0) + (hasLower ? 1 : 0) + (hasDigit ? 1 : 0);
+    final int score =
+        (hasUpper ? 1 : 0) + (hasLower ? 1 : 0) + (hasDigit ? 1 : 0);
     if (password.length >= 12 && score >= 3) return 'Kuat';
     if (password.length >= 8 && score >= 2) return 'Sedang';
     return 'Lemah';

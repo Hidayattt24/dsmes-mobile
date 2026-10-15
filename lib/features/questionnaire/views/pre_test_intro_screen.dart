@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_error_state.dart';
 import '../models/questionnaire_detail_model.dart';
 import '../viewmodels/questionnaire_notifier.dart';
 import 'questionnaire_questions_screen.dart';
+import '../widgets/questionnaire_action_button.dart';
 
 class PreTestIntroScreen extends ConsumerWidget {
   const PreTestIntroScreen({super.key, this.initialPreTest});
@@ -245,82 +246,54 @@ class _PreTestIntroContent extends StatelessWidget {
         ),
 
         // ── CTA button (fixed bottom) ──────────────────────────────────
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border(
-                top: BorderSide(
-                  color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                ),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            border: Border(
+              top: BorderSide(
+                color: AppColors.outlineVariant.withValues(alpha: 0.3),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, -4),
-                ),
-              ],
             ),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.page,
-                  vertical: AppSpacing.sm,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.page,
+                vertical: AppSpacing.sm,
+              ),
+              child: QuestionnaireActionButton(
+                onPressed: () {
+                  if (useDirectNavigation) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder:
+                            (_) => QuestionnaireQuestionsScreen(
+                              questionnaire: preTest,
+                              isPreTest: true,
+                            ),
                       ),
-                    ),
-                    onPressed: () {
-                      if (useDirectNavigation) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder:
-                                (_) => QuestionnaireQuestionsScreen(
-                                  questionnaire: preTest,
-                                  isPreTest: true,
-                                ),
-                          ),
-                        );
-                      } else {
-                        context.push(RouteNames.preTestQuestions, extra: preTest);
-                      }
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.play_arrow_rounded,
-                          size: 24,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Mulai Kuesioner',
-                          style: AppTextStyles.poppinsButton.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                    );
+                  } else {
+                    context.push(RouteNames.preTestQuestions, extra: preTest);
+                  }
+                },
+                icon: Icons.play_arrow_rounded,
+                label: 'Mulai Kuesioner',
+                variant: QuestionnaireActionVariant.primary,
               ),
             ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 }
 
@@ -429,9 +402,10 @@ class _PreTestErrorView extends StatelessWidget {
       body: SafeArea(
         child: AppErrorState(
           title: 'Gagal Memuat Pre-Test',
-          message: message.isNotEmpty
-              ? message
-              : 'Tidak dapat memuat data Pre-Test. Periksa koneksi internet atau tunggu server pulih.',
+          message:
+              message.isNotEmpty
+                  ? message
+                  : 'Tidak dapat memuat data Pre-Test. Periksa koneksi internet atau tunggu server pulih.',
           onRetry: onRetry,
         ),
       ),

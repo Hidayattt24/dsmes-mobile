@@ -61,7 +61,8 @@ class AppSmartImage extends StatelessWidget {
       } else {
         imageWidget = _buildFallback();
       }
-    } else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    } else if (imageUrl.startsWith('http://') ||
+        imageUrl.startsWith('https://')) {
       imageWidget = Image.network(
         imageUrl,
         width: width,
@@ -86,10 +87,7 @@ class AppSmartImage extends StatelessWidget {
     }
 
     if (borderRadius != null) {
-      return ClipRRect(
-        borderRadius: borderRadius!,
-        child: imageWidget,
-      );
+      return ClipRRect(borderRadius: borderRadius!, child: imageWidget);
     }
 
     return imageWidget;
@@ -112,7 +110,8 @@ class AppSmartImage extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: fallbackColor ?? AppColors.primaryContainer.withValues(alpha: 0.18),
+        color:
+            fallbackColor ?? AppColors.primaryContainer.withValues(alpha: 0.18),
       ),
       child: Center(
         child: Icon(

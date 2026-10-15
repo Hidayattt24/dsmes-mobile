@@ -8,7 +8,7 @@ import '../../features/questionnaire/models/quiz_attempt_model.dart';
 
 abstract class IQuestionnaireRepository {
   /// Fetches the active Pre-Test questionnaire with all categories and questions.
-  Future<QuestionnaireDetailModel> getActivePreTest();
+  Future<QuestionnaireDetailModel> getActivePreTest({String? educationId});
 
   /// Fetches the Post-Test linked to a given education material.
   Future<QuestionnaireDetailModel> getPostTestByEducation(String educationId);
@@ -19,7 +19,7 @@ abstract class IQuestionnaireRepository {
   /// Submits answers for a questionnaire. Backend calculates score.
   ///
   /// [answers] is a map of questionID → optionID (or Likert value for PRE_TEST).
-  /// [isPreTest] when true, sends `selected_value` (int 1-5) instead of `option_id`.
+  /// Numeric Likert IDs use `selected_value`; persisted option IDs use `option_id`.
   Future<QuizSubmitResultModel> submitQuestionnaire({
     required String questionnaireId,
     required Map<String, String> answers,
@@ -39,7 +39,7 @@ abstract class IQuestionnaireRepository {
 
   /// Returns all questionnaire attempts by the current patient.
   /// Optionally filter by [type] = 'PRE_TEST' | 'POST_TEST'.
-  Future<List<MyHistoryItemModel>> getMyHistory({String? type});
+  Future<List<MyHistoryItemModel>> getMyHistory({String? type, String? scope});
 
   /// Returns all active questionnaires available to the patient, with completion status.
   /// Optionally filter by [type] = 'PRE_TEST' | 'POST_TEST'.
@@ -57,9 +57,17 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
   final Dio _dio;
 
   @override
-  Future<QuestionnaireDetailModel> getActivePreTest() async {
+  Future<QuestionnaireDetailModel> getActivePreTest({
+    String? educationId,
+  }) async {
     try {
-      final response = await _dio.get('/patient/questionnaires/pre-test');
+      final response = await _dio.get(
+        '/patient/questionnaires/pre-test',
+        queryParameters:
+            educationId != null && educationId.isNotEmpty
+                ? {'education_id': educationId}
+                : null,
+      );
       final data = response.data['data'] as Map<String, dynamic>;
       return QuestionnaireDetailModel.fromJson(data);
     } on DioException catch (e) {
@@ -105,13 +113,16 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
       List<Map<String, dynamic>> answerList;
 
       if (isPreTest) {
-        // PRE_TEST: backend expects `selected_value` (integer 1-5)
+        // PRE_TEST supports both numeric default choices and database options.
         answerList =
             answers.entries.map((e) {
-              final val = int.tryParse(e.value) ?? 1;
+              final val = int.tryParse(e.value);
               return <String, dynamic>{
                 'question_id': e.key,
-                'selected_value': val,
+                if (val != null && val >= 1 && val <= 5)
+                  'selected_value': val
+                else
+                  'option_id': e.value,
               };
             }).toList();
       } else {
@@ -204,11 +215,17 @@ class QuestionnaireRepository implements IQuestionnaireRepository {
   }
 
   @override
-  Future<List<MyHistoryItemModel>> getMyHistory({String? type}) async {
+  Future<List<MyHistoryItemModel>> getMyHistory({
+    String? type,
+    String? scope,
+  }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (type != null && type.isNotEmpty) {
         queryParams['type'] = type;
+      }
+      if (scope != null && scope.isNotEmpty) {
+        queryParams['scope'] = scope;
       }
       final response = await _dio.get(
         '/patient/questionnaires/my-history',

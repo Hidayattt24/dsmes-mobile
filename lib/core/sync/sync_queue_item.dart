@@ -15,6 +15,7 @@ enum SyncDataType {
   medication,
   meal,
   questionnaire,
+  appUsage,
 }
 
 @immutable

@@ -18,10 +18,7 @@ class SummaryItemData {
 }
 
 class WeeklySummarySection extends StatelessWidget {
-  const WeeklySummarySection({
-    super.key,
-    required this.summaries,
-  });
+  const WeeklySummarySection({super.key, required this.summaries});
 
   final List<SummaryItemData> summaries;
 
@@ -55,7 +52,7 @@ class WeeklySummarySection extends StatelessWidget {
             ),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x0500695c),
+                color: Color(0x053B67FC),
                 blurRadius: 10,
                 offset: Offset(0, 3),
               ),

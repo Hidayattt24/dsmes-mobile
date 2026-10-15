@@ -153,7 +153,10 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
                       horizontal: AppSpacing.lg,
                       vertical: AppSpacing.lg,
                     ),
-                    child: _buildStep(widget.step),
+                    child: IconTheme(
+                      data: const IconThemeData(color: AppColors.onPrimary),
+                      child: _buildStep(widget.step),
+                    ),
                   ),
                 ),
               ),

@@ -6,8 +6,6 @@ import '../../../data/repositories/facility_repository.dart';
 import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../models/onboarding_form_state.dart';
 
-
-
 class OnboardingNotifier extends Notifier<OnboardingFormState> {
   @override
   OnboardingFormState build() => const OnboardingFormState();
@@ -43,7 +41,6 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
   void onNicknameChanged(String value) {
     state = state.copyWith(nickname: value);
   }
-
 
   // ── Step 2: Email ──────────────────────────────────────────────────────────
 
@@ -196,10 +193,7 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
       state = state.copyWith(isLoading: false);
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.message,
-      );
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
       return false;
     } catch (e) {
       state = state.copyWith(
@@ -215,18 +209,13 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
   Future<bool> setupHealthProfileFromBackend() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final res =
-          await ref.read(authRepositoryProvider).setupHealthProfile(state);
-      state = state.copyWith(
-        calorieResult: res,
-        isLoading: false,
-      );
+      final res = await ref
+          .read(authRepositoryProvider)
+          .setupHealthProfile(state);
+      state = state.copyWith(calorieResult: res, isLoading: false);
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.message,
-      );
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
       return false;
     } catch (e) {
       state = state.copyWith(
@@ -246,10 +235,7 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
       state = state.copyWith(isLoading: false);
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.message,
-      );
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
       return false;
     } catch (e) {
       state = state.copyWith(
@@ -261,9 +247,7 @@ class OnboardingNotifier extends Notifier<OnboardingFormState> {
   }
 }
 
-
-
 final onboardingProvider =
     NotifierProvider<OnboardingNotifier, OnboardingFormState>(
-  OnboardingNotifier.new,
-);
+      OnboardingNotifier.new,
+    );

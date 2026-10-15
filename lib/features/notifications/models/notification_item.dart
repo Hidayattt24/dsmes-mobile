@@ -1,9 +1,4 @@
-enum NotificationType {
-  warning,
-  medication,
-  education,
-  targetAchieved,
-}
+enum NotificationType { warning, medication, education, targetAchieved }
 
 class NotificationItem {
   final String id;
@@ -14,6 +9,9 @@ class NotificationItem {
   final bool isUnread;
   final String group;
   final String? articleId;
+  final String? iconName;
+  final String? activityName;
+  final String? category;
 
   const NotificationItem({
     required this.id,
@@ -24,6 +22,9 @@ class NotificationItem {
     required this.isUnread,
     required this.group,
     this.articleId,
+    this.iconName,
+    this.activityName,
+    this.category,
   });
 
   NotificationItem copyWith({
@@ -35,6 +36,9 @@ class NotificationItem {
     bool? isUnread,
     String? group,
     String? articleId,
+    String? iconName,
+    String? activityName,
+    String? category,
   }) {
     return NotificationItem(
       id: id ?? this.id,
@@ -45,6 +49,9 @@ class NotificationItem {
       isUnread: isUnread ?? this.isUnread,
       group: group ?? this.group,
       articleId: articleId ?? this.articleId,
+      iconName: iconName ?? this.iconName,
+      activityName: activityName ?? this.activityName,
+      category: category ?? this.category,
     );
   }
 }

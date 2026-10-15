@@ -7,10 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../constants/routine_icons.dart';
 
-Future<String?> showIconPicker(
-  BuildContext context, {
-  String? currentKey,
-}) {
+Future<String?> showIconPicker(BuildContext context, {String? currentKey}) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
@@ -71,14 +68,16 @@ Future<String?> showIconPicker(
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primaryContainer
-                              : AppColors.surfaceContainerLow,
+                          color:
+                              isSelected
+                                  ? AppColors.primaryContainer
+                                  : AppColors.surfaceContainerLow,
                           borderRadius: AppRadius.card,
                           border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.outlineVariant,
+                            color:
+                                isSelected
+                                    ? AppColors.primary
+                                    : AppColors.outlineVariant,
                           ),
                         ),
                         child: Column(
@@ -87,17 +86,19 @@ Future<String?> showIconPicker(
                             Icon(
                               option.icon,
                               size: 28,
-                              color: isSelected
-                                  ? AppColors.onPrimaryContainer
-                                  : AppColors.onSurfaceVariant,
+                              color:
+                                  isSelected
+                                      ? AppColors.onPrimary
+                                      : AppColors.primary,
                             ),
                             const SizedBox(height: AppSpacing.xxs),
                             Text(
                               option.label,
                               style: AppTextStyles.labelMd.copyWith(
-                                color: isSelected
-                                    ? AppColors.onPrimaryContainer
-                                    : AppColors.onSurfaceVariant,
+                                color:
+                                    isSelected
+                                        ? AppColors.onPrimaryContainer
+                                        : AppColors.onSurfaceVariant,
                                 fontSize: 10,
                               ),
                               maxLines: 1,

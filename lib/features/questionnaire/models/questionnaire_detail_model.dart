@@ -46,13 +46,19 @@ class QuestionModel {
     final img = json['question_image_url'] ?? json['questionImageUrl'];
     return QuestionModel(
       id: json['id'] as String? ?? '',
-      questionText: json['question_text'] as String? ?? json['questionText'] as String? ?? '',
-      questionImageUrl: img is String && img.trim().isNotEmpty ? img.trim() : null,
+      questionText:
+          json['question_text'] as String? ??
+          json['questionText'] as String? ??
+          '',
+      questionImageUrl:
+          img is String && img.trim().isNotEmpty ? img.trim() : null,
       explanation: json['explanation'] as String? ?? '',
-      displayOrder: json['display_order'] as int? ?? json['displayOrder'] as int? ?? 0,
-      choices: rawChoices
-          .map((e) => ChoiceModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      displayOrder:
+          json['display_order'] as int? ?? json['displayOrder'] as int? ?? 0,
+      choices:
+          rawChoices
+              .map((e) => ChoiceModel.fromJson(e as Map<String, dynamic>))
+              .toList(),
     );
   }
 }
@@ -81,9 +87,10 @@ class QuestionCategoryModel {
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       displayOrder: json['display_order'] as int? ?? 0,
-      questions: rawQuestions
-          .map((e) => QuestionModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      questions:
+          rawQuestions
+              .map((e) => QuestionModel.fromJson(e as Map<String, dynamic>))
+              .toList(),
     );
   }
 }
@@ -96,6 +103,7 @@ class QuestionnaireDetailModel {
     required this.id,
     required this.title,
     required this.type,
+    this.scope = 'APPLICATION',
     required this.description,
     this.educationId,
     this.educationTitle,
@@ -112,6 +120,7 @@ class QuestionnaireDetailModel {
 
   /// 'PRE_TEST' or 'POST_TEST'
   final String type;
+  final String scope;
   final String description;
   final String? educationId;
   final String? educationTitle;
@@ -142,6 +151,9 @@ class QuestionnaireDetailModel {
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       type: json['type'] as String? ?? 'POST_TEST',
+      scope:
+          json['scope'] as String? ??
+          ((json['education_id'] != null) ? 'EDUCATION' : 'APPLICATION'),
       description: json['description'] as String? ?? '',
       educationId: json['education_id'] as String?,
       educationTitle: json['education_title'] as String?,
@@ -150,10 +162,13 @@ class QuestionnaireDetailModel {
       status: json['status'] as String? ?? 'draft',
       categoryCount: json['category_count'] as int? ?? 0,
       questionCount: json['question_count'] as int? ?? 0,
-      categories: rawCategories
-          .map((e) =>
-              QuestionCategoryModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      categories:
+          rawCategories
+              .map(
+                (e) =>
+                    QuestionCategoryModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList(),
     );
   }
 }
@@ -243,21 +258,28 @@ class PaginatedQuestionnaireResult {
   final int total;
 
   factory PaginatedQuestionnaireResult.fromJson(Map<String, dynamic> json) {
-    final rawData = json['data'] as List<dynamic>? ?? [];
-    final total = json['total'] as int? ?? rawData.length;
+    final rawData = json['data'];
+    if (rawData is! List) {
+      throw const FormatException('Invalid questionnaire list response');
+    }
+    final meta = json['meta'];
+    final metaTotal = meta is Map<String, dynamic> ? meta['total'] : null;
+    final total =
+        (json['total'] as int?) ?? (metaTotal as int?) ?? rawData.length;
     return PaginatedQuestionnaireResult(
-      items: rawData
-          .map((e) => PatientQuestionnaireItemModel.fromJson(
-              e as Map<String, dynamic>))
-          .toList(),
+      items:
+          rawData
+              .map(
+                (e) => PatientQuestionnaireItemModel.fromJson(
+                  e as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
       total: total,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'data': items.map((e) => e.toJson()).toList(),
-      'total': total,
-    };
+    return {'data': items.map((e) => e.toJson()).toList(), 'total': total};
   }
 }

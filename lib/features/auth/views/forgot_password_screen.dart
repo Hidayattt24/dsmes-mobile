@@ -36,26 +36,31 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     if (value == null || value.trim().isEmpty) {
       return AppStrings.validationRequired;
     }
-    final clean = value.replaceAll(RegExp(r'[\s\-+]'), '');
-    if (clean.length < 8 || clean.length > 15) {
+    final clean = _normalizePhone(value);
+    if (!RegExp(r'^\d{8,15}$').hasMatch(clean)) {
       return AppStrings.validationPhoneNumber;
     }
     return null;
+  }
+
+  String _normalizePhone(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('62')) return digits;
+    if (digits.startsWith('0')) return '62${digits.substring(1)}';
+    return digits;
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
+      final phoneNumber = _normalizePhone(_phoneController.text);
       await ref
           .read(authRepositoryProvider)
-          .checkPhoneNumber(phoneNumber: _phoneController.text.trim());
+          .checkPhoneNumber(phoneNumber: phoneNumber);
       if (mounted) {
         setState(() => _isLoading = false);
-        await context.push(
-          RouteNames.resetPassword,
-          extra: _phoneController.text.trim(),
-        );
+        await context.push(RouteNames.resetPassword, extra: phoneNumber);
       }
     } on ApiException catch (e) {
       if (mounted) {

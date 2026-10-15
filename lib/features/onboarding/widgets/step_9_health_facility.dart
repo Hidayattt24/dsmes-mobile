@@ -14,14 +14,18 @@ class Step9HealthFacility extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(onboardingProvider.notifier);
-    final selectedFacility =
-        ref.watch(onboardingProvider.select((s) => s.healthFacility));
-    final facilities =
-        ref.watch(onboardingProvider.select((s) => s.healthFacilities));
-    final isLoading =
-        ref.watch(onboardingProvider.select((s) => s.isFacilityLoading));
-    final isLoaded =
-        ref.watch(onboardingProvider.select((s) => s.facilityLoaded));
+    final selectedFacility = ref.watch(
+      onboardingProvider.select((s) => s.healthFacility),
+    );
+    final facilities = ref.watch(
+      onboardingProvider.select((s) => s.healthFacilities),
+    );
+    final isLoading = ref.watch(
+      onboardingProvider.select((s) => s.isFacilityLoading),
+    );
+    final isLoaded = ref.watch(
+      onboardingProvider.select((s) => s.facilityLoaded),
+    );
 
     if (!isLoaded && !isLoading) {
       Future.microtask(notifier.loadHealthFacilities);
@@ -56,8 +60,9 @@ class Step9HealthFacility extends ConsumerWidget {
   }
 
   Future<void> _showFacilityPicker(BuildContext context, WidgetRef ref) async {
-    final facilities =
-        ref.read(onboardingProvider.select((s) => s.healthFacilities));
+    final facilities = ref.read(
+      onboardingProvider.select((s) => s.healthFacilities),
+    );
     if (facilities.isEmpty) return;
 
     final selected = await showModalBottomSheet<String>(
@@ -88,9 +93,10 @@ class _FacilityPickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayText = isLoading
-        ? AppStrings.healthFacilityLoading
-        : selected.isEmpty
+    final displayText =
+        isLoading
+            ? AppStrings.healthFacilityLoading
+            : selected.isEmpty
             ? AppStrings.healthFacilityHint
             : selected;
 
@@ -111,9 +117,10 @@ class _FacilityPickerField extends StatelessWidget {
               child: Text(
                 displayText,
                 style: AppTextStyles.bodyLg.copyWith(
-                  color: selected.isEmpty
-                      ? AppColors.outline
-                      : AppColors.onSurface,
+                  color:
+                      selected.isEmpty
+                          ? AppColors.outline
+                          : AppColors.onSurface,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -128,10 +135,7 @@ class _FacilityPickerField extends StatelessWidget {
                 ),
               )
             else
-              const Icon(
-                Icons.expand_more,
-                color: AppColors.outline,
-              ),
+              const Icon(Icons.expand_more, color: AppColors.onPrimary),
           ],
         ),
       ),
@@ -154,11 +158,12 @@ class _FacilityPickerSheetState extends State<_FacilityPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final query = _query.trim().toLowerCase();
-    final filtered = query.isEmpty
-        ? widget.facilities
-        : widget.facilities
-            .where((f) => f.toLowerCase().contains(query))
-            .toList();
+    final filtered =
+        query.isEmpty
+            ? widget.facilities
+            : widget.facilities
+                .where((f) => f.toLowerCase().contains(query))
+                .toList();
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,
@@ -198,7 +203,10 @@ class _FacilityPickerSheetState extends State<_FacilityPickerSheet> {
               onChanged: (value) => setState(() => _query = value),
               decoration: InputDecoration(
                 hintText: AppStrings.healthFacilitySearchHint,
-                prefixIcon: const Icon(Icons.search, color: AppColors.outline),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppColors.onPrimary,
+                ),
                 filled: true,
                 fillColor: AppColors.surfaceContainerLowest,
                 border: OutlineInputBorder(
@@ -213,35 +221,36 @@ class _FacilityPickerSheetState extends State<_FacilityPickerSheet> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Text(
-                      AppStrings.healthFacilityEmpty,
-                      style: AppTextStyles.bodyLg.copyWith(
-                        color: AppColors.outline,
+            child:
+                filtered.isEmpty
+                    ? Center(
+                      child: Text(
+                        AppStrings.healthFacilityEmpty,
+                        style: AppTextStyles.bodyLg.copyWith(
+                          color: AppColors.outline,
+                        ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final facility = filtered[index];
-                      return ListTile(
-                        leading: const Icon(
-                          Icons.local_hospital_outlined,
-                          color: AppColors.primary,
-                        ),
-                        title: Text(
-                          facility,
-                          style: AppTextStyles.bodyLg.copyWith(
-                            color: AppColors.onSurface,
-                            fontWeight: FontWeight.w500,
+                    )
+                    : ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final facility = filtered[index];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.local_hospital_outlined,
+                            color: AppColors.onPrimary,
                           ),
-                        ),
-                        onTap: () => Navigator.of(context).pop(facility),
-                      );
-                    },
-                  ),
+                          title: Text(
+                            facility,
+                            style: AppTextStyles.bodyLg.copyWith(
+                              color: AppColors.onSurface,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          onTap: () => Navigator.of(context).pop(facility),
+                        );
+                      },
+                    ),
           ),
         ],
       ),

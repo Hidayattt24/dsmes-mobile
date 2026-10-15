@@ -9,6 +9,7 @@ import '../../core/security/app_lock_manager.dart';
 import '../../core/services/firebase_messaging_service.dart';
 import '../../core/services/local_notification_service.dart';
 import '../../core/sync/sync_queue_manager.dart';
+import '../../core/services/app_usage_tracker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/server_status_banner.dart';
@@ -74,6 +75,8 @@ class _AppShellState extends ConsumerState<AppShell>
       // 4. Check any pending notifications that launched the app from terminated state
       firebaseMessagingService.checkInitialMessage();
       LocalNotificationService.instance.checkAppLaunchNotification();
+      // 5. Initialize app foreground duration usage tracking
+      ref.read(appUsageTrackerProvider);
     });
   }
 

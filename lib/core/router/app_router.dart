@@ -41,6 +41,7 @@ const _publicRoutes = <String>{
   RouteNames.welcome,
   RouteNames.login,
   RouteNames.forgotPassword,
+  RouteNames.resetPassword,
   RouteNames.registrationWelcome,
   RouteNames.preTestIntro,
   RouteNames.preTestQuestions,
@@ -80,6 +81,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // the guard for this route can otherwise race with the route transition.
       if (location == RouteNames.preTestResult) {
         return null;
+      }
+
+      if (location == RouteNames.resetPassword && state.extra is! String) {
+        return RouteNames.forgotPassword;
       }
 
       final preTestAsync = ref.read(hasCompletedPreTestProvider);
@@ -442,10 +447,7 @@ CustomTransitionPage<void> _buildFadeTransition({
     reverseTransitionDuration: const Duration(milliseconds: 300),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       return FadeTransition(
-        opacity: CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeInOut,
-        ),
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
         child: child,
       );
     },

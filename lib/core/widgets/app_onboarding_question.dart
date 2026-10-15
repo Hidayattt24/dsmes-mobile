@@ -11,8 +11,8 @@ class AppOnboardingQuestion extends StatelessWidget {
     required this.icon,
     required this.question,
     this.description,
-    this.iconBackgroundColor = AppColors.primaryFixed,
-    this.iconColor = AppColors.primary,
+    this.iconBackgroundColor = AppColors.primaryContainer,
+    this.iconColor = AppColors.onPrimary,
   });
 
   final IconData icon;

@@ -37,10 +37,7 @@ class OnboardingNavButtons extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            AppColors.surface.withValues(alpha: 0),
-            AppColors.surface,
-          ],
+          colors: [AppColors.surface.withValues(alpha: 0), AppColors.surface],
         ),
       ),
       child: SizedBox(
@@ -51,7 +48,9 @@ class OnboardingNavButtons extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primaryContainer,
             foregroundColor: AppColors.onPrimary,
-            disabledBackgroundColor: AppColors.primaryContainer.withValues(alpha: 0.5),
+            disabledBackgroundColor: AppColors.primaryContainer.withValues(
+              alpha: 0.5,
+            ),
             disabledForegroundColor: AppColors.onPrimary.withValues(alpha: 0.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -59,35 +58,37 @@ class OnboardingNavButtons extends StatelessWidget {
             elevation: 0,
             shadowColor: AppColors.primaryContainer.withValues(alpha: 0.2),
           ),
-          child: isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: AppColors.onPrimary,
+          child:
+              isLoading
+                  ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.onPrimary,
+                    ),
+                  )
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        currentStep == 6
+                            ? "Buat Akun"
+                            : isLastStep
+                            ? 'Selesai'
+                            : AppStrings.buttonNext,
+                        style: AppTextStyles.poppinsButton,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Icon(
+                        currentStep == 6 || isLastStep
+                            ? Icons.check_circle_outline
+                            : Icons.arrow_forward,
+                        size: 20,
+                        color: AppColors.onPrimary,
+                      ),
+                    ],
                   ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      currentStep == 6
-                          ? "Buat Akun"
-                          : isLastStep
-                              ? 'Selesai'
-                              : AppStrings.buttonNext,
-                      style: AppTextStyles.poppinsButton,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Icon(
-                      currentStep == 6 || isLastStep
-                          ? Icons.check_circle_outline
-                          : Icons.arrow_forward,
-                      size: 20,
-                    ),
-                  ],
-                ),
         ),
       ),
     );

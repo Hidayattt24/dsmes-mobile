@@ -38,20 +38,20 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty) {
       return AppStrings.validationRequired;
     }
-    if (value.trim().length < AppConstants.passwordMinLength) {
+    if (value.length < AppConstants.passwordMinLength) {
       return AppStrings.validationPasswordMin;
     }
     return null;
   }
 
   String? _validateConfirm(String? value) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty) {
       return AppStrings.validationRequired;
     }
-    if (value.trim() != _passwordController.text.trim()) {
+    if (value != _passwordController.text) {
       return AppStrings.validationPasswordNotMatch;
     }
     return null;
@@ -65,8 +65,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           .read(authRepositoryProvider)
           .resetPasswordByPhone(
             phoneNumber: widget.phoneNumber,
-            newPassword: _passwordController.text.trim(),
-            confirmPassword: _confirmController.text.trim(),
+            newPassword: _passwordController.text,
+            confirmPassword: _confirmController.text,
           );
       if (mounted) {
         setState(() => _isLoading = false);

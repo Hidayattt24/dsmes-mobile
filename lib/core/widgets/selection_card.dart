@@ -31,36 +31,47 @@ class SelectionCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : AppColors.surfaceContainerLowest,
+          color:
+              isSelected ? AppColors.primary : AppColors.surfaceContainerLowest,
           borderRadius: AppRadius.cardMd,
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.outlineVariant,
             width: 2,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                  : null,
         ),
         padding: EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: isWide ? AppSpacing.sm : AppSpacing.xl,
         ),
-        child: isWide ? _WideContent(label: label, isSelected: isSelected, icon: icon) : _GridContent(label: label, isSelected: isSelected, subtitle: subtitle),
+        child:
+            isWide
+                ? _WideContent(label: label, isSelected: isSelected, icon: icon)
+                : _GridContent(
+                  label: label,
+                  isSelected: isSelected,
+                  subtitle: subtitle,
+                ),
       ),
     );
   }
 }
 
 class _GridContent extends StatelessWidget {
-  const _GridContent({required this.label, required this.isSelected, this.subtitle});
+  const _GridContent({
+    required this.label,
+    required this.isSelected,
+    this.subtitle,
+  });
 
   final String label;
   final bool isSelected;
@@ -83,9 +94,10 @@ class _GridContent extends StatelessWidget {
           Text(
             subtitle!,
             style: AppTextStyles.labelMd.copyWith(
-              color: isSelected
-                  ? AppColors.onPrimary.withValues(alpha: 0.85)
-                  : AppColors.onSurfaceVariant,
+              color:
+                  isSelected
+                      ? AppColors.onPrimary.withValues(alpha: 0.85)
+                      : AppColors.onSurfaceVariant,
             ),
           ),
         ],
@@ -95,7 +107,11 @@ class _GridContent extends StatelessWidget {
 }
 
 class _WideContent extends StatelessWidget {
-  const _WideContent({required this.label, required this.isSelected, this.icon});
+  const _WideContent({
+    required this.label,
+    required this.isSelected,
+    this.icon,
+  });
 
   final String label;
   final bool isSelected;
@@ -106,11 +122,7 @@ class _WideContent extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon ?? Icons.help_outline,
-          color: isSelected ? AppColors.onPrimary : AppColors.secondary,
-          size: 24,
-        ),
+        Icon(icon ?? Icons.help_outline, color: AppColors.onPrimary, size: 24),
         const SizedBox(width: AppSpacing.sm),
         Text(
           label,

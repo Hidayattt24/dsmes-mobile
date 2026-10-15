@@ -16,6 +16,9 @@ import '../widgets/article_information.dart';
 import '../widgets/education_review_dialog.dart';
 import '../widgets/education_skeleton.dart';
 import '../widgets/youtube_preview_card.dart';
+import '../../questionnaire/models/questionnaire_detail_model.dart';
+import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
+import '../../questionnaire/views/questionnaire_questions_screen.dart';
 
 class EducationDetailScreen extends ConsumerStatefulWidget {
   const EducationDetailScreen({super.key, required this.articleId});
@@ -42,12 +45,113 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   int _lastReportedScrollPct = 0;
   bool _hasMarkedComplete = false;
   bool _hasScrolledToBottom = false;
+  bool _hasCheckedPreTest = false;
 
   @override
   void initState() {
     super.initState();
     _readStartTime = DateTime.now();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndPromptPreTest();
+    });
+  }
+
+  Future<void> _checkAndPromptPreTest() async {
+    if (_hasCheckedPreTest) return;
+    _hasCheckedPreTest = true;
+
+    try {
+      final preTest = await ref.read(
+        preTestByEducationProvider(widget.articleId).future,
+      );
+      if (!mounted || preTest == null) return;
+
+      // If pre-test has questions, prompt patient to complete it before reading
+      final hasQuestions = preTest.categories.any(
+        (c) => c.questions.isNotEmpty,
+      );
+      if (!hasQuestions) return;
+
+      // Show dialog informing patient of pre-test
+      final startPreTest = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.psychology_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Pre-Test Edukasi',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'Sebelum membaca materi ini, ukur tingkat pemahaman awal Anda melalui Pre-Test singkat: "${preTest.title}".',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text(
+                    'Mulai Pre-Test',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+      );
+
+      if (startPreTest == true && mounted) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder:
+                (_) => QuestionnaireQuestionsScreen(
+                  questionnaire: preTest,
+                  isPreTest: true,
+                  returnToEducationId: widget.articleId,
+                ),
+          ),
+        );
+      }
+    } catch (_) {}
   }
 
   @override
@@ -210,6 +314,101 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
         ),
       );
     }
+
+    // 4. Setelah ulasan selesai, tawarkan post-test jika tersedia untuk modul edukasi ini
+    if (!mounted) return;
+    try {
+      final postTest = await ref.read(
+        postTestByEducationProvider(widget.articleId).future,
+      );
+      if (mounted && postTest != null) {
+        final proceedToPostTest = await showDialog<bool>(
+          context: context,
+          builder:
+              (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Lanjut ke Post-Test?',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  'Anda telah menyelesaikan materi dan ulasan. Uji pemahaman Anda dengan mengerjakan Post-Test: "${postTest.title}".',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: const Text(
+                      'Lewati',
+                      style: TextStyle(
+                        color: AppColors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text(
+                      'Lanjutkan',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+        );
+
+        if (proceedToPostTest == true && mounted) {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder:
+                  (_) => QuestionnaireQuestionsScreen(
+                    questionnaire: postTest,
+                    isPreTest: false,
+                  ),
+            ),
+          );
+        }
+      }
+    } catch (_) {}
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -531,55 +730,60 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 180,
-                  child: article.imageUrl.trim().isEmpty
-                      ? Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppColors.primaryContainer.withValues(alpha: 0.35),
-                                AppColors.primary.withValues(alpha: 0.12),
-                                AppColors.surfaceContainerLowest,
-                              ],
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: Center(
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
+                  child:
+                      article.imageUrl.trim().isEmpty
+                          ? Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.primaryContainer.withValues(
+                                    alpha: 0.35,
                                   ),
+                                  AppColors.primary.withValues(alpha: 0.12),
+                                  AppColors.surfaceContainerLowest,
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.menu_book_rounded,
-                                size: 32,
-                                color: AppColors.primary,
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(20),
+                                bottomRight: Radius.circular(20),
                               ),
                             ),
+                            child: Center(
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.menu_book_rounded,
+                                  size: 32,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          )
+                          : AppSmartImage(
+                            imageUrl: article.imageUrl,
+                            fit: BoxFit.cover,
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                              bottomRight: Radius.circular(16),
+                            ),
+                            fallbackIcon: Icons.menu_book_rounded,
                           ),
-                        )
-                      : AppSmartImage(
-                          imageUrl: article.imageUrl,
-                          fit: BoxFit.cover,
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(16),
-                            bottomRight: Radius.circular(16),
-                          ),
-                          fallbackIcon: Icons.menu_book_rounded,
-                        ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(

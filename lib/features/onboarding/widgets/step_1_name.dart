@@ -83,7 +83,7 @@ class Step1Name extends ConsumerWidget {
                   const Icon(
                     Icons.info_outline,
                     size: 18,
-                    color: AppColors.onSurfaceVariant,
+                    color: AppColors.onPrimary,
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(

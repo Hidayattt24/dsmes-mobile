@@ -54,7 +54,7 @@ class _Step5PasswordState extends ConsumerState<Step5Password> {
               const SizedBox(width: AppSpacing.lg),
               const Icon(
                 Icons.lock_outline,
-                color: AppColors.outline,
+                color: AppColors.onPrimary,
                 size: 22,
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -87,7 +87,7 @@ class _Step5PasswordState extends ConsumerState<Step5Password> {
                   _obscure
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: AppColors.outline,
+                  color: AppColors.onPrimary,
                   size: 22,
                 ),
                 onPressed: () => setState(() => _obscure = !_obscure),

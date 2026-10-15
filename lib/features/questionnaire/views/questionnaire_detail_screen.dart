@@ -6,14 +6,12 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../models/questionnaire_detail_model.dart';
 import 'questionnaire_questions_screen.dart';
+import '../widgets/questionnaire_action_button.dart';
 
 /// Displays detail info & instructions about a questionnaire (Pre-Test or Post-Test)
 /// before the patient begins answering.
 class QuestionnaireDetailScreen extends ConsumerWidget {
-  const QuestionnaireDetailScreen({
-    super.key,
-    required this.questionnaire,
-  });
+  const QuestionnaireDetailScreen({super.key, required this.questionnaire});
 
   final QuestionnaireDetailModel questionnaire;
 
@@ -53,17 +51,21 @@ class QuestionnaireDetailScreen extends ConsumerWidget {
               children: [
                 // ── Type badge ──────────────────────────────────────────
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: questionnaire.isPreTest
-                        ? AppColors.primary.withValues(alpha: 0.1)
-                        : AppColors.secondary.withValues(alpha: 0.1),
+                    color:
+                        questionnaire.isPreTest
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : AppColors.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(100),
                     border: Border.all(
-                      color: questionnaire.isPreTest
-                          ? AppColors.primary.withValues(alpha: 0.3)
-                          : AppColors.secondary.withValues(alpha: 0.3),
+                      color:
+                          questionnaire.isPreTest
+                              ? AppColors.primary.withValues(alpha: 0.3)
+                              : AppColors.secondary.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
@@ -73,9 +75,10 @@ class QuestionnaireDetailScreen extends ConsumerWidget {
                     style: AppTextStyles.labelMd.copyWith(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: questionnaire.isPreTest
-                          ? AppColors.primary
-                          : AppColors.secondary,
+                      color:
+                          questionnaire.isPreTest
+                              ? AppColors.primary
+                              : AppColors.secondary,
                     ),
                   ),
                 ),
@@ -141,8 +144,11 @@ class QuestionnaireDetailScreen extends ConsumerWidget {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.info_outline_rounded,
-                              color: AppColors.primary, size: 22),
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Petunjuk & Instruksi Pengerjaan',
@@ -174,9 +180,10 @@ class QuestionnaireDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       _InstructionPoint(
                         number: '4',
-                        text: questionnaire.isPreTest
-                            ? 'Pre-Test ini wajib diselesaikan 1x sebelum menggunakan aplikasi.'
-                            : 'Anda dapat mengerjakan ulang Post-Test ini kapan saja untuk mengasah pemahaman.',
+                        text:
+                            questionnaire.isPreTest
+                                ? 'Pre-Test ini wajib diselesaikan 1x sebelum menggunakan aplikasi.'
+                                : 'Anda dapat mengerjakan ulang Post-Test ini kapan saja untuk mengasah pemahaman.',
                       ),
                     ],
                   ),
@@ -184,7 +191,8 @@ class QuestionnaireDetailScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xl),
 
                 // ── Question Categories Section (Pre-Test Only) ─────────────────
-                if (questionnaire.isPreTest && questionnaire.categories.isNotEmpty) ...[
+                if (questionnaire.isPreTest &&
+                    questionnaire.categories.isNotEmpty) ...[
                   Text(
                     'Kategori Pertanyaan',
                     style: AppTextStyles.headlineMd.copyWith(
@@ -228,39 +236,21 @@ class QuestionnaireDetailScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              child: QuestionnaireActionButton(
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder:
+                          (_) => QuestionnaireQuestionsScreen(
+                            questionnaire: questionnaire,
+                            isPreTest: questionnaire.isPreTest,
+                          ),
                     ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => QuestionnaireQuestionsScreen(
-                          questionnaire: questionnaire,
-                          isPreTest: questionnaire.isPreTest,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.play_arrow_rounded,
-                      color: Colors.white, size: 22),
-                  label: Text(
-                    'Mulai Mengerjakan',
-                    style: AppTextStyles.poppinsButton.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                  );
+                },
+                icon: Icons.play_arrow_rounded,
+                label: 'Mulai Mengerjakan',
+                variant: QuestionnaireActionVariant.primary,
               ),
             ),
           ),

@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../models/quiz_attempt_model.dart';
+import '../../../../data/repositories/questionnaire_repository.dart';
+import '../viewmodels/questionnaire_notifier.dart';
+import '../views/questionnaire_detail_screen.dart';
+import '../views/questionnaire_questions_screen.dart';
 import '../views/questionnaire_review_screen.dart';
+import 'questionnaire_action_button.dart';
 
 /// Grouped questionnaire attempt history, grouped by questionnaire module.
 class QuestionnaireHistorySection extends StatelessWidget {
@@ -27,8 +33,11 @@ class QuestionnaireHistorySection extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.history_toggle_off_rounded,
-                color: AppColors.outline, size: 20),
+            const Icon(
+              Icons.history_toggle_off_rounded,
+              color: AppColors.outline,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -80,8 +89,9 @@ class _ModuleHistoryCardState extends State<_ModuleHistoryCard> {
     }
     final latest = widget.attempts.first;
     final total = widget.attempts.length;
-    final highestScore =
-        widget.attempts.map((a) => a.score).reduce((a, b) => a > b ? a : b);
+    final highestScore = widget.attempts
+        .map((a) => a.score)
+        .reduce((a, b) => a > b ? a : b);
 
     return Container(
       decoration: BoxDecoration(
@@ -109,9 +119,10 @@ class _ModuleHistoryCardState extends State<_ModuleHistoryCard> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: latest.passed
-                        ? const Color(0xFFABF4AC)
-                        : const Color(0xFFFFDAD6),
+                    color:
+                        latest.passed
+                            ? const Color(0xFFABF4AC)
+                            : const Color(0xFFFFDAD6),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -120,9 +131,10 @@ class _ModuleHistoryCardState extends State<_ModuleHistoryCard> {
                       style: AppTextStyles.headlineMd.copyWith(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: latest.passed
-                            ? const Color(0xFF07521D)
-                            : const Color(0xFF93000A),
+                        color:
+                            latest.passed
+                                ? const Color(0xFF07521D)
+                                : const Color(0xFF93000A),
                       ),
                     ),
                   ),
@@ -199,8 +211,8 @@ class _ModuleHistoryCardState extends State<_ModuleHistoryCard> {
                 AppSpacing.md,
                 AppSpacing.md,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Terakhir: ${DateFormat('d MMM yyyy', 'id').format(latest.completedAt.toLocal())}',
@@ -209,36 +221,46 @@ class _ModuleHistoryCardState extends State<_ModuleHistoryCard> {
                       color: AppColors.outline,
                     ),
                   ),
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => QuestionnaireReviewScreen(
-                            questionnaireId: latest.questionnaireId,
-                            quizTitle: latest.questionnaireTitle,
+                  const SizedBox(height: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          minimumSize: const Size(0, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                      );
-                    },
-                    child: Text(
-                      'Lihat Hasil',
-                      style: AppTextStyles.labelMd.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: AppColors.primary,
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => QuestionnaireReviewScreen(
+                                    questionnaireId: latest.questionnaireId,
+                                    quizTitle: latest.questionnaireTitle,
+                                    attemptId: latest.attemptId,
+                                  ),
+                            ),
+                          );
+                        },
+                        child: const Center(
+                          child: Text(
+                            'Lihat Detail',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      _RetakeHistoryButton(attempt: latest),
+                    ],
                   ),
                 ],
               ),
@@ -250,91 +272,140 @@ class _ModuleHistoryCardState extends State<_ModuleHistoryCard> {
   }
 }
 
-class _AttemptSubItemRow extends StatelessWidget {
-  const _AttemptSubItemRow({
-    required this.attempt,
-    required this.attemptIndex,
-  });
+class _AttemptSubItemRow extends ConsumerWidget {
+  const _AttemptSubItemRow({required this.attempt, required this.attemptIndex});
 
   final MyHistoryItemModel attempt;
   final int attemptIndex;
 
+  Future<void> _retake(BuildContext context, WidgetRef ref) async {
+    final detail = await ref
+        .read(questionnaireRepositoryProvider)
+        .getQuestionnaireById(attempt.questionnaireId);
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => QuestionnaireDetailScreen(questionnaire: detail),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
-    return Row(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            '#$attemptIndex',
-            style: AppTextStyles.labelMd.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              color: AppColors.onSurfaceVariant,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Skor: ${attempt.score}% (${attempt.passed ? "Lulus" : "Gagal"})',
-                style: AppTextStyles.bodyMd.copyWith(
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '#$attemptIndex',
+                style: AppTextStyles.labelMd.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: attempt.passed
-                      ? const Color(0xFF07521D)
-                      : const Color(0xFF93000A),
-                ),
-              ),
-              Text(
-                DateFormat('d MMM yyyy · HH:mm', 'id')
-                    .format(attempt.completedAt.toLocal()),
-                style: AppTextStyles.bodyMd.copyWith(
                   fontSize: 11,
-                  color: AppColors.outline,
+                  color: AppColors.onSurfaceVariant,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Skor: ${attempt.score}% (${attempt.passed ? "Lulus" : "Gagal"})',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color:
+                          attempt.passed
+                              ? const Color(0xFF07521D)
+                              : const Color(0xFF93000A),
+                    ),
+                  ),
+                  Text(
+                    DateFormat(
+                      'd MMM yyyy · HH:mm',
+                      'id',
+                    ).format(attempt.completedAt.toLocal()),
+                    style: AppTextStyles.bodyMd.copyWith(
+                      fontSize: 11,
+                      color: AppColors.outline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            minimumSize: const Size(0, 30),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        const SizedBox(height: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            QuestionnaireActionButton(
+              onPressed:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (_) => QuestionnaireReviewScreen(
+                            questionnaireId: attempt.questionnaireId,
+                            quizTitle: attempt.questionnaireTitle,
+                            attemptId: attempt.attemptId,
+                          ),
+                    ),
+                  ),
+              label: 'Lihat Detail',
+              icon: Icons.visibility_outlined,
             ),
-          ),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => QuestionnaireReviewScreen(
-                  questionnaireId: attempt.questionnaireId,
-                  quizTitle: attempt.questionnaireTitle,
-                ),
-              ),
-            );
-          },
-          child: Text(
-            'Lihat Hasil',
-            style: AppTextStyles.labelMd.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              color: AppColors.primary,
+            const SizedBox(height: 8),
+            QuestionnaireActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) => QuestionnaireReviewScreen(
+                          questionnaireId: attempt.questionnaireId,
+                          quizTitle: attempt.questionnaireTitle,
+                          attemptId: attempt.attemptId,
+                        ),
+                  ),
+                );
+              },
+              label: 'Kerjakan Ulang',
+              icon: Icons.replay_rounded,
             ),
-          ),
+          ],
         ),
       ],
     );
   }
+}
+
+class _RetakeHistoryButton extends ConsumerWidget {
+  const _RetakeHistoryButton({required this.attempt});
+
+  final MyHistoryItemModel attempt;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) =>
+      QuestionnaireActionButton(
+        onPressed: () async {
+          final detail = await ref
+              .read(questionnaireRepositoryProvider)
+              .getQuestionnaireById(attempt.questionnaireId);
+          if (!context.mounted) return;
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => QuestionnaireDetailScreen(questionnaire: detail),
+            ),
+          );
+        },
+        label: 'Kerjakan Ulang',
+        icon: Icons.replay_rounded,
+      );
 }

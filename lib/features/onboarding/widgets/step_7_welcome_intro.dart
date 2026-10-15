@@ -26,7 +26,7 @@ class Step7WelcomeIntro extends ConsumerWidget {
           child: const Icon(
             Icons.person_pin_circle_outlined,
             size: 96,
-            color: AppColors.primaryContainer,
+            color: AppColors.onPrimaryContainer,
           ),
         ),
         const SizedBox(height: AppSpacing.xl),

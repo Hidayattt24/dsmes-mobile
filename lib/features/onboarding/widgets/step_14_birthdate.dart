@@ -54,7 +54,7 @@ class Step14Birthdate extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.md),
                 const Icon(
                   Icons.calendar_month_outlined,
-                  color: AppColors.outline,
+                  color: AppColors.onPrimary,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
@@ -70,7 +70,7 @@ class Step14Birthdate extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.arrow_drop_down, color: AppColors.outline),
+                const Icon(Icons.arrow_drop_down, color: AppColors.onPrimary),
                 const SizedBox(width: AppSpacing.sm),
               ],
             ),

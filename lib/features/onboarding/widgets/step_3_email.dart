@@ -51,7 +51,7 @@ class Step3Email extends ConsumerWidget {
               const SizedBox(width: AppSpacing.lg),
               const Icon(
                 Icons.email_outlined,
-                color: AppColors.outline,
+                color: AppColors.onPrimary,
                 size: 22,
               ),
               const SizedBox(width: AppSpacing.sm),

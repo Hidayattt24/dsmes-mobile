@@ -38,12 +38,15 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
     } catch (e) {
       // Graceful offline fallback: load from local cache
       try {
-        final cached = await cacheManager.getCache(OfflineCacheManager.keyReminders);
+        final cached = await cacheManager.getCache(
+          OfflineCacheManager.keyReminders,
+        );
         if (cached is List && cached.isNotEmpty) {
-          final cachedReminders = cached
-              .whereType<Map<String, dynamic>>()
-              .map(ReminderModel.fromJson)
-              .toList();
+          final cachedReminders =
+              cached
+                  .whereType<Map<String, dynamic>>()
+                  .map(ReminderModel.fromJson)
+                  .toList();
 
           unawaited(_syncLocalAlarms(cachedReminders));
           return cachedReminders;
@@ -150,7 +153,9 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
         // to prevent duplicate ghost alarms when editing schedules or day sets.
         await LocalNotificationService.instance.cancelNotification(baseId);
         for (int d = 1; d <= 7; d++) {
-          await LocalNotificationService.instance.cancelNotification(baseId + d);
+          await LocalNotificationService.instance.cancelNotification(
+            baseId + d,
+          );
         }
 
         if (!item.isActive) {
@@ -168,6 +173,7 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
           type: NotificationType.medication,
           iconName: item.iconName,
           activityName: item.activityName,
+          category: item.category,
         );
 
         final days = item.activeDays;
@@ -194,7 +200,9 @@ class ReminderListNotifier extends AsyncNotifier<List<ReminderModel>> {
           }
         }
       }
-      debugPrint('[REMINDER][SYNC] synchronized local alarms count=${reminders.length}');
+      debugPrint(
+        '[REMINDER][SYNC] synchronized local alarms count=${reminders.length}',
+      );
     } catch (e) {
       debugPrint('[REMINDER][SYNC][ERROR] failed to sync local alarms: $e');
     }

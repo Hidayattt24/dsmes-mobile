@@ -12,6 +12,7 @@ import '../viewmodels/questionnaire_notifier.dart';
 import '../views/questionnaire_detail_screen.dart';
 import '../views/questionnaire_result_screen.dart';
 import '../views/questionnaire_review_screen.dart';
+import 'questionnaire_action_button.dart';
 
 /// Single dynamic questionnaire card.
 ///
@@ -72,6 +73,10 @@ class QuestionnaireListCard extends ConsumerWidget {
                     ),
       ),
     );
+  }
+
+  Future<void> _retake(BuildContext context, WidgetRef ref) async {
+    await _startQuestionnaire(context, ref);
   }
 
   @override
@@ -163,51 +168,29 @@ class QuestionnaireListCard extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,
-            height: 48,
             child:
                 isCompleted
-                    ? OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: accent,
-                        side: BorderSide(color: accent, width: 1.4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                    ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        QuestionnaireActionButton(
+                          onPressed: () => _viewResult(context),
+                          label: 'Lihat Detail',
+                          icon: Icons.visibility_outlined,
                         ),
-                      ),
-                      onPressed: () => _viewResult(context),
-                      icon: const Icon(Icons.remove_red_eye_outlined, size: 20),
-                      label: Text(
-                        'Lihat Hasil',
-                        style: AppTextStyles.poppinsButton.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: accent,
+                        const SizedBox(height: 8),
+                        QuestionnaireActionButton(
+                          onPressed: () => _retake(context, ref),
+                          label: 'Kerjakan Ulang',
+                          icon: Icons.replay_rounded,
                         ),
-                      ),
+                      ],
                     )
-                    : ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
+                    : QuestionnaireActionButton(
                       onPressed: () => _startQuestionnaire(context, ref),
-                      icon: const Icon(
-                        Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      label: Text(
-                        'Mulai Kuesioner',
-                        style: AppTextStyles.poppinsButton.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
-                      ),
+                      icon: Icons.play_arrow_rounded,
+                      label: 'Mulai Kuesioner',
+                      variant: QuestionnaireActionVariant.primary,
                     ),
           ),
         ],

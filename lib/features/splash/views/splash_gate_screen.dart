@@ -40,15 +40,12 @@ class _SplashGateScreenState extends ConsumerState<SplashGateScreen> {
     final elapsed = DateTime.now().difference(_initTime ?? DateTime.now());
     final remaining = _minSplashDuration - elapsed;
 
-    Future.delayed(
-      remaining.isNegative ? Duration.zero : remaining,
-      () {
-        if (mounted &&
-            GoRouterState.of(context).matchedLocation == RouteNames.splash) {
-          context.go(route);
-        }
-      },
-    );
+    Future.delayed(remaining.isNegative ? Duration.zero : remaining, () {
+      if (mounted &&
+          GoRouterState.of(context).matchedLocation == RouteNames.splash) {
+        context.go(route);
+      }
+    });
   }
 
   @override
@@ -66,14 +63,17 @@ class _SplashGateScreenState extends ConsumerState<SplashGateScreen> {
           return;
         }
         // Only watch questionnaire eligibility after session is confirmed restored
-        ref.watch(hasCompletedPreTestProvider).when(
+        ref
+            .watch(hasCompletedPreTestProvider)
+            .when(
               skipLoadingOnReload: false,
               skipLoadingOnRefresh: false,
               loading: () {},
               error: (err, _) async {
                 final cacheManager = ref.read(offlineCacheManagerProvider);
-                final cachedProfile = await cacheManager
-                    .getCache(OfflineCacheManager.keyDashboardProfile);
+                final cachedProfile = await cacheManager.getCache(
+                  OfflineCacheManager.keyDashboardProfile,
+                );
                 if (cachedProfile != null) {
                   _navigateSmoothly(RouteNames.home);
                 } else if (mounted) {
@@ -82,9 +82,10 @@ class _SplashGateScreenState extends ConsumerState<SplashGateScreen> {
                   });
                 }
               },
-              data: (completed) => _navigateSmoothly(
-                completed ? RouteNames.home : RouteNames.preTestIntro,
-              ),
+              data:
+                  (completed) => _navigateSmoothly(
+                    completed ? RouteNames.home : RouteNames.preTestIntro,
+                  ),
             );
       },
     );
@@ -116,10 +117,7 @@ class _SplashGateScreenState extends ConsumerState<SplashGateScreen> {
         systemNavigationBarColor: Colors.white,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: _SplashContent(),
-      ),
+      child: Scaffold(backgroundColor: Colors.white, body: _SplashContent()),
     );
   }
 }
@@ -138,11 +136,10 @@ class _SplashContentState extends State<_SplashContent>
     duration: const Duration(milliseconds: 900),
   )..forward();
 
-  late final Animation<double> _fade =
-      CurvedAnimation(parent: _c, curve: Curves.easeOut);
-  late final Animation<double> _scale = Tween<double>(begin: 0.85, end: 1)
-      .animate(CurvedAnimation(parent: _c, curve: Curves.easeOutBack));
-
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _c,
+    curve: Curves.easeOut,
+  );
   @override
   void dispose() {
     _c.dispose();
@@ -158,27 +155,13 @@ class _SplashContentState extends State<_SplashContent>
           Center(
             child: FadeTransition(
               opacity: _fade,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ScaleTransition(
-                    scale: _scale,
-                    child: Image.asset(
-                      'assets/images/splash_logo.png',
-                      width: 160,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.6,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
+              child: const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.6,
+                  color: AppColors.primary,
+                ),
               ),
             ),
           ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/app_radius.dart';
 
 /// Reusable text field with label, hint, validation, and password toggle.
 ///
@@ -84,23 +85,43 @@ class _AppTextFieldState extends State<AppTextField> {
           hintText: widget.hint,
           filled: true,
           fillColor: AppColors.surfaceContainerLowest,
-          prefixIcon: widget.prefixIcon != null
-              ? Icon(widget.prefixIcon, color: AppColors.outline)
-              : null,
-          suffixIcon: widget.isPassword
-              ? IconButton(
-                  icon: Icon(
-                    _obscureText
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: AppColors.outline,
-                  ),
-                  tooltip: _obscureText
-                      ? 'Tampilkan kata sandi'
-                      : 'Sembunyikan kata sandi',
-                  onPressed: _toggleObscureText,
-                )
-              : widget.suffixIcon,
+          prefixIcon:
+              widget.prefixIcon != null
+                  ? Icon(widget.prefixIcon, color: AppColors.outline)
+                  : null,
+          suffixIcon:
+              widget.isPassword
+                  ? IconButton(
+                    icon: Icon(
+                      _obscureText
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: AppColors.outline,
+                    ),
+                    tooltip:
+                        _obscureText
+                            ? 'Tampilkan kata sandi'
+                            : 'Sembunyikan kata sandi',
+                    onPressed: _toggleObscureText,
+                  )
+                  : widget.suffixIcon,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AppRadius.input,
+            borderSide: const BorderSide(color: Color(0xFFC7D2E3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AppRadius.input,
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: AppRadius.input,
+            borderSide: const BorderSide(color: AppColors.error),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: AppRadius.input,
+            borderSide: const BorderSide(color: AppColors.error, width: 1.8),
+          ),
+          floatingLabelStyle: const TextStyle(color: AppColors.primary),
         ),
       ),
     );

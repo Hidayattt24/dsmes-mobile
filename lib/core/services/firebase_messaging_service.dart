@@ -147,7 +147,9 @@ class FirebaseMessagingService {
     const storage = FlutterSecureStorage();
     final token = await storage.read(key: AppConstants.keyAuthToken);
     if (token == null || token.isEmpty) {
-      debugPrint('[FCM] Ignoring foreground notification: no active user session.');
+      debugPrint(
+        '[FCM] Ignoring foreground notification: no active user session.',
+      );
       return;
     }
 
@@ -159,9 +161,11 @@ class FirebaseMessagingService {
     final notifTypeStr = message.data['type'] as String? ?? 'reminder';
     final iconName = message.data['icon_name'] as String?;
     final activityName = message.data['activity_name'] as String?;
-    final notifType = notifTypeStr == 'education'
-        ? NotificationType.education
-        : NotificationType.medication;
+    final category = message.data['category'] as String?;
+    final notifType =
+        notifTypeStr == 'education'
+            ? NotificationType.education
+            : NotificationType.medication;
 
     final (title, body) = NotificationCopywriter.getInteractiveCopy(
       rawTitle: rawTitle,
@@ -169,12 +173,14 @@ class FirebaseMessagingService {
       type: notifType,
       iconName: iconName,
       activityName: activityName,
+      category: category,
     );
 
     final reminderId = message.data['reminder_id'];
-    final notifId = reminderId != null
-        ? reminderId.hashCode.abs()
-        : message.messageId.hashCode.abs();
+    final notifId =
+        reminderId != null
+            ? reminderId.hashCode.abs()
+            : message.messageId.hashCode.abs();
     final notifTag = reminderId != null ? 'reminder_$reminderId' : null;
 
     await LocalNotificationService.instance.showNotification(
@@ -204,7 +210,9 @@ class FirebaseMessagingService {
     final type = message.data['type'];
     final articleId = message.data['article_id'];
 
-    if (type == 'education' && articleId != null && articleId.toString().isNotEmpty) {
+    if (type == 'education' &&
+        articleId != null &&
+        articleId.toString().isNotEmpty) {
       context.go('${RouteNames.educationDetail}/$articleId');
     } else if (type == 'reminder') {
       context.go(RouteNames.reminders);

@@ -31,8 +31,7 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       final items = await repo.getNotifications();
 
       final backendItems = items.map(_toItem).toList();
-      final localItems =
-          state.where((n) => n.id.startsWith('notif_')).toList();
+      final localItems = state.where((n) => n.id.startsWith('notif_')).toList();
 
       // De-duplicate by id (backend wins on conflict).
       final seen = <String>{};
@@ -53,11 +52,15 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
 
   NotificationItem _toItem(NotificationModel n) {
     final isEducation = n.notifType == 'education';
-    final notifType = isEducation ? NotificationType.education : NotificationType.medication;
+    final notifType =
+        isEducation ? NotificationType.education : NotificationType.medication;
     final (title, desc) = NotificationCopywriter.getInteractiveCopy(
       rawTitle: isEducation ? 'Materi Edukasi Baru' : 'Pengingat DIBA',
       rawDescription: n.messageText,
       type: notifType,
+      iconName: n.iconName,
+      activityName: n.activityName,
+      category: n.category,
     );
     return NotificationItem(
       id: n.id,
@@ -68,6 +71,9 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       isUnread: !n.isRead,
       group: _groupFor(n.notifiedAt),
       articleId: n.articleId,
+      iconName: n.iconName,
+      activityName: n.activityName,
+      category: n.category,
     );
   }
 
@@ -79,7 +85,10 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
           title: item.title,
           body: item.description,
           payload: jsonEncode({
-            'type': item.type == NotificationType.education ? 'education' : 'reminder',
+            'type':
+                item.type == NotificationType.education
+                    ? 'education'
+                    : 'reminder',
             'article_id': item.articleId,
           }),
         );
@@ -120,7 +129,10 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
   Future<void> markAsRead(String id) async {
     state = [
       for (final notification in state)
-        if (notification.id == id) notification.copyWith(isUnread: false) else notification,
+        if (notification.id == id)
+          notification.copyWith(isUnread: false)
+        else
+          notification,
     ];
     // Locally-generated notifications (id prefix "notif_") only live in the
     // app's in-memory inbox and do NOT exist in the backend DB. Sending their
@@ -137,7 +149,10 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
   Future<void> markAllAsRead() async {
     state = [
       for (final notification in state)
-        if (notification.isUnread) notification.copyWith(isUnread: false) else notification,
+        if (notification.isUnread)
+          notification.copyWith(isUnread: false)
+        else
+          notification,
     ];
     try {
       await ref.read(notificationRepositoryProvider).markAllAsRead();
@@ -176,7 +191,10 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     String? customTimestamp,
     bool showSystemPopup = true,
   }) {
-    final (interactiveTitle, interactiveDesc) = NotificationCopywriter.getInteractiveCopy(
+    final (
+      interactiveTitle,
+      interactiveDesc,
+    ) = NotificationCopywriter.getInteractiveCopy(
       rawTitle: title,
       rawDescription: description,
       type: type,
@@ -234,7 +252,8 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
         title: title,
         description: description,
         type: type,
-        customTimestamp: '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} WIB',
+        customTimestamp:
+            '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} WIB',
         showSystemPopup: false,
       );
       _scheduledTimers.remove(timerId);
@@ -242,6 +261,7 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
   }
 }
 
-final notificationsProvider = NotifierProvider<NotificationsNotifier, List<NotificationItem>>(
-  NotificationsNotifier.new,
-);
+final notificationsProvider =
+    NotifierProvider<NotificationsNotifier, List<NotificationItem>>(
+      NotificationsNotifier.new,
+    );

@@ -7,25 +7,25 @@ abstract final class AppColors {
   AppColors._();
 
   // ── Primary ────────────────────────────────────────────────────────────────
-  static const Color primary = Color(0xFF004f45);
-  static const Color onPrimary = Color(0xFFffffff);
-  static const Color primaryContainer = Color(0xFF00695c);
-  static const Color onPrimaryContainer = Color(0xFF94e5d5);
-  static const Color primaryFixed = Color(0xFFa0f2e1);
-  static const Color primaryFixedDim = Color(0xFF84d5c5);
-  static const Color onPrimaryFixed = Color(0xFF00201b);
-  static const Color onPrimaryFixedVariant = Color(0xFF005046);
-  static const Color inversePrimary = Color(0xFF84d5c5);
+  static const Color primary = Color(0xFF3B67FC);
+  static const Color onPrimary = Color(0xFFFFFFFF);
+  static const Color primaryContainer = Color(0xFF1A63ED);
+  static const Color onPrimaryContainer = Color(0xFFB9F5FB);
+  static const Color primaryFixed = Color(0xFF07CADE);
+  static const Color primaryFixedDim = Color(0xFF07CADE);
+  static const Color onPrimaryFixed = Color(0xFF001B6B);
+  static const Color onPrimaryFixedVariant = Color(0xFF001F60);
+  static const Color inversePrimary = Color(0xFF07CADE);
 
   // ── Secondary ──────────────────────────────────────────────────────────────
-  static const Color secondary = Color(0xFF286b33);
-  static const Color onSecondary = Color(0xFFffffff);
-  static const Color secondaryContainer = Color(0xFFabf4ac);
-  static const Color onSecondaryContainer = Color(0xFF2e7238);
-  static const Color secondaryFixed = Color(0xFFabf4ac);
-  static const Color secondaryFixedDim = Color(0xFF90d792);
-  static const Color onSecondaryFixed = Color(0xFF002107);
-  static const Color onSecondaryFixedVariant = Color(0xFF07521d);
+  static const Color secondary = Color(0xFF07CADE);
+  static const Color onSecondary = Color(0xFF001B6B);
+  static const Color secondaryContainer = Color(0xFFB9F5FB);
+  static const Color onSecondaryContainer = Color(0xFF001F60);
+  static const Color secondaryFixed = Color(0xFFB9F5FB);
+  static const Color secondaryFixedDim = Color(0xFF07CADE);
+  static const Color onSecondaryFixed = Color(0xFF001B6B);
+  static const Color onSecondaryFixedVariant = Color(0xFF001F60);
 
   // ── Tertiary ───────────────────────────────────────────────────────────────
   static const Color tertiary = Color(0xFF613e00);
@@ -47,7 +47,7 @@ abstract final class AppColors {
   static const Color surfaceContainerHigh = Color(0xFFeae8e7);
   static const Color surfaceContainerHighest = Color(0xFFe4e2e1);
   static const Color surfaceVariant = Color(0xFFe4e2e1);
-  static const Color surfaceTint = Color(0xFF046b5e);
+  static const Color surfaceTint = Color(0xFF3B67FC);
   static const Color inverseSurface = Color(0xFF303030);
   static const Color inverseOnSurface = Color(0xFFf2f0f0);
 
@@ -67,6 +67,24 @@ abstract final class AppColors {
   static const Color errorContainer = Color(0xFFffdad6);
   static const Color onErrorContainer = Color(0xFF93000a);
 
+  // ── Semantic status colors ───────────────────────────────────────────────
+  static const Color success = Color(0xFF388E3C);
+  static const Color successContainer = Color(0xFFE8F5E9);
+  static const Color onSuccessContainer = Color(0xFF1B5E20);
+  static const Color warning = Color(0xFFD97706);
+  static const Color warningContainer = Color(0xFFFEF3C7);
+  static const Color onWarningContainer = Color(0xFF92400E);
+  static const Color info = Color(0xFF0284C7);
+  static const Color infoContainer = Color(0xFFF0F9FF);
+  static const Color onInfoContainer = Color(0xFF075985);
+
   // ── Tonal shadow base ──────────────────────────────────────────────────────
-  static const Color shadowPrimary = Color(0xFF00695c);
+  static const Color shadowPrimary = Color(0xFF3B67FC);
+
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF00C0F3), Color(0xFF1A63ED), Color(0xFF001F60)],
+    stops: [0.0692, 0.8556, 1.0],
+  );
 }

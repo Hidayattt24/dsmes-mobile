@@ -104,7 +104,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                                 "Selamat datang di DIBA!",
                                 style: AppTextStyles.poppinsHeadline.copyWith(
                                   fontSize: 26,
-                                  color: AppColors.primary,
+                                  color: AppColors.onPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
@@ -122,10 +122,12 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                               Container(
                                 padding: const EdgeInsets.all(AppSpacing.lg),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryContainer
-                                      .withValues(alpha: 0.1),
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.lg),
+                                  color: AppColors.primaryContainer.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.lg,
+                                  ),
                                   border: Border.all(
                                     color: AppColors.primaryContainer
                                         .withValues(alpha: 0.3),
@@ -135,7 +137,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                                   children: [
                                     const Icon(
                                       Icons.health_and_safety_outlined,
-                                      color: AppColors.primary,
+                                      color: AppColors.onPrimary,
                                       size: 32,
                                     ),
                                     const SizedBox(width: AppSpacing.md),
@@ -148,18 +150,21 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
                                             "Langkah 2: Lengkapi Data Diri",
                                             style: AppTextStyles.labelLg
                                                 .copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.onSurface,
-                                            ),
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.onSurface,
+                                                ),
                                           ),
                                           const SizedBox(
-                                              height: AppSpacing.xxs),
+                                            height: AppSpacing.xxs,
+                                          ),
                                           Text(
                                             "Melengkapi tempat tinggal, data sosial, pendidikan & riwayat diabetes Anda",
                                             style: AppTextStyles.bodyMd
                                                 .copyWith(
-                                              color: AppColors.onSurfaceVariant,
-                                            ),
+                                                  color:
+                                                      AppColors
+                                                          .onSurfaceVariant,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -179,10 +184,7 @@ class _RegistrationWelcomeScreenState extends State<RegistrationWelcomeScreen>
             AnimatedBuilder(
               animation: _controller,
               builder: (context, child) {
-                return Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: child,
-                );
+                return Opacity(opacity: _fadeAnimation.value, child: child);
               },
               child: Container(
                 padding: EdgeInsets.fromLTRB(

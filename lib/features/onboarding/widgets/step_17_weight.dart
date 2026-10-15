@@ -27,17 +27,12 @@ class Step17Weight extends ConsumerWidget {
           iconBackgroundColor: AppColors.primaryFixed,
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppNumericDisplay(
-          value: weight,
-          unit: AppStrings.step11Unit,
-        ),
+        AppNumericDisplay(value: weight, unit: AppStrings.step11Unit),
         const SizedBox(height: AppSpacing.md),
         Text(
           'Gunakan papan ketik di bawah untuk memasukkan berat badan Anda saat ini.',
           textAlign: TextAlign.center,
-          style: AppTextStyles.bodyMd.copyWith(
-            color: AppColors.outline,
-          ),
+          style: AppTextStyles.bodyMd.copyWith(color: AppColors.outline),
         ),
         const SizedBox(height: AppSpacing.lg),
         AppNumericKeypad(

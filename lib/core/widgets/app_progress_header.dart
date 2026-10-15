@@ -81,12 +81,7 @@ class _HeaderRow extends StatelessWidget {
           _BackButton(onBack: onBack),
           const SizedBox(width: AppSpacing.md),
         ],
-        Expanded(
-          child: Text(
-            stepLabel,
-            style: AppTextStyles.poppinsLabel,
-          ),
-        ),
+        Expanded(child: Text(stepLabel, style: AppTextStyles.poppinsLabel)),
         Text(
           percentageLabel,
           style: AppTextStyles.poppinsLabel.copyWith(
@@ -138,12 +133,15 @@ class _ProgressBar extends StatelessWidget {
         tween: Tween(begin: 0, end: progress),
         duration: const Duration(milliseconds: 700),
         curve: Curves.easeOut,
-        builder: (context, value, child) => LinearProgressIndicator(
-          value: value,
-          minHeight: 8,
-          backgroundColor: AppColors.surfaceContainerHighest,
-          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary),
-        ),
+        builder:
+            (context, value, child) => LinearProgressIndicator(
+              value: value,
+              minHeight: 8,
+              backgroundColor: AppColors.surfaceContainerHighest,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.secondary,
+              ),
+            ),
       ),
     );
   }

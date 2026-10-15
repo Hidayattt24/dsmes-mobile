@@ -23,7 +23,8 @@ class QuizSubmitResultModel {
   /// Only populated for Pre-Test (DMSES) — e.g. "Good Self-Efficacy".
   final String selfEfficacyCategory;
 
-  int get incorrectCount => (totalQuestions - correctCount).clamp(0, totalQuestions);
+  int get incorrectCount =>
+      (totalQuestions - correctCount).clamp(0, totalQuestions);
   int get percentage => score;
 
   factory QuizSubmitResultModel.fromJson(Map<String, dynamic> json) {
@@ -74,7 +75,8 @@ class MyAttemptModel {
       correctCount: json['correct_count'] as int? ?? 0,
       incorrectCount: json['incorrect_count'] as int? ?? 0,
       percentage: json['percentage'] as int? ?? 0,
-      completedAt: DateTime.tryParse(json['completed_at'] as String? ?? '') ??
+      completedAt:
+          DateTime.tryParse(json['completed_at'] as String? ?? '') ??
           DateTime.now(),
     );
   }
@@ -88,6 +90,7 @@ class MyHistoryItemModel {
     required this.questionnaireId,
     required this.questionnaireTitle,
     required this.type,
+    this.scope = '',
     required this.score,
     required this.passed,
     required this.totalQuestions,
@@ -103,6 +106,7 @@ class MyHistoryItemModel {
 
   /// 'PRE_TEST' or 'POST_TEST'
   final String type;
+  final String scope;
   final int score;
   final bool passed;
   final int totalQuestions;
@@ -119,13 +123,15 @@ class MyHistoryItemModel {
       questionnaireId: json['questionnaire_id'] as String? ?? '',
       questionnaireTitle: json['questionnaire_title'] as String? ?? '',
       type: json['type'] as String? ?? 'POST_TEST',
+      scope: json['scope'] as String? ?? '',
       score: json['score'] as int? ?? 0,
       passed: json['passed'] as bool? ?? false,
       totalQuestions: json['total_questions'] as int? ?? 0,
       correctCount: json['correct_count'] as int? ?? 0,
       incorrectCount: json['incorrect_count'] as int? ?? 0,
       percentage: json['percentage'] as int? ?? 0,
-      completedAt: DateTime.tryParse(json['completed_at'] as String? ?? '') ??
+      completedAt:
+          DateTime.tryParse(json['completed_at'] as String? ?? '') ??
           DateTime.now(),
     );
   }
@@ -136,6 +142,7 @@ class MyHistoryItemModel {
       'questionnaire_id': questionnaireId,
       'questionnaire_title': questionnaireTitle,
       'type': type,
+      'scope': scope,
       'score': score,
       'passed': passed,
       'total_questions': totalQuestions,
@@ -219,9 +226,13 @@ class AttemptDetailModel {
       type: json['type'] as String? ?? 'POST_TEST',
       selfEfficacyCategory:
           participant['self_efficacy_category'] as String? ?? '',
-      questionAnalysis: rawAnalysis
-          .map((e) => QuestionAnalysisModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      questionAnalysis:
+          rawAnalysis
+              .map(
+                (e) =>
+                    QuestionAnalysisModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList(),
     );
   }
 }

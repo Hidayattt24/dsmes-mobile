@@ -21,10 +21,12 @@ class QuestionnaireQuestionsScreen extends ConsumerStatefulWidget {
     super.key,
     required this.questionnaire,
     this.isPreTest = false,
+    this.returnToEducationId,
   });
 
   final QuestionnaireDetailModel questionnaire;
   final bool isPreTest;
+  final String? returnToEducationId;
 
   @override
   ConsumerState<QuestionnaireQuestionsScreen> createState() =>
@@ -131,7 +133,8 @@ class _QuestionnaireQuestionsScreenState
                   questionnaireId: widget.questionnaire.id,
                   questionnaireTitle: widget.questionnaire.title,
                   isPreTest: true,
-                  returnToHome: true,
+                  returnToHome: widget.questionnaire.scope == 'APPLICATION',
+                  returnToEducationId: widget.returnToEducationId,
                   initialResult: result,
                 ),
           ),
@@ -144,6 +147,7 @@ class _QuestionnaireQuestionsScreenState
                   questionnaireId: widget.questionnaire.id,
                   questionnaireTitle: widget.questionnaire.title,
                   isPreTest: false,
+                  returnToEducationId: widget.returnToEducationId,
                 ),
           ),
         );
@@ -272,10 +276,14 @@ class _QuestionnaireQuestionsScreenState
                   const SizedBox(height: AppSpacing.xl),
 
                   // ── Answer options ─────────────────────────────────────
-                  if (widget.isPreTest) ...[
-                    // Pre-Test DMSES 1-5 Likert scale confidence cards
+                  if (widget.questionnaire.scope == 'APPLICATION' &&
+                      currentQuestion.choices.every(
+                        (c) =>
+                            int.tryParse(c.id) != null && int.parse(c.id) <= 5,
+                      )) ...[
+                    // Standard 1-5 Likert scale confidence cards
                     Text(
-                      'Tingkat Keyakinan Anda:',
+                      'Pilihan Jawaban:',
                       style: AppTextStyles.labelLg.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
@@ -292,7 +300,7 @@ class _QuestionnaireQuestionsScreenState
                       const SizedBox(height: 12),
                     ],
                   ] else ...[
-                    // Standard Multiple Choice cards for Post-Test
+                    // Dynamic Custom Choices input by Admin
                     for (final choice in currentQuestion.choices) ...[
                       _OptionCard(
                         optionText: choice.optionText,

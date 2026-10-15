@@ -93,55 +93,53 @@ class ReminderSection extends StatelessWidget {
         // List items
         reminders.isEmpty
             ? Container(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLowest,
-                  borderRadius: AppRadius.card,
-                  border: Border.all(
-                    color: AppColors.outlineVariant.withValues(alpha: 0.2),
-                  ),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: AppRadius.card,
+                border: Border.all(
+                  color: AppColors.outlineVariant.withValues(alpha: 0.2),
                 ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.notifications_none_rounded,
-                      color: AppColors.outlineVariant,
-                      size: 32,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      emptyMessage ?? 'Tidak ada pengingat untuk hari ini.',
-                      style: AppTextStyles.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: reminders.length > 3 ? 3 : reminders.length,
-                separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
-                itemBuilder: (context, index) {
-                  final reminder = reminders[index];
-                  return _ReminderItemWidget(
-                    data: reminder,
-                    onTap: () => onReminderTapped?.call(reminder.id),
-                  );
-                },
               ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    color: AppColors.outlineVariant,
+                    size: 32,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    emptyMessage ?? 'Tidak ada pengingat untuk hari ini.',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            )
+            : ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: reminders.length > 3 ? 3 : reminders.length,
+              separatorBuilder:
+                  (context, index) => const SizedBox(height: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final reminder = reminders[index];
+                return _ReminderItemWidget(
+                  data: reminder,
+                  onTap: () => onReminderTapped?.call(reminder.id),
+                );
+              },
+            ),
       ],
     );
   }
 }
 
 class _ReminderItemWidget extends StatelessWidget {
-  const _ReminderItemWidget({
-    required this.data,
-    this.onTap,
-  });
+  const _ReminderItemWidget({required this.data, this.onTap});
 
   final ReminderItemData data;
   final VoidCallback? onTap;
@@ -159,10 +157,10 @@ class _ReminderItemWidget extends StatelessWidget {
           ),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0500695c),
+              color: Color(0x053B67FC),
               blurRadius: 10,
               offset: Offset(0, 3),
-            )
+            ),
           ],
         ),
         child: Material(
@@ -183,11 +181,7 @@ class _ReminderItemWidget extends StatelessWidget {
                       color: data.iconBgColor,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(
-                      data.icon,
-                      color: data.iconColor,
-                      size: 24,
-                    ),
+                    child: Icon(data.icon, color: data.iconColor, size: 24),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   // Content

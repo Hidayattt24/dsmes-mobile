@@ -120,7 +120,7 @@ class Step4Phone extends ConsumerWidget {
             children: [
               const Icon(
                 Icons.verified_user_outlined,
-                color: AppColors.primaryContainer,
+                color: AppColors.onPrimaryContainer,
                 size: 40,
               ),
               const SizedBox(height: AppSpacing.sm),
