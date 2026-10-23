@@ -122,7 +122,11 @@ class _WideContent extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon ?? Icons.help_outline, color: AppColors.onPrimary, size: 24),
+        Icon(
+          icon ?? Icons.help_outline,
+          color: isSelected ? AppColors.onPrimary : AppColors.primary,
+          size: 24,
+        ),
         const SizedBox(width: AppSpacing.sm),
         Text(
           label,

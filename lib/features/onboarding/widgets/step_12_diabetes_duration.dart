@@ -32,7 +32,7 @@ class Step12DiabetesDuration extends ConsumerWidget {
           icon: Icons.bloodtype_rounded,
           question: AppStrings.diabetesDurationTitle,
           description: AppStrings.diabetesDurationSubtitle,
-          iconBackgroundColor: AppColors.primaryFixed,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         ...List.generate(_options.length, (i) {

@@ -38,7 +38,7 @@ class Step9HealthFacility extends ConsumerWidget {
           icon: Icons.local_hospital_outlined,
           question: AppStrings.healthFacilityTitle,
           description: AppStrings.healthFacilitySubtitle,
-          iconBackgroundColor: AppColors.primaryFixed,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(
@@ -135,7 +135,18 @@ class _FacilityPickerField extends StatelessWidget {
                 ),
               )
             else
-              const Icon(Icons.expand_more, color: AppColors.onPrimary),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
           ],
         ),
       ),
@@ -205,7 +216,7 @@ class _FacilityPickerSheetState extends State<_FacilityPickerSheet> {
                 hintText: AppStrings.healthFacilitySearchHint,
                 prefixIcon: const Icon(
                   Icons.search,
-                  color: AppColors.onPrimary,
+                  color: AppColors.primary,
                 ),
                 filled: true,
                 fillColor: AppColors.surfaceContainerLowest,
@@ -236,9 +247,18 @@ class _FacilityPickerSheetState extends State<_FacilityPickerSheet> {
                       itemBuilder: (context, index) {
                         final facility = filtered[index];
                         return ListTile(
-                          leading: const Icon(
-                            Icons.local_hospital_outlined,
-                            color: AppColors.onPrimary,
+                          leading: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.local_hospital_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                           title: Text(
                             facility,

@@ -62,34 +62,30 @@ class _Step6ConfirmPasswordState extends ConsumerState<Step6ConfirmPassword> {
           ),
           child: Row(
             children: [
-              const SizedBox(width: AppSpacing.lg),
-              const Icon(
-                Icons.lock_outline,
-                color: AppColors.onPrimary,
-                size: 22,
-              ),
-              const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: TextFormField(
-                  initialValue: confirmPassword,
-                  onChanged: notifier.onConfirmPasswordChanged,
-                  obscureText: _obscure,
-                  textInputAction: TextInputAction.done,
-                  style: AppTextStyles.bodyLg.copyWith(
-                    color: AppColors.onSurface,
-                  ),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    hintText: AppStrings.step5FieldHint,
-                    hintStyle: AppTextStyles.bodyLg.copyWith(
-                      color: AppColors.outline,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.lg),
+                  child: TextFormField(
+                    initialValue: confirmPassword,
+                    onChanged: notifier.onConfirmPasswordChanged,
+                    obscureText: _obscure,
+                    textInputAction: TextInputAction.done,
+                    style: AppTextStyles.bodyLg.copyWith(
+                      color: AppColors.onSurface,
                     ),
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      hintText: AppStrings.step5FieldHint,
+                      hintStyle: AppTextStyles.bodyLg.copyWith(
+                        color: AppColors.outline,
+                      ),
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
                 ),
               ),
@@ -104,12 +100,12 @@ class _Step6ConfirmPasswordState extends ConsumerState<Step6ConfirmPassword> {
                   _obscure
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: AppColors.onPrimary,
+                  color: AppColors.outline,
                   size: 22,
                 ),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.xs),
             ],
           ),
         ),

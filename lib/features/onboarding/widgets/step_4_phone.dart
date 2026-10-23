@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
@@ -24,7 +25,7 @@ class Step4Phone extends ConsumerWidget {
           icon: Icons.phone_outlined,
           question: AppStrings.step3Title,
           description: AppStrings.step3Subtitle,
-          iconBackgroundColor: AppColors.secondaryContainer,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         Container(
@@ -47,23 +48,11 @@ class Step4Phone extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
+                    SvgPicture.asset(
+                      'assets/icons/indonesia-country.svg',
                       width: 24,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'ID',
-                          style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                      ),
+                      height: 24,
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
@@ -95,7 +84,7 @@ class Step4Phone extends ConsumerWidget {
                       focusedBorder: InputBorder.none,
                       errorBorder: InputBorder.none,
                       disabledBorder: InputBorder.none,
-                      hintText: AppStrings.step3FieldHint,
+                      hintText: '82211676543',
                       hintStyle: AppTextStyles.labelLg.copyWith(
                         color: AppColors.outlineVariant,
                       ),
@@ -120,7 +109,7 @@ class Step4Phone extends ConsumerWidget {
             children: [
               const Icon(
                 Icons.verified_user_outlined,
-                color: AppColors.onPrimaryContainer,
+                color: AppColors.primary,
                 size: 40,
               ),
               const SizedBox(height: AppSpacing.sm),

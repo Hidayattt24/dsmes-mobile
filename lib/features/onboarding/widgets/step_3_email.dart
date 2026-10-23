@@ -48,34 +48,32 @@ class Step3Email extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              const SizedBox(width: AppSpacing.lg),
-              const Icon(
-                Icons.email_outlined,
-                color: AppColors.onPrimary,
-                size: 22,
-              ),
-              const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: TextFormField(
-                  initialValue: email,
-                  onChanged: notifier.onEmailChanged,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.done,
-                  style: AppTextStyles.bodyLg.copyWith(
-                    color: AppColors.onSurface,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
                   ),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    hintText: AppStrings.step2FieldHint,
-                    hintStyle: AppTextStyles.bodyLg.copyWith(
-                      color: AppColors.outline,
+                  child: TextFormField(
+                    initialValue: email,
+                    onChanged: notifier.onEmailChanged,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    style: AppTextStyles.bodyLg.copyWith(
+                      color: AppColors.onSurface,
                     ),
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      hintText: AppStrings.step2FieldHint,
+                      hintStyle: AppTextStyles.bodyLg.copyWith(
+                        color: AppColors.outline,
+                      ),
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
                 ),
               ),

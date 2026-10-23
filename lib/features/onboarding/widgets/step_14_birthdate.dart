@@ -29,7 +29,7 @@ class Step14Birthdate extends ConsumerWidget {
           icon: Icons.calendar_month_outlined,
           question: AppStrings.step8Title,
           description: AppStrings.step8Subtitle,
-          iconBackgroundColor: AppColors.secondaryContainer,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         Text(

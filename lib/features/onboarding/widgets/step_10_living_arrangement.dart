@@ -30,7 +30,7 @@ class Step10LivingArrangement extends ConsumerWidget {
           icon: Icons.people_outline,
           question: AppStrings.livingArrangementTitle,
           description: AppStrings.livingArrangementSubtitle,
-          iconBackgroundColor: AppColors.secondaryContainer,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         ...List.generate(_options.length, (i) {

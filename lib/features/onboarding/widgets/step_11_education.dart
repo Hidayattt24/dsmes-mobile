@@ -35,7 +35,7 @@ class Step11Education extends ConsumerWidget {
           icon: Icons.menu_book_outlined,
           question: AppStrings.educationTitle,
           description: AppStrings.educationSubtitle,
-          iconBackgroundColor: AppColors.primaryFixed,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         ...List.generate(_options.length, (i) {

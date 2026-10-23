@@ -28,7 +28,7 @@ class Step13Gender extends ConsumerWidget {
         const AppOnboardingQuestion(
           icon: Icons.wc,
           question: AppStrings.step7Title,
-          iconBackgroundColor: AppColors.secondaryContainer,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         ...List.generate(_options.length, (i) {

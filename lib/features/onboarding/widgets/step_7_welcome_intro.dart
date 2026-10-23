@@ -20,13 +20,13 @@ class Step7WelcomeIntro extends ConsumerWidget {
           width: 200,
           height: 200,
           decoration: BoxDecoration(
-            color: AppColors.primaryContainer.withValues(alpha: 0.15),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(100),
           ),
           child: const Icon(
             Icons.person_pin_circle_outlined,
             size: 96,
-            color: AppColors.onPrimaryContainer,
+            color: AppColors.primary,
           ),
         ),
         const SizedBox(height: AppSpacing.xl),

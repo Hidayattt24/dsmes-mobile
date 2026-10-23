@@ -23,7 +23,7 @@ class Step8Residence extends ConsumerWidget {
           icon: Icons.home_outlined,
           question: AppStrings.residenceTitle,
           description: AppStrings.residenceSubtitle,
-          iconBackgroundColor: AppColors.secondaryContainer,
+          iconBackgroundColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.lg),
         _StaticField(label: AppStrings.residenceCityLabel, value: city),
