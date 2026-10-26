@@ -113,6 +113,7 @@ class QuestionnaireDetailModel {
     required this.categoryCount,
     required this.questionCount,
     required this.categories,
+    this.hasAttempted = false,
   });
 
   final String id;
@@ -130,6 +131,7 @@ class QuestionnaireDetailModel {
   final int categoryCount;
   final int questionCount;
   final List<QuestionCategoryModel> categories;
+  final bool hasAttempted;
 
   bool get isPreTest => type == 'PRE_TEST';
   bool get isPostTest => type == 'POST_TEST';
@@ -169,6 +171,7 @@ class QuestionnaireDetailModel {
                     QuestionCategoryModel.fromJson(e as Map<String, dynamic>),
               )
               .toList(),
+      hasAttempted: json['has_attempted'] as bool? ?? false,
     );
   }
 }

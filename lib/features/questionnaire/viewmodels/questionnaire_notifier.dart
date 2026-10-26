@@ -60,6 +60,14 @@ class PreTestByEducationNotifier
   @override
   Future<QuestionnaireDetailModel?> build(String educationId) async {
     if (educationId.isEmpty) return null;
+    final storage = ref.read(secureStorageProvider);
+    final userId = await storage.read(key: AppConstants.keyUserId);
+    if (userId != null && userId.isNotEmpty) {
+      final localMarker = await storage.read(
+        key: AppConstants.educationPreTestSubmittedKey(userId, educationId),
+      );
+      if (localMarker == 'true') return null;
+    }
     try {
       final result = await ref
           .read(questionnaireRepositoryProvider)
@@ -68,6 +76,12 @@ class PreTestByEducationNotifier
           result.scope != 'EDUCATION' ||
           result.educationId != educationId) {
         throw StateError('Server returned invalid education Pre-Test');
+      }
+      if (result.hasAttempted && userId != null && userId.isNotEmpty) {
+        await storage.write(
+          key: AppConstants.educationPreTestSubmittedKey(userId, educationId),
+          value: 'true',
+        );
       }
       return result;
     } catch (_) {
@@ -394,6 +408,7 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
     required Map<String, String> answers,
     required int durationSeconds,
     bool isPreTest = false,
+    String? educationId,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -408,9 +423,12 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
       state = state.copyWith(isLoading: false, result: result);
 
       if (isPreTest && result != null) {
-        await ref
-            .read(secureStorageProvider)
-            .write(key: AppConstants.keyPreTestCompleted, value: 'true');
+        final storage = ref.read(secureStorageProvider);
+        await storage.write(
+          key: AppConstants.keyPreTestCompleted,
+          value: 'true',
+        );
+        await _markEducationPreTestSubmitted(storage, educationId);
       }
 
       return result;
@@ -445,6 +463,12 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
           createdAt: DateTime.now(),
         );
         await ref.read(syncQueueManagerProvider.notifier).enqueue(syncItem);
+        if (isPreTest) {
+          await _markEducationPreTestSubmitted(
+            ref.read(secureStorageProvider),
+            educationId,
+          );
+        }
 
         if (isPreTest) {
           int totalLikert = 0;
@@ -496,6 +520,19 @@ class QuizSubmissionNotifier extends Notifier<QuizSubmissionState> {
       );
       return null;
     }
+  }
+
+  Future<void> _markEducationPreTestSubmitted(
+    dynamic storage,
+    String? educationId,
+  ) async {
+    if (educationId == null || educationId.isEmpty) return;
+    final userId = await storage.read(key: AppConstants.keyUserId);
+    if (userId == null || userId.isEmpty) return;
+    await storage.write(
+      key: AppConstants.educationPreTestSubmittedKey(userId, educationId),
+      value: 'true',
+    );
   }
 
   void reset() {

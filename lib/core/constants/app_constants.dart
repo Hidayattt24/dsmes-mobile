@@ -22,6 +22,11 @@ abstract final class AppConstants {
   static const String keyBiometricEnabled = 'biometric_enabled';
   static const String keyPreTestCompleted = 'pre_test_completed';
 
+  static String educationPreTestSubmittedKey(
+    String userId,
+    String educationId,
+  ) => 'education_pretest_submitted_${userId}_$educationId';
+
   static const int totalOnboardingSteps = 19;
 
   static const int defaultPageSize = 20;

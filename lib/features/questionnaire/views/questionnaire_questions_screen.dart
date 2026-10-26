@@ -115,6 +115,8 @@ class _QuestionnaireQuestionsScreenState
           answers: _answers,
           durationSeconds: durationSeconds,
           isPreTest: widget.isPreTest,
+          educationId:
+              widget.questionnaire.educationId ?? widget.returnToEducationId,
         );
 
     if (!mounted) return;
