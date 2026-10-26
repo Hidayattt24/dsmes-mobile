@@ -15,6 +15,7 @@ import '../viewmodels/education_notifier.dart';
 import '../widgets/article_information.dart';
 import '../widgets/education_review_dialog.dart';
 import '../widgets/education_skeleton.dart';
+import '../widgets/youtube_mini_player.dart';
 import '../widgets/youtube_preview_card.dart';
 import '../../questionnaire/models/questionnaire_detail_model.dart';
 import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
@@ -47,6 +48,33 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   bool _hasScrolledToBottom = false;
   bool _hasCheckedPreTest = false;
 
+  // ──────────────────────────────────────────────────────────────
+  // YouTube shared controller & mini-player state
+  // ──────────────────────────────────────────────────────────────
+
+  /// Shared [YoutubePlayerController] lifted from [YouTubePreviewCard].
+  /// Null until the card calls [_onVideoControllerReady].
+  YoutubePlayerController? _sharedVideoController;
+
+  /// Title of the currently loaded video (for mini player label).
+  String _videoTitle = 'Video Edukasi';
+
+  /// Whether the mini player is currently visible.
+  bool _showMiniPlayer = false;
+
+  /// GlobalKey on the [YouTubePreviewCard] container so we can calculate
+  /// when the video widget scrolls out of view.
+  final GlobalKey _videoCardKey = GlobalKey();
+
+  /// Cached bottom-Y of the video card widget (in scroll coordinates).
+  /// Updated lazily on first scroll event after controller is ready.
+  double? _videoCardBottomOffset;
+
+  // ──────────────────────────────────────────────────────────────
+  // Overlay entry for the floating mini player
+  // ──────────────────────────────────────────────────────────────
+  OverlayEntry? _miniPlayerOverlay;
+
   @override
   void initState() {
     super.initState();
@@ -66,14 +94,13 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
         preTestByEducationProvider(widget.articleId).future,
       );
       if (!mounted || preTest == null) return;
+      if (preTest.hasAttempted) return;
 
-      // If pre-test has questions, prompt patient to complete it before reading
       final hasQuestions = preTest.categories.any(
         (c) => c.questions.isNotEmpty,
       );
       if (!hasQuestions) return;
 
-      // Show dialog informing patient of pre-test
       final startPreTest = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -157,7 +184,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Cache the notifier instance safely while mounted
     _cachedNotifier = ref.read(
       educationDetailProvider(widget.articleId).notifier,
     );
@@ -165,7 +191,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
 
   @override
   void deactivate() {
-    // deactivate() runs BEFORE dispose() while the element is still active
     _flushReadProgress();
     super.deactivate();
   }
@@ -174,17 +199,91 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _removeMiniPlayerOverlay();
+    // Dispose the shared controller here since we own it after it was
+    // transferred from YouTubePreviewCard via onControllerReady.
+    _sharedVideoController?.dispose();
     super.dispose();
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // YouTube shared controller callback
+  // ──────────────────────────────────────────────────────────────
+
+  void _onVideoControllerReady(YoutubePlayerController ctrl) {
+    if (_sharedVideoController == ctrl) return;
+    _sharedVideoController?.dispose();
+    setState(() => _sharedVideoController = ctrl);
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // Mini player overlay management
+  // ──────────────────────────────────────────────────────────────
+
+  void _showMiniPlayerOverlay(String title) {
+    if (_sharedVideoController == null) return;
+    _removeMiniPlayerOverlay();
+
+    _miniPlayerOverlay = OverlayEntry(
+      builder:
+          (ctx) => Positioned(
+            right: 16,
+            bottom: 100, // sits above the bottom "Tandai Selesai" bar
+            child: YouTubeMiniPlayer(
+              controller: _sharedVideoController!,
+              videoTitle: title,
+              onExpand: _expandMiniPlayer,
+              onClose: _closeMiniPlayer,
+            ),
+          ),
+    );
+
+    Overlay.of(context).insert(_miniPlayerOverlay!);
+    setState(() => _showMiniPlayer = true);
+  }
+
+  void _removeMiniPlayerOverlay() {
+    _miniPlayerOverlay?.remove();
+    _miniPlayerOverlay = null;
+  }
+
+  void _closeMiniPlayer() {
+    _sharedVideoController?.pause();
+    _removeMiniPlayerOverlay();
+    if (mounted) setState(() => _showMiniPlayer = false);
+  }
+
+  void _expandMiniPlayer() {
+    _removeMiniPlayerOverlay();
+    if (mounted) setState(() => _showMiniPlayer = false);
+
+    // Scroll back to video position
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_videoCardBottomOffset != null && _scrollController.hasClients) {
+        _scrollController.animateTo(
+          (_videoCardBottomOffset! - 400).clamp(0.0, double.infinity),
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _onMinimizeVideo() {
+    final title = _videoTitle;
+    _showMiniPlayerOverlay(title);
   }
 
   // ──────────────────────────────────────────────────────────────
   // Scroll tracking
   // ──────────────────────────────────────────────────────────────
+
   void _onScroll() {
     if (!mounted) return;
     final pos = _scrollController.position;
+
+    // ── Article read-progress ──────────────────────────────────
     if (pos.maxScrollExtent <= 0) {
-      // Article fits on screen without scrolling — treat as reached bottom.
       if (!_hasScrolledToBottom) {
         setState(() => _hasScrolledToBottom = true);
       }
@@ -196,17 +295,49 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
       100,
     );
 
-    // Throttle: only report every 10% change
     if (pct - _lastReportedScrollPct >= 10) {
       _lastReportedScrollPct = pct;
       _flushReadProgress(scrollPct: pct);
     }
 
-    // Enable the "Tandai Sudah Membaca" button only once the user reaches
-    // the very bottom of the article.
     if (!_hasScrolledToBottom && pos.pixels >= pos.maxScrollExtent - 1) {
       setState(() => _hasScrolledToBottom = true);
     }
+
+    // ── Mini player visibility ─────────────────────────────────
+    _updateMiniPlayerVisibility(pos.pixels);
+  }
+
+  /// Shows mini player when video card is scrolled out of view upward.
+  void _updateMiniPlayerVisibility(double scrollPixels) {
+    if (_sharedVideoController == null) return;
+
+    // Lazily compute the video card's bottom offset
+    _videoCardBottomOffset ??= _computeVideoCardBottom();
+    final cardBottom = _videoCardBottomOffset;
+    if (cardBottom == null) return;
+
+    final videoIsOutOfView = scrollPixels > cardBottom;
+
+    if (videoIsOutOfView && !_showMiniPlayer) {
+      _showMiniPlayerOverlay(_videoTitle);
+    } else if (!videoIsOutOfView && _showMiniPlayer) {
+      _removeMiniPlayerOverlay();
+      if (mounted) setState(() => _showMiniPlayer = false);
+    }
+  }
+
+  /// Computes how many pixels from the top of the scroll content the bottom
+  /// edge of the video card widget is located.
+  double? _computeVideoCardBottom() {
+    final ro = _videoCardKey.currentContext?.findRenderObject();
+    if (ro == null || ro is! RenderBox || !ro.hasSize) return null;
+    // Convert widget's local top to scroll coordinate
+    final scrollRo =
+        _scrollController.position.context.storageContext.findRenderObject();
+    if (scrollRo == null || scrollRo is! RenderBox) return null;
+    final localOffset = ro.localToGlobal(Offset.zero, ancestor: scrollRo);
+    return localOffset.dy + ro.size.height;
   }
 
   void _flushReadProgress({int? scrollPct}) {
@@ -214,7 +345,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
     final duration = DateTime.now().difference(_readStartTime!).inSeconds;
     final pct = scrollPct ?? _lastReportedScrollPct;
 
-    // Use cached notifier instance if ref is unmounted/disposed
     if (mounted) {
       ref
           .read(educationDetailProvider(widget.articleId).notifier)
@@ -315,7 +445,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
       );
     }
 
-    // 4. Setelah ulasan selesai, tawarkan post-test jika tersedia untuk modul edukasi ini
+    // 4. Setelah ulasan selesai, tawarkan post-test jika tersedia
     if (!mounted) return;
     try {
       final postTest = await ref.read(
@@ -451,7 +581,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // Build
+  // Share
   // ──────────────────────────────────────────────────────────────
   void _handleShare(EducationArticle article) {
     final mockUrl = 'https://dsmes-aceh.id/edukasi/${article.id}';
@@ -649,6 +779,9 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
             ? Colors.white
             : AppColors.onSurfaceVariant;
 
+    // Cache video title for mini player label
+    _videoTitle = article.title;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -714,12 +847,12 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
             ),
             onPressed: _toggleBookmark,
           ),
-
           const SizedBox(width: 8),
         ],
       ),
       body: Stack(
         children: [
+          // ── Main scrollable content ──────────────────────────────────
           SingleChildScrollView(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
@@ -727,6 +860,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Hero image ───────────────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   height: 180,
@@ -785,6 +919,8 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                             fallbackIcon: Icons.menu_book_rounded,
                           ),
                 ),
+
+                // ── Article info ─────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.page,
@@ -794,20 +930,81 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                   ),
                   child: ArticleInformation(article: article),
                 ),
+
+                // ── Body content ─────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.page),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        article.title,
-                        style: AppTextStyles.poppinsHeadline.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          height: 1.35,
-                          color: AppColors.onSurface,
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          article.title,
+                          style: AppTextStyles.poppinsHeadline.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            height: 1.35,
+                            color: AppColors.onSurface,
+                          ),
                         ),
                       ),
+                      if (article.quoteText.trim().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
+                            border: const Border(
+                              left: BorderSide(
+                                color: AppColors.primary,
+                                width: 4,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            article.quoteText.trim(),
+                            style: AppTextStyles.bodyLg.copyWith(
+                              color: AppColors.onSurface,
+                              fontStyle: FontStyle.italic,
+                              height: 1.55,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (article.youtubeVideoId != null &&
+                          !article.bodyParagraphs.any(
+                            (paragraph) =>
+                                paragraph.contains('youtube.com') ||
+                                paragraph.contains('youtu.be') ||
+                                paragraph.contains('data-youtube-id'),
+                          )) ...[
+                        const SizedBox(height: 20),
+                        KeyedSubtree(
+                          key: _videoCardKey,
+                          child: YouTubePreviewCard(
+                            videoTitle: article.title,
+                            videoDuration:
+                                article.videoDuration ?? 'Video Edukasi',
+                            channelName: article.channelName ?? 'DIBA Official',
+                            imageUrl: article.imageUrl,
+                            videoUrl: article.videoUrl,
+                            isWatched:
+                                article.isYoutubeWatched || article.isCompleted,
+                            onVideoEnded: _onVideoEnded,
+                            onControllerReady: _onVideoControllerReady,
+                            onMinimize: _onMinimizeVideo,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       for (final contentHtml in article.bodyParagraphs) ...[
                         HtmlWidget(
@@ -828,6 +1025,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                             color: const Color(0xFF334155),
                           ),
                           customWidgetBuilder: (element) {
+                            // ── YouTube embed ───────────────────────
                             final youtubeId =
                                 element.attributes['data-youtube-id'] ??
                                 (element.localName == 'a' &&
@@ -836,27 +1034,36 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                                       element.attributes['href']!,
                                     )
                                     : null);
+
                             if (youtubeId != null && youtubeId.isNotEmpty) {
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 8,
                                 ),
-                                child: YouTubePreviewCard(
-                                  videoTitle: article.title,
-                                  videoDuration: 'Video Edukasi',
-                                  channelName:
-                                      article.channelName ?? 'DIBA Official',
-                                  imageUrl: article.imageUrl,
-                                  videoUrl:
-                                      'https://www.youtube.com/watch?v=$youtubeId',
-                                  isWatched:
-                                      article.isYoutubeWatched ||
-                                      article.isCompleted,
-                                  onVideoEnded: _onVideoEnded,
+                                // GlobalKey so we can measure position for
+                                // mini-player trigger
+                                child: KeyedSubtree(
+                                  key: _videoCardKey,
+                                  child: YouTubePreviewCard(
+                                    videoTitle: article.title,
+                                    videoDuration: 'Video Edukasi',
+                                    channelName:
+                                        article.channelName ?? 'DIBA Official',
+                                    imageUrl: article.imageUrl,
+                                    videoUrl:
+                                        'https://www.youtube.com/watch?v=$youtubeId',
+                                    isWatched:
+                                        article.isYoutubeWatched ||
+                                        article.isCompleted,
+                                    onVideoEnded: _onVideoEnded,
+                                    onControllerReady: _onVideoControllerReady,
+                                    onMinimize: _onMinimizeVideo,
+                                  ),
                                 ),
                               );
                             }
 
+                            // ── Inline image ────────────────────────
                             if (element.localName == 'img' &&
                                 element.attributes['src'] != null) {
                               final src = element.attributes['src']!;
@@ -875,6 +1082,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                               );
                             }
 
+                            // ── Blockquote / teal box ───────────────
                             if (element.classes.contains('bg-teal-50') ||
                                 element.localName == 'blockquote') {
                               return Container(
@@ -974,6 +1182,8 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
               ],
             ),
           ),
+
+          // ── Bottom "Tandai Selesai" bar ──────────────────────────────
           Positioned(
             left: 0,
             right: 0,
