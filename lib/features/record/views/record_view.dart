@@ -8,7 +8,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../data/repositories/food_repository.dart';
 import '../../home/history/widgets/calendar_history_bottom_sheet.dart';
+import '../../home/meal/models/food_item.dart';
+import '../../home/meal/widgets/food_detail_sheet.dart';
 import '../../home/reminders/viewmodels/reminder_provider.dart';
 import '../../notifications/models/notification_item.dart';
 import '../../notifications/viewmodels/notifications_notifier.dart';
@@ -17,7 +20,6 @@ import '../models/record_provider.dart';
 import '../widgets/activity_entry_sheet.dart';
 import '../widgets/add_record_sheet.dart';
 import '../widgets/blood_sugar_edit_sheet.dart';
-import '../widgets/food_edit_sheet.dart';
 import '../widgets/medication_entry_sheet.dart';
 import '../widgets/record_action_card.dart';
 import '../widgets/record_timeline_section.dart';
@@ -199,15 +201,7 @@ class _RecordViewState extends ConsumerState<RecordView> {
         break;
 
       case RecordType.food:
-        showFoodEditSheet(
-          context,
-          initialTitle: item.title,
-          initialSubtitle: item.subtitle,
-          initialTime: item.time,
-          onSaved: (title, subtitle, time) {
-            ref.read(recordProvider.notifier).loadData();
-          },
-        );
+        _editFoodRecord(item);
         break;
 
       case RecordType.activity:
@@ -256,6 +250,46 @@ class _RecordViewState extends ConsumerState<RecordView> {
 
       case RecordType.all:
         break;
+    }
+  }
+
+  Future<void> _editFoodRecord(TimelineRecordItem item) async {
+    try {
+      final detail = await ref.read(foodRepositoryProvider).getMealLog(item.id);
+      if (!mounted) return;
+      final food = FoodItem.fromFoodMasterModel(
+        detail.food,
+        mealType: detail.mealType,
+      );
+      await showFoodDetailSheet(
+        context: context,
+        food: food,
+        initialPortionMultiplier: detail.portionMultiplier,
+        initialMealType: detail.mealType,
+        showMealTypeSelector: true,
+        submitLabel: 'Simpan Perubahan',
+        onAddToLog: (_) {},
+        onSubmitAsync: ({required multiplier, required mealType}) async {
+          final saved = await ref
+              .read(recordProvider.notifier)
+              .updateMealLog(
+                id: item.id,
+                mealType: mealType,
+                portionMultiplier: multiplier,
+              );
+          if (saved && mounted) {
+            AppSnackbar.showSuccess(
+              context,
+              'Catatan makanan berhasil diperbarui',
+            );
+          }
+          return saved;
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        AppSnackbar.showError(context, 'Gagal memuat detail makanan: $e');
+      }
     }
   }
 
@@ -502,13 +536,17 @@ class _RecordViewState extends ConsumerState<RecordView> {
                         title: 'Makanan',
                         valueText: pageState.foodValue,
                         unitText: 'kcal',
-                        subtitle: pageState.foodSubtitle,
                         buttonText: 'Tambah',
                         icon: Icons.restaurant,
                         iconBgColor: AppColors.tertiaryFixed,
                         iconColor: AppColors.onTertiaryFixedVariant,
                         isPrimaryButton: true,
-                        onTap: () => context.push(RouteNames.mealEntry),
+                        onTap: () async {
+                          await context.push(RouteNames.mealEntry);
+                          if (mounted) {
+                            await ref.read(recordProvider.notifier).loadData();
+                          }
+                        },
                       ),
                       RecordActionCard(
                         title: 'Aktivitas',

@@ -57,10 +57,14 @@ class FoodItem {
       servingSize.trim() == '0 ml' ||
       servingSize.trim().isEmpty;
 
-  factory FoodItem.fromFoodMasterModel(FoodMasterModel model, {String mealType = 'Makan Siang'}) {
-    final String cleanServingSize = model.servingSize.trim().isNotEmpty
-        ? model.servingSize.trim()
-        : '1 porsi';
+  factory FoodItem.fromFoodMasterModel(
+    FoodMasterModel model, {
+    String mealType = 'Makan Siang',
+  }) {
+    final String cleanServingSize =
+        model.servingSize.trim().isNotEmpty
+            ? model.servingSize.trim()
+            : '1 porsi';
     return FoodItem(
       id: model.id,
       name: model.name,
@@ -75,9 +79,7 @@ class FoodItem {
       fiberG: model.fiberG,
       nutritionBasis: model.nutritionBasis,
       mealType: mealType,
-      servingOptions: [
-        cleanServingSize,
-      ],
+      servingOptions: [cleanServingSize],
     );
   }
 
@@ -95,7 +97,7 @@ class MealEntryState {
   final String selectedMealType;
   final String searchQuery;
   final List<FoodItem> recommendedFoods;
-  final Set<String> selectedFoodIds;
+  final Map<String, FoodItem> selectedFoodsById;
   final Map<String, double> foodPortionMultipliers;
   final List<String> recentSearches;
   final bool isLoading;
@@ -107,9 +109,14 @@ class MealEntryState {
     this.selectedMealType = 'Makan Siang',
     this.searchQuery = '',
     this.recommendedFoods = const [],
-    this.selectedFoodIds = const {},
+    this.selectedFoodsById = const {},
     this.foodPortionMultipliers = const {},
-    this.recentSearches = const ['Nasi Goreng', 'Ayam Bakar', 'Tempe Goreng', 'Tahu Goreng'],
+    this.recentSearches = const [
+      'Nasi Goreng',
+      'Ayam Bakar',
+      'Tempe Goreng',
+      'Tahu Goreng',
+    ],
     this.isLoading = false,
     this.isMoreLoading = false,
     this.currentPage = 1,
@@ -118,23 +125,25 @@ class MealEntryState {
 
   int get totalCalories {
     int total = 0;
-    for (final id in selectedFoodIds) {
-      final food = recommendedFoods.where((f) => f.id == id).firstOrNull;
-      final multiplier = foodPortionMultipliers[id] ?? 1.0;
-      if (food != null) total += (food.energyKcal * multiplier).round();
+    for (final entry in selectedFoodsById.entries) {
+      final food = entry.value;
+      final multiplier = foodPortionMultipliers[entry.key] ?? 1.0;
+      total += (food.energyKcal * multiplier).round();
     }
     return total;
   }
 
   List<FoodItem> get selectedFoods {
-    return recommendedFoods.where((f) => selectedFoodIds.contains(f.id)).toList();
+    return selectedFoodsById.values.toList(growable: false);
   }
+
+  Set<String> get selectedFoodIds => selectedFoodsById.keys.toSet();
 
   MealEntryState copyWith({
     String? selectedMealType,
     String? searchQuery,
     List<FoodItem>? recommendedFoods,
-    Set<String>? selectedFoodIds,
+    Map<String, FoodItem>? selectedFoodsById,
     Map<String, double>? foodPortionMultipliers,
     List<String>? recentSearches,
     bool? isLoading,
@@ -146,8 +155,9 @@ class MealEntryState {
       selectedMealType: selectedMealType ?? this.selectedMealType,
       searchQuery: searchQuery ?? this.searchQuery,
       recommendedFoods: recommendedFoods ?? this.recommendedFoods,
-      selectedFoodIds: selectedFoodIds ?? this.selectedFoodIds,
-      foodPortionMultipliers: foodPortionMultipliers ?? this.foodPortionMultipliers,
+      selectedFoodsById: selectedFoodsById ?? this.selectedFoodsById,
+      foodPortionMultipliers:
+          foodPortionMultipliers ?? this.foodPortionMultipliers,
       recentSearches: recentSearches ?? this.recentSearches,
       isLoading: isLoading ?? this.isLoading,
       isMoreLoading: isMoreLoading ?? this.isMoreLoading,

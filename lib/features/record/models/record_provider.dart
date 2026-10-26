@@ -114,9 +114,10 @@ class RecordPageState {
       isMedicationTaken: isMedicationTaken ?? this.isMedicationTaken,
       todayTimelineItems: todayTimelineItems ?? this.todayTimelineItems,
       allHistoryItems: allHistoryItems ?? this.allHistoryItems,
-      dailyNutritionSummary: clearDailyNutritionSummary
-          ? null
-          : (dailyNutritionSummary ?? this.dailyNutritionSummary),
+      dailyNutritionSummary:
+          clearDailyNutritionSummary
+              ? null
+              : (dailyNutritionSummary ?? this.dailyNutritionSummary),
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -209,8 +210,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
         totalCount: todayAgg.totalCount > 0 ? todayAgg.totalCount : 4,
         bloodSugarValue: todayAgg.bloodSugarValue,
         bloodSugarSubtitle: todayAgg.bloodSugarSubtitle,
-        foodValue: todayAgg.foodValue,
-        foodSubtitle: todayAgg.foodSubtitle,
+        foodValue: nutritionSummary?.consumedCaloriesRounded.toString() ?? '0',
+        foodSubtitle: '',
         activityName: todayAgg.activityName,
         activityDuration: todayAgg.activityDuration,
         activityIntensity: todayAgg.activityIntensity,
@@ -227,25 +228,29 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       // Graceful offline fallback: load history and reminders from local cache
       try {
         final cacheManager = _ref.read(offlineCacheManagerProvider);
-        final cachedHistory =
-            await cacheManager.getCache(OfflineCacheManager.keyHistory);
-        final cachedReminders =
-            await cacheManager.getCache(OfflineCacheManager.keyReminders);
+        final cachedHistory = await cacheManager.getCache(
+          OfflineCacheManager.keyHistory,
+        );
+        final cachedReminders = await cacheManager.getCache(
+          OfflineCacheManager.keyReminders,
+        );
 
         List<HistoryItemModel> allItems = [];
         if (cachedHistory is List) {
-          allItems = cachedHistory
-              .whereType<Map<String, dynamic>>()
-              .map(HistoryItemModel.fromJson)
-              .toList();
+          allItems =
+              cachedHistory
+                  .whereType<Map<String, dynamic>>()
+                  .map(HistoryItemModel.fromJson)
+                  .toList();
         }
 
         List<ReminderModel> reminders = [];
         if (cachedReminders is List) {
-          reminders = cachedReminders
-              .whereType<Map<String, dynamic>>()
-              .map(ReminderModel.fromJson)
-              .toList();
+          reminders =
+              cachedReminders
+                  .whereType<Map<String, dynamic>>()
+                  .map(ReminderModel.fromJson)
+                  .toList();
         }
 
         if (allItems.isNotEmpty || reminders.isNotEmpty) {
@@ -261,9 +266,10 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
           bool isMedTaken = false;
 
           final targetDateStr = _dateKey(targetDate);
-          final medLogs = allItems
-              .where((item) => item.activityType == 'medication')
-              .toList();
+          final medLogs =
+              allItems
+                  .where((item) => item.activityType == 'medication')
+                  .toList();
 
           if (medLogs.isNotEmpty) {
             final latestMed = medLogs.first;
@@ -271,8 +277,11 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
             if (latestMed.notes.isNotEmpty) {
               medDosage = latestMed.notes;
             } else if (latestMed.subtitle.isNotEmpty &&
-                !['selesai', 'pending', 'terlewat']
-                    .contains(latestMed.subtitle)) {
+                ![
+                  'selesai',
+                  'pending',
+                  'terlewat',
+                ].contains(latestMed.subtitle)) {
               medDosage = latestMed.subtitle;
             }
             if (latestMed.parsedMeasuredAt != null) {
@@ -325,6 +334,34 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     }
   }
 
+  Future<bool> updateMealLog({
+    required String id,
+    required String mealType,
+    required double portionMultiplier,
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      await _ref
+          .read(foodRepositoryProvider)
+          .updateMealLog(
+            id: id,
+            mealType: mealType,
+            portionMultiplier: portionMultiplier,
+          );
+      state = state.copyWith(isSubmitting: false);
+      await loadData();
+      await _ref.read(historyProvider.notifier).refresh();
+      await _ref.read(homeDashboardProvider.notifier).refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: _formatError(e),
+      );
+      return false;
+    }
+  }
+
   _TodaySummary _computeTodaySummary(
     List<HistoryItemModel> allItems,
     DateTime today,
@@ -332,8 +369,7 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     final todayStr = _dateKey(today);
     String bsValue = '-';
     String bsSubtitle = 'Belum dicatat';
-    String foodVal = '0';
-    String foodSub = 'Belum dicatat';
+    double foodCalories = 0;
     String actName = 'Belum dicatat';
     int actDuration = 0;
     String actIntensity = '';
@@ -354,8 +390,10 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
           bsSubtitle = item.subtitle;
           break;
         case 'meal':
-          foodVal = item.value;
-          foodSub = item.title;
+          foodCalories +=
+              (item.metadata['calories'] as num?)?.toDouble() ??
+              double.tryParse(item.value) ??
+              0;
           break;
         case 'activity':
           actName = item.title;
@@ -377,8 +415,8 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
     return _TodaySummary(
       bloodSugarValue: bsValue,
       bloodSugarSubtitle: bsSubtitle,
-      foodValue: foodVal,
-      foodSubtitle: foodSub,
+      foodValue: foodCalories.round().toString(),
+      foodSubtitle: '',
       activityName: actName,
       activityDuration: actDuration,
       activityIntensity: actIntensity,
@@ -526,16 +564,31 @@ class RecordNotifier extends StateNotifier<RecordPageState> {
       completedCount: dateAgg.completedCount,
       totalCount: 4,
       todayTimelineItems: filtered,
+      foodValue: '-',
+      foodSubtitle: '',
+      clearDailyNutritionSummary: true,
     );
 
     try {
       final foodRepo = _ref.read(foodRepositoryProvider);
       final summary = await foodRepo.getDailyNutritionSummary(date: date);
-      if (state.selectedDate == date) {
-        state = state.copyWith(dailyNutritionSummary: summary);
+      if (state.selectedDate != null &&
+          _dateKey(state.selectedDate!) == _dateKey(date)) {
+        state = state.copyWith(
+          dailyNutritionSummary: summary,
+          foodValue: summary.consumedCaloriesRounded.toString(),
+          foodSubtitle: '',
+        );
       }
     } catch (_) {
-      // Ignore non-critical summary load error
+      if (state.selectedDate != null &&
+          _dateKey(state.selectedDate!) == _dateKey(date)) {
+        state = state.copyWith(
+          foodValue: '-',
+          foodSubtitle: '',
+          clearDailyNutritionSummary: true,
+        );
+      }
     }
   }
 

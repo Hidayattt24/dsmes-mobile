@@ -10,10 +10,24 @@ class FoodDetailSheet extends StatefulWidget {
     super.key,
     required this.food,
     required this.onAddToLog,
+    this.initialPortionMultiplier = 1.0,
+    this.submitLabel = 'Tambahkan ke Log Harian',
+    this.initialMealType = 'Makan Siang',
+    this.showMealTypeSelector = false,
+    this.onSubmitAsync,
   });
 
   final FoodItem food;
   final void Function(double portionMultiplier) onAddToLog;
+  final double initialPortionMultiplier;
+  final String submitLabel;
+  final String initialMealType;
+  final bool showMealTypeSelector;
+  final Future<bool> Function({
+    required double multiplier,
+    required String mealType,
+  })?
+  onSubmitAsync;
 
   @override
   State<FoodDetailSheet> createState() => _FoodDetailSheetState();
@@ -21,10 +35,36 @@ class FoodDetailSheet extends StatefulWidget {
 
 class _FoodDetailSheetState extends State<FoodDetailSheet> {
   // Grams for PER_100G mode
-  int _grams = 100;
+  late int _grams;
 
   // Servings / Packages for PER_SERVING or PER_PACKAGE mode
-  double _servings = 1.0;
+  late double _servings;
+  late String _selectedMealType;
+  bool _isSubmitting = false;
+  String? _submitError;
+
+  static const _mealTypes = [
+    'Sarapan',
+    'Makan Siang',
+    'Makan Malam',
+    'Camilan',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final initial =
+        widget.initialPortionMultiplier.isFinite &&
+                widget.initialPortionMultiplier > 0
+            ? widget.initialPortionMultiplier
+            : 1.0;
+    _grams = (initial * 100).round().clamp(25, 1500);
+    _servings = initial.clamp(0.25, 20.0);
+    _selectedMealType =
+        _mealTypes.contains(widget.initialMealType)
+            ? widget.initialMealType
+            : _displayMealType(widget.initialMealType);
+  }
 
   double get _multiplier {
     if (widget.food.isPer100g) {
@@ -62,6 +102,13 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
+        constraints: BoxConstraints(
+          // Keep sheet inside viewport on short phones and when keyboard opens.
+          maxHeight:
+              MediaQuery.sizeOf(context).height -
+              MediaQuery.viewInsetsOf(context).bottom -
+              16,
+        ),
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
           AppSpacing.sm,
@@ -75,201 +122,304 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
             topRight: Radius.circular(24),
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 48,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppColors.outlineVariant.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(3),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
 
-            // Food Title & Close button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        food.name,
-                        style: AppTextStyles.headlineMd.copyWith(
-                          fontWeight: FontWeight.bold,
+              // Food Title & Close button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          food.name,
+                          style: AppTextStyles.headlineMd.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (food.manufacturer.trim().isNotEmpty &&
-                          food.manufacturer.trim().toLowerCase() != 'tidak diketahui' &&
-                          food.manufacturer.trim().toLowerCase() != 'tidak ada' &&
-                          food.manufacturer.trim() != '-') ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.storefront_outlined,
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                'Produsen / Merk: ${food.manufacturer.trim()}',
-                                style: AppTextStyles.labelSm.copyWith(
-                                  color: AppColors.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 11,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                        if (food.manufacturer.trim().isNotEmpty &&
+                            food.manufacturer.trim().toLowerCase() !=
+                                'tidak diketahui' &&
+                            food.manufacturer.trim().toLowerCase() !=
+                                'tidak ada' &&
+                            food.manufacturer.trim() != '-') ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.storefront_outlined,
+                                size: 14,
+                                color: AppColors.primary,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Produsen / Merk: ${food.manufacturer.trim()}',
+                                  style: AppTextStyles.labelSm.copyWith(
+                                    color: AppColors.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: AppColors.surfaceContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: AppColors.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Nutrition Basis & Warning Banner
+              _BasisBadge(food: food),
+
+              if (food.isUnverified) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.errorContainer.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.error,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Ukuran sajian atau basis nutrisi makanan ini belum terverifikasi. Nilai di bawah merupakan estimasi referensi awal.',
+                          style: AppTextStyles.bodySm.copyWith(
+                            color: AppColors.error,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: AppColors.surfaceContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: AppColors.onSurfaceVariant,
-                      size: 20,
-                    ),
+              ],
+
+              const SizedBox(height: AppSpacing.lg),
+
+              if (widget.showMealTypeSelector) ...[
+                Text(
+                  'Sesi Makan',
+                  style: AppTextStyles.labelLg.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onSurface,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children:
+                      _mealTypes.map((type) {
+                        final selected = _selectedMealType == type;
+                        return ChoiceChip(
+                          label: Text(type),
+                          selected: selected,
+                          selectedColor: AppColors.primaryContainer,
+                          backgroundColor: AppColors.surfaceContainerLow,
+                          labelStyle: AppTextStyles.labelMd.copyWith(
+                            color:
+                                selected
+                                    ? AppColors.onPrimaryContainer
+                                    : AppColors.onSurface,
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          onSelected:
+                              (_) => setState(() => _selectedMealType = type),
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
+              // Portion Input Selector
+              if (food.isPer100g) ...[
+                _GramQuantitySelector(
+                  grams: _grams,
+                  onChanged: _onGramsChanged,
+                ),
+              ] else if (food.isPerPackage) ...[
+                _PackageQuantitySelector(
+                  packages: _servings,
+                  servingSize: food.servingSize,
+                  onChanged: _onServingsChanged,
+                ),
+              ] else ...[
+                _ServingQuantitySelector(
+                  servings: _servings,
+                  servingSize: food.servingSize,
+                  onChanged: _onServingsChanged,
                 ),
               ],
-            ),
-            const SizedBox(height: AppSpacing.md),
 
-            // Nutrition Basis & Warning Banner
-            _BasisBadge(food: food),
+              const SizedBox(height: AppSpacing.lg),
 
-            if (food.isUnverified) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: AppColors.errorContainer.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.error.withValues(alpha: 0.3),
+              // Nutrition Information Grid (7 values)
+              _NutritionGrid(
+                calories: _adjustedCalories,
+                carbs: _adjustedCarbs,
+                protein: _adjustedProtein,
+                fat: _adjustedFat,
+                sugar: _adjustedSugar,
+                sodium: _adjustedSodium,
+                fiber: _adjustedFiber,
+              ),
+
+              const SizedBox(height: AppSpacing.xl),
+
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline_rounded,
-                      color: AppColors.error,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Ukuran sajian atau basis nutrisi makanan ini belum terverifikasi. Nilai di bawah merupakan estimasi referensi awal.',
-                        style: AppTextStyles.bodySm.copyWith(
-                          color: AppColors.error,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
+                  onPressed:
+                      _isSubmitting
+                          ? null
+                          : () async {
+                            setState(() => _submitError = null);
+                            if (widget.onSubmitAsync != null) {
+                              setState(() => _isSubmitting = true);
+                              try {
+                                final saved = await widget.onSubmitAsync!(
+                                  multiplier: _multiplier,
+                                  mealType: _selectedMealType,
+                                );
+                                if (!mounted) return;
+                                if (saved) {
+                                  Navigator.of(context).pop();
+                                } else {
+                                  setState(() {
+                                    _isSubmitting = false;
+                                    _submitError = 'Gagal menyimpan perubahan.';
+                                  });
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  setState(() {
+                                    _isSubmitting = false;
+                                    _submitError =
+                                        'Gagal menyimpan perubahan: $e';
+                                  });
+                                }
+                              }
+                              return;
+                            }
+                            widget.onAddToLog(_multiplier);
+                            if (mounted) Navigator.of(context).pop();
+                          },
+                  child:
+                      _isSubmitting
+                          ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.playlist_add, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                widget.submitLabel,
+                                style: AppTextStyles.poppinsButton.copyWith(
+                                  color: AppColors.onPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                 ),
               ),
+              if (_submitError != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _submitError!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12),
+                ),
+              ],
             ],
-
-            const SizedBox(height: AppSpacing.lg),
-
-            // Portion Input Selector
-            if (food.isPer100g) ...[
-              _GramQuantitySelector(
-                grams: _grams,
-                onChanged: _onGramsChanged,
-              ),
-            ] else if (food.isPerPackage) ...[
-              _PackageQuantitySelector(
-                packages: _servings,
-                servingSize: food.servingSize,
-                onChanged: _onServingsChanged,
-              ),
-            ] else ...[
-              _ServingQuantitySelector(
-                servings: _servings,
-                servingSize: food.servingSize,
-                onChanged: _onServingsChanged,
-              ),
-            ],
-
-            const SizedBox(height: AppSpacing.lg),
-
-            // Nutrition Information Grid (7 values)
-            _NutritionGrid(
-              calories: _adjustedCalories,
-              carbs: _adjustedCarbs,
-              protein: _adjustedProtein,
-              fat: _adjustedFat,
-              sugar: _adjustedSugar,
-              sodium: _adjustedSodium,
-              fiber: _adjustedFiber,
-            ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                onPressed: () {
-                  widget.onAddToLog(_multiplier);
-                  Navigator.of(context).pop();
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.playlist_add, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Tambahkan ke Log Harian',
-                      style: AppTextStyles.poppinsButton.copyWith(
-                        color: AppColors.onPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
+  }
+}
+
+String _displayMealType(String value) {
+  switch (value.toLowerCase()) {
+    case 'sarapan':
+      return 'Sarapan';
+    case 'makan_malam':
+      return 'Makan Malam';
+    case 'camilan':
+    case 'cemilan':
+      return 'Camilan';
+    default:
+      return 'Makan Siang';
   }
 }
 
@@ -338,10 +488,7 @@ class _BasisBadge extends StatelessWidget {
 }
 
 class _GramQuantitySelector extends StatelessWidget {
-  const _GramQuantitySelector({
-    required this.grams,
-    required this.onChanged,
-  });
+  const _GramQuantitySelector({required this.grams, required this.onChanged});
 
   final int grams;
   final ValueChanged<int> onChanged;
@@ -419,25 +566,27 @@ class _GramQuantitySelector extends StatelessWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: presets.map((g) {
-              final isSelected = grams == g;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text('$g g'),
-                  selected: isSelected,
-                  onSelected: (_) => onChanged(g),
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.surfaceContainerLow,
-                  showCheckmark: false,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.onSurface,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 12,
-                  ),
-                ),
-              );
-            }).toList(),
+            children:
+                presets.map((g) {
+                  final isSelected = grams == g;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text('$g g'),
+                      selected: isSelected,
+                      onSelected: (_) => onChanged(g),
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surfaceContainerLow,
+                      showCheckmark: false,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : AppColors.onSurface,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 12,
+                      ),
+                    ),
+                  );
+                }).toList(),
           ),
         ),
       ],
@@ -528,25 +677,27 @@ class _ServingQuantitySelector extends StatelessWidget {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: presets.map((s) {
-              final isSelected = (servings - s).abs() < 0.01;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text('$s porsi'),
-                  selected: isSelected,
-                  onSelected: (_) => onChanged(s),
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.surfaceContainerLow,
-                  showCheckmark: false,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.onSurface,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 12,
-                  ),
-                ),
-              );
-            }).toList(),
+            children:
+                presets.map((s) {
+                  final isSelected = (servings - s).abs() < 0.01;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text('$s porsi'),
+                      selected: isSelected,
+                      onSelected: (_) => onChanged(s),
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surfaceContainerLow,
+                      showCheckmark: false,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : AppColors.onSurface,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 12,
+                      ),
+                    ),
+                  );
+                }).toList(),
           ),
         ),
       ],
@@ -654,7 +805,10 @@ class _CircleButton extends StatelessWidget {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: isPrimary ? AppColors.primaryContainer : AppColors.surfaceContainerHigh,
+          color:
+              isPrimary
+                  ? AppColors.primaryContainer
+                  : AppColors.surfaceContainerHigh,
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -855,14 +1009,26 @@ Future<void> showFoodDetailSheet({
   required BuildContext context,
   required FoodItem food,
   required void Function(double portionMultiplier) onAddToLog,
+  double initialPortionMultiplier = 1.0,
+  String submitLabel = 'Tambahkan ke Log Harian',
+  String initialMealType = 'Makan Siang',
+  bool showMealTypeSelector = false,
+  Future<bool> Function({required double multiplier, required String mealType})?
+  onSubmitAsync,
 }) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => FoodDetailSheet(
-      food: food,
-      onAddToLog: onAddToLog,
-    ),
+    builder:
+        (context) => FoodDetailSheet(
+          food: food,
+          initialPortionMultiplier: initialPortionMultiplier,
+          submitLabel: submitLabel,
+          initialMealType: initialMealType,
+          showMealTypeSelector: showMealTypeSelector,
+          onSubmitAsync: onSubmitAsync,
+          onAddToLog: onAddToLog,
+        ),
   );
 }

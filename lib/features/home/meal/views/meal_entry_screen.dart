@@ -8,6 +8,7 @@ import '../models/food_item.dart';
 import '../viewmodels/meal_entry_notifier.dart';
 import '../widgets/food_card.dart';
 import '../widgets/food_detail_sheet.dart';
+import '../widgets/food_request_sheet.dart';
 import '../widgets/food_skeleton.dart';
 
 class MealTypeOption {
@@ -33,11 +34,15 @@ class MealEntryScreen extends ConsumerStatefulWidget {
 
 class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
   late final ScrollController _scrollController;
+  late final TextEditingController _searchController;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
+    _searchController = TextEditingController(
+      text: ref.read(mealEntryProvider).searchQuery,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Always reset selection when entering the screen to start fresh from 0
       ref.read(mealEntryProvider.notifier).resetSelection();
@@ -54,6 +59,7 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -124,6 +130,7 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
                         border: Border.all(color: AppColors.outlineVariant),
                       ),
                       child: TextField(
+                        controller: _searchController,
                         onChanged: notifier.setSearchQuery,
                         style: AppTextStyles.bodyLg,
                         decoration: InputDecoration(
@@ -166,7 +173,16 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
                           children: [
                             for (final search in state.recentSearches.take(4))
                               GestureDetector(
-                                onTap: () => notifier.selectRecentSearch(search),
+                                onTap: () {
+                                  _searchController.value = TextEditingValue(
+                                    text: search,
+                                    selection: TextSelection.collapsed(
+                                      offset: search.length,
+                                    ),
+                                  );
+                                  FocusManager.instance.primaryFocus?.unfocus();
+                                  notifier.selectRecentSearch(search);
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -207,79 +223,186 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: state.isLoading
-                        ? ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: 4,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 16),
-                            itemBuilder: (context, index) => const FoodSkeleton(),
-                          )
-                        : foods.isEmpty
+                    child:
+                        state.isLoading
+                            ? ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: 4,
+                              separatorBuilder:
+                                  (context, index) =>
+                                      const SizedBox(height: 16),
+                              itemBuilder:
+                                  (context, index) => const FoodSkeleton(),
+                            )
+                            : foods.isEmpty
                             ? Container(
-                                padding: const EdgeInsets.all(32),
-                                alignment: Alignment.center,
-                                child: Column(
-                                  children: [
-                                    const Icon(
-                                      Icons.restaurant_menu_rounded,
-                                      size: 48,
-                                      color: AppColors.outline,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'Makanan tidak ditemukan',
-                                      style: AppTextStyles.labelLg.copyWith(
-                                        color: AppColors.onSurfaceVariant,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Coba kata kunci pencarian yang lain.',
-                                      style: AppTextStyles.bodyMd.copyWith(
-                                        color: AppColors.outline,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Column(
-                                children: [
-                                  ListView.separated(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: foods.length,
-                                    separatorBuilder: (context, index) =>
-                                        const SizedBox(height: 16),
-                                    itemBuilder: (context, index) {
-                                      final food = foods[index];
-                                      return FoodCard(
-                                        food: food,
-                                        isSelected: state.selectedFoodIds
-                                            .contains(food.id),
-                                        onAddPressed: () => _onFoodAddPressed(
-                                          context,
-                                          ref,
-                                          food,
-                                        ),
-                                      );
-                                    },
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 32,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerLowest,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: AppColors.outlineVariant.withValues(
+                                    alpha: 0.5,
                                   ),
-                                  if (state.isMoreLoading)
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 16),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: AppColors.primary,
-                                        ),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryContainer
+                                          .withValues(alpha: 0.3),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.restaurant_menu_rounded,
+                                      size: 32,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Makanan tidak ditemukan',
+                                    style: AppTextStyles.labelLg.copyWith(
+                                      color: AppColors.onSurface,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Menu "${state.searchQuery.isNotEmpty ? state.searchQuery : 'ini'}" belum ada di database? Ajukan makanan baru agar dapat ditinjau oleh tim kami.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.bodyMd.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  ElevatedButton.icon(
+                                    onPressed:
+                                        () =>
+                                            _showFoodRequestSheet(context, ref),
+                                    icon: const Icon(
+                                      Icons.add_circle_outline_rounded,
+                                      size: 20,
+                                    ),
+                                    label: const Text('Ajukan Makanan Baru'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      elevation: 1,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
                                     ),
+                                  ),
                                 ],
                               ),
+                            )
+                            : Column(
+                              children: [
+                                ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: foods.length,
+                                  separatorBuilder:
+                                      (context, index) =>
+                                          const SizedBox(height: 16),
+                                  itemBuilder: (context, index) {
+                                    final food = foods[index];
+                                    return FoodCard(
+                                      food: food,
+                                      isSelected: state.selectedFoodIds
+                                          .contains(food.id),
+                                      onAddPressed:
+                                          () => _onFoodAddPressed(
+                                            context,
+                                            ref,
+                                            food,
+                                          ),
+                                    );
+                                  },
+                                ),
+                                if (state.isMoreLoading)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 20),
+                                // Inline subtle request prompt
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceContainerLow,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.outlineVariant
+                                          .withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.help_outline_rounded,
+                                        size: 20,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Tidak menemukan makanan yang dicari?',
+                                          style: AppTextStyles.bodySm.copyWith(
+                                            color: AppColors.onSurfaceVariant,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed:
+                                            () => _showFoodRequestSheet(
+                                              context,
+                                              ref,
+                                            ),
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                        child: Text(
+                                          'Ajukan Baru',
+                                          style: AppTextStyles.labelMd.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                   ),
                   const SizedBox(height: 160),
                 ],
@@ -291,9 +414,10 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
           _StickyFooter(
             totalCalories: state.totalCalories,
             selectedCount: state.selectedFoodIds.length,
-            onViewDetails: state.selectedFoodIds.isNotEmpty
-                ? () => _showSelectedFoodsSheet(context, ref)
-                : null,
+            onViewDetails:
+                state.selectedFoodIds.isNotEmpty
+                    ? () => _showSelectedFoodsSheet(context, ref)
+                    : null,
             onSave: () async {
               if (state.selectedFoodIds.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -308,15 +432,18 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
               final dashState = ref.read(homeDashboardProvider).valueOrNull;
               final currentConsumed = dashState?.consumedCalories ?? 0;
               final target = dashState?.dailyCalorieTarget ?? 2000;
-              final isTargetMetOrExceeded = target > 0 && (currentConsumed + state.totalCalories) >= target;
+              final isTargetMetOrExceeded =
+                  target > 0 &&
+                  (currentConsumed + state.totalCalories) >= target;
 
               final success = await notifier.saveMealLogs();
               if (context.mounted) {
-                final message = success
-                    ? (isTargetMetOrExceeded
-                        ? 'Catatan berhasil disimpan! Asupan kalori Anda hari ini telah mencapai target. Pastikan cukup minum air putih dan pertimbangkan aktivitas fisik ringan (seperti jalan santai 15 menit) untuk membantu menjaga stabilitas gula darah.'
-                        : 'Log makanan berhasil disimpan!')
-                    : 'Gagal menyimpan log makanan.';
+                final message =
+                    success
+                        ? (isTargetMetOrExceeded
+                            ? 'Catatan berhasil disimpan! Asupan kalori Anda hari ini telah mencapai target. Pastikan cukup minum air putih dan pertimbangkan aktivitas fisik ringan (seperti jalan santai 15 menit) untuk membantu menjaga stabilitas gula darah.'
+                            : 'Log makanan berhasil disimpan!')
+                        : 'Gagal menyimpan log makanan.';
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -336,17 +463,52 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
     );
   }
 
-  void _showSelectedFoodsSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
+  void _showFoodRequestSheet(BuildContext context, WidgetRef ref) async {
+    final state = ref.read(mealEntryProvider);
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _SelectedFoodsSheet(
-        onEditFood: (food) {
-          Navigator.of(ctx).pop();
-          _onFoodAddPressed(context, ref, food);
-        },
-      ),
+      builder:
+          (ctx) => FoodRequestSheet(
+            initialFoodName: state.searchQuery,
+            initialMealType: state.selectedMealType,
+          ),
+    );
+
+    if (result == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Pengajuan makanan berhasil dikirim! Tim kami akan meninjau dan menambahkan informasi gizi makanan ini.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showSelectedFoodsSheet(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final food = await showModalBottomSheet<FoodItem>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _SelectedFoodsSheet(),
+    );
+
+    if (food == null || !context.mounted) return;
+    final state = ref.read(mealEntryProvider);
+    final notifier = ref.read(mealEntryProvider.notifier);
+    await showFoodDetailSheet(
+      context: context,
+      food: food,
+      initialPortionMultiplier: state.foodPortionMultipliers[food.id] ?? 1.0,
+      submitLabel: 'Simpan Perubahan',
+      onAddToLog: (multiplier) => notifier.addFoodToLog(food, multiplier),
     );
   }
 
@@ -359,7 +521,7 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
       showFoodDetailSheet(
         context: context,
         food: food,
-        onAddToLog: (multiplier) => notifier.addFoodToLog(food.id, multiplier),
+        onAddToLog: (multiplier) => notifier.addFoodToLog(food, multiplier),
       );
     }
   }
@@ -386,24 +548,24 @@ class _MealTypeTab extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : AppColors.surfaceContainerLow,
+          color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: isSelected
-                ? AppColors.primary
-                : AppColors.outlineVariant.withValues(alpha: 0.4),
+            color:
+                isSelected
+                    ? AppColors.primary
+                    : AppColors.outlineVariant.withValues(alpha: 0.4),
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              isSelected
+                  ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -492,16 +654,23 @@ class _StickyFooter extends StatelessWidget {
                 GestureDetector(
                   onTap: onViewDetails,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: selectedCount > 0
-                          ? AppColors.primaryContainer.withValues(alpha: 0.25)
-                          : AppColors.surfaceContainerLow,
+                      color:
+                          selectedCount > 0
+                              ? AppColors.primaryContainer.withValues(
+                                alpha: 0.25,
+                              )
+                              : AppColors.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: selectedCount > 0
-                            ? AppColors.primary.withValues(alpha: 0.3)
-                            : Colors.transparent,
+                        color:
+                            selectedCount > 0
+                                ? AppColors.primary.withValues(alpha: 0.3)
+                                : Colors.transparent,
                       ),
                     ),
                     child: Row(
@@ -515,7 +684,10 @@ class _StickyFooter extends StatelessWidget {
                               style: AppTextStyles.labelMd.copyWith(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: selectedCount > 0 ? AppColors.primary : AppColors.outline,
+                                color:
+                                    selectedCount > 0
+                                        ? AppColors.primary
+                                        : AppColors.outline,
                                 letterSpacing: 1,
                               ),
                             ),
@@ -523,7 +695,10 @@ class _StickyFooter extends StatelessWidget {
                             Text(
                               '$selectedCount makanan',
                               style: AppTextStyles.labelLg.copyWith(
-                                color: selectedCount > 0 ? AppColors.primary : AppColors.onSurface,
+                                color:
+                                    selectedCount > 0
+                                        ? AppColors.primary
+                                        : AppColors.onSurface,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
@@ -576,9 +751,7 @@ class _StickyFooter extends StatelessWidget {
 }
 
 class _SelectedFoodsSheet extends ConsumerWidget {
-  const _SelectedFoodsSheet({required this.onEditFood});
-
-  final void Function(FoodItem food) onEditFood;
+  const _SelectedFoodsSheet();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -640,7 +813,10 @@ class _SelectedFoodsSheet extends ConsumerWidget {
                   },
                   child: const Text(
                     'Hapus Semua',
-                    style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -656,11 +832,13 @@ class _SelectedFoodsSheet extends ConsumerWidget {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (ctx, index) {
                   final food = selectedFoods[index];
-                  final multiplier = state.foodPortionMultipliers[food.id] ?? 1.0;
+                  final multiplier =
+                      state.foodPortionMultipliers[food.id] ?? 1.0;
                   final calories = (food.energyKcal * multiplier).round();
-                  final portionDesc = food.isPer100g
-                      ? '${(multiplier * 100).round()} gram'
-                      : '${multiplier == multiplier.roundToDouble() ? multiplier.toInt() : multiplier.toStringAsFixed(1)} porsi (${food.servingSize})';
+                  final portionDesc =
+                      food.isPer100g
+                          ? '${(multiplier * 100).round()} gram'
+                          : '${multiplier == multiplier.roundToDouble() ? multiplier.toInt() : multiplier.toStringAsFixed(1)} porsi (${food.servingSize})';
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -678,8 +856,10 @@ class _SelectedFoodsSheet extends ConsumerWidget {
                                 ),
                               ),
                               if (food.manufacturer.trim().isNotEmpty &&
-                                  food.manufacturer.trim().toLowerCase() != 'tidak diketahui' &&
-                                  food.manufacturer.trim().toLowerCase() != 'tidak ada' &&
+                                  food.manufacturer.trim().toLowerCase() !=
+                                      'tidak diketahui' &&
+                                  food.manufacturer.trim().toLowerCase() !=
+                                      'tidak ada' &&
                                   food.manufacturer.trim() != '-') ...[
                                 Text(
                                   food.manufacturer.trim(),
@@ -702,13 +882,21 @@ class _SelectedFoodsSheet extends ConsumerWidget {
                         ),
                         // Edit portion button
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
-                          onPressed: () => onEditFood(food),
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(food),
                           tooltip: 'Ubah porsi',
                         ),
                         // Delete button
                         IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.error),
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 20,
+                            color: AppColors.error,
+                          ),
                           onPressed: () {
                             notifier.removeFoodFromLog(food.id);
                             if (state.selectedFoodIds.length <= 1) {

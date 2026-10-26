@@ -11,6 +11,7 @@ import '../models/food_item.dart';
 
 class MealEntryNotifier extends Notifier<MealEntryState> {
   Timer? _debounceTimer;
+  int _searchRevision = 0;
 
   @override
   MealEntryState build() {
@@ -41,8 +42,15 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
   }
 
   Future<void> fetchFoods({bool isRefresh = true}) async {
+    final revision = _searchRevision;
+    final query = state.searchQuery;
     if (isRefresh) {
-      state = state.copyWith(isLoading: true, currentPage: 1, hasMore: true);
+      state = state.copyWith(
+        isLoading: true,
+        isMoreLoading: false,
+        currentPage: 1,
+        hasMore: true,
+      );
     } else {
       if (!state.hasMore || state.isMoreLoading) return;
       state = state.copyWith(isMoreLoading: true);
@@ -52,18 +60,27 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
       final repo = ref.read(foodRepositoryProvider);
       final page = isRefresh ? 1 : state.currentPage + 1;
       final results = await repo.searchFoods(
-        query: state.searchQuery,
+        query: query,
         page: page,
         limit: 15,
       );
 
-      final newItems = results
-          .map((m) => FoodItem.fromFoodMasterModel(m, mealType: state.selectedMealType))
-          .toList();
+      if (revision != _searchRevision) return;
 
-      final updatedList = isRefresh
-          ? (newItems.isNotEmpty ? newItems : defaultFoods)
-          : [...state.recommendedFoods, ...newItems];
+      final newItems =
+          results
+              .map(
+                (m) => FoodItem.fromFoodMasterModel(
+                  m,
+                  mealType: state.selectedMealType,
+                ),
+              )
+              .toList();
+
+      final updatedList =
+          isRefresh
+              ? (newItems.isNotEmpty ? newItems : defaultFoods)
+              : [...state.recommendedFoods, ...newItems];
 
       state = state.copyWith(
         recommendedFoods: updatedList,
@@ -73,6 +90,7 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
         hasMore: newItems.length >= 15,
       );
     } catch (e) {
+      if (revision != _searchRevision) return;
       state = state.copyWith(
         isLoading: false,
         isMoreLoading: false,
@@ -86,6 +104,7 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
   }
 
   void setSearchQuery(String query) {
+    _searchRevision++;
     state = state.copyWith(searchQuery: query);
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
@@ -97,49 +116,46 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
     setSearchQuery(query);
   }
 
-  void toggleFoodSelection(String foodId, [double portionMultiplier = 1.0]) {
-    final updated = Set<String>.from(state.selectedFoodIds);
+  void toggleFoodSelection(FoodItem food, [double portionMultiplier = 1.0]) {
+    final selected = Map<String, FoodItem>.from(state.selectedFoodsById);
     final multipliers = Map<String, double>.from(state.foodPortionMultipliers);
-    if (updated.contains(foodId)) {
-      updated.remove(foodId);
-      multipliers.remove(foodId);
+    if (selected.containsKey(food.id)) {
+      selected.remove(food.id);
+      multipliers.remove(food.id);
     } else {
-      updated.add(foodId);
-      multipliers[foodId] = portionMultiplier;
+      selected[food.id] = food;
+      multipliers[food.id] = portionMultiplier;
     }
     state = state.copyWith(
-      selectedFoodIds: updated,
+      selectedFoodsById: selected,
       foodPortionMultipliers: multipliers,
     );
   }
 
-  void addFoodToLog(String foodId, [double portionMultiplier = 1.0]) {
-    final updated = Set<String>.from(state.selectedFoodIds);
-    updated.add(foodId);
+  void addFoodToLog(FoodItem food, [double portionMultiplier = 1.0]) {
+    final selected = Map<String, FoodItem>.from(state.selectedFoodsById);
+    selected[food.id] = food;
     final multipliers = Map<String, double>.from(state.foodPortionMultipliers);
-    multipliers[foodId] = portionMultiplier;
+    multipliers[food.id] = portionMultiplier;
     state = state.copyWith(
-      selectedFoodIds: updated,
+      selectedFoodsById: selected,
       foodPortionMultipliers: multipliers,
     );
   }
 
   void removeFoodFromLog(String foodId) {
-    final updated = Set<String>.from(state.selectedFoodIds);
-    updated.remove(foodId);
+    final selected = Map<String, FoodItem>.from(state.selectedFoodsById);
+    selected.remove(foodId);
     final multipliers = Map<String, double>.from(state.foodPortionMultipliers);
     multipliers.remove(foodId);
     state = state.copyWith(
-      selectedFoodIds: updated,
+      selectedFoodsById: selected,
       foodPortionMultipliers: multipliers,
     );
   }
 
   void resetSelection() {
-    state = state.copyWith(
-      selectedFoodIds: {},
-      foodPortionMultipliers: {},
-    );
+    state = state.copyWith(selectedFoodsById: {}, foodPortionMultipliers: {});
   }
 
   Future<bool> saveMealLogs() async {
@@ -155,10 +171,7 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
         );
       }
       // Reset selected foods so next entry starts fresh at 0
-      state = state.copyWith(
-        selectedFoodIds: {},
-        foodPortionMultipliers: {},
-      );
+      state = state.copyWith(selectedFoodsById: {}, foodPortionMultipliers: {});
       // Refresh the dashboard so the Daily Calories Card shows updated values.
       await ref.read(homeDashboardProvider.notifier).refresh();
       return true;
@@ -188,7 +201,7 @@ class MealEntryNotifier extends Notifier<MealEntryState> {
         }
 
         state = state.copyWith(
-          selectedFoodIds: {},
+          selectedFoodsById: {},
           foodPortionMultipliers: {},
         );
         await ref.read(homeDashboardProvider.notifier).refresh();

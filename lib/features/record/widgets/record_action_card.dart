@@ -9,7 +9,7 @@ class RecordActionCard extends StatelessWidget {
     required this.title,
     required this.valueText,
     this.unitText,
-    required this.subtitle,
+    this.subtitle,
     required this.buttonText,
     required this.icon,
     required this.iconBgColor,
@@ -24,7 +24,7 @@ class RecordActionCard extends StatelessWidget {
   final String title;
   final String valueText;
   final String? unitText;
-  final String subtitle;
+  final String? subtitle;
   final String buttonText;
   final IconData icon;
   final Color iconBgColor;
@@ -42,10 +42,7 @@ class RecordActionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.surfaceContainerLow,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.surfaceContainerLow, width: 1),
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryContainer.withValues(alpha: 0.04),
@@ -71,16 +68,15 @@ class RecordActionCard extends StatelessWidget {
                   color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 16,
-                ),
+                child: Icon(icon, color: iconColor, size: 16),
               ),
               if (badgeText != null)
                 Flexible(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: badgeBgColor ?? AppColors.secondaryContainer,
                       borderRadius: BorderRadius.circular(8),
@@ -144,17 +140,18 @@ class RecordActionCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 1),
-          // Subtitle
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.bodyMd.copyWith(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 12,
+          if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+            const SizedBox(height: 1),
+            Text(
+              subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 4),
           // Action Button
           SizedBox(
@@ -162,21 +159,24 @@ class RecordActionCard extends StatelessWidget {
             height: 36,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isPrimaryButton
-                    ? AppColors.primaryContainer
-                    : AppColors.surfaceContainerLow,
-                foregroundColor: isPrimaryButton
-                    ? AppColors.onPrimary
-                    : AppColors.primary,
+                backgroundColor:
+                    isPrimaryButton
+                        ? AppColors.primaryContainer
+                        : AppColors.surfaceContainerLow,
+                foregroundColor:
+                    isPrimaryButton ? AppColors.onPrimary : AppColors.primary,
                 elevation: 0,
                 padding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                  side: isPrimaryButton
-                      ? BorderSide.none
-                      : BorderSide(
-                          color: AppColors.outlineVariant.withValues(alpha: 0.3),
-                        ),
+                  side:
+                      isPrimaryButton
+                          ? BorderSide.none
+                          : BorderSide(
+                            color: AppColors.outlineVariant.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
                 ),
               ),
               onPressed: onTap,
@@ -185,9 +185,8 @@ class RecordActionCard extends StatelessWidget {
                 style: AppTextStyles.labelMd.copyWith(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isPrimaryButton
-                      ? AppColors.onPrimary
-                      : AppColors.primary,
+                  color:
+                      isPrimaryButton ? AppColors.onPrimary : AppColors.primary,
                 ),
               ),
             ),

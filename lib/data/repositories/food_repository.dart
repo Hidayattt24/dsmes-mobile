@@ -5,6 +5,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/network/dio_client.dart';
 import '../../features/home/meal/models/nutrition_summary_model.dart';
 import '../models/food_master_model.dart';
+import '../models/meal_log_detail_model.dart';
 
 abstract class IFoodRepository {
   Future<List<FoodMasterModel>> searchFoods({
@@ -22,6 +23,22 @@ abstract class IFoodRepository {
   });
 
   Future<DailyNutritionSummary> getDailyNutritionSummary({DateTime? date});
+
+  Future<void> submitFoodRequest({
+    required String name,
+    required String servingSize,
+    double? estimatedCalories,
+    String? mealType,
+    String? notes,
+  });
+
+  Future<MealLogDetailModel> getMealLog(String id);
+
+  Future<void> updateMealLog({
+    required String id,
+    required String mealType,
+    required double portionMultiplier,
+  });
 }
 
 class FoodRepository implements IFoodRepository {
@@ -107,7 +124,9 @@ class FoodRepository implements IFoodRepository {
   }
 
   @override
-  Future<DailyNutritionSummary> getDailyNutritionSummary({DateTime? date}) async {
+  Future<DailyNutritionSummary> getDailyNutritionSummary({
+    DateTime? date,
+  }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (date != null) {
@@ -126,6 +145,73 @@ class FoodRepository implements IFoodRepository {
       // would silently mislead the user into thinking nothing was eaten.
       throw ApiException.fromDioException(e);
     }
+  }
+
+  @override
+  Future<void> submitFoodRequest({
+    required String name,
+    required String servingSize,
+    double? estimatedCalories,
+    String? mealType,
+    String? notes,
+  }) async {
+    try {
+      await _dio.post(
+        '/patient/food-requests',
+        data: {
+          'name': name.trim(),
+          'serving_size': servingSize.trim(),
+          'estimated_calories': estimatedCalories ?? 0.0,
+          'meal_type': mealType ?? '',
+          'notes': notes ?? '',
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<MealLogDetailModel> getMealLog(String id) async {
+    try {
+      final response = await _dio.get('/patient/meals/$id');
+      return MealLogDetailModel.fromJson(
+        response.data['data'] as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<void> updateMealLog({
+    required String id,
+    required String mealType,
+    required double portionMultiplier,
+  }) async {
+    try {
+      await _dio.put(
+        '/patient/meals/$id',
+        data: {
+          'meal_type': _mealTypeCode(mealType),
+          'portion_multiplier': portionMultiplier,
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  static String _mealTypeCode(String value) {
+    final lower = value.trim().toLowerCase();
+    if (lower.contains('sarapan')) return 'sarapan';
+    if (lower.contains('malam')) return 'makan_malam';
+    if (lower.contains('camilan') ||
+        lower.contains('cemilan') ||
+        lower.contains('snack')) {
+      return 'camilan';
+    }
+    return lower == 'makan_siang' ? lower : 'makan_siang';
   }
 }
 
