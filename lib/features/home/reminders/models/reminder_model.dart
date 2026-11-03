@@ -12,6 +12,8 @@ class ReminderModel {
   final String iconName;
   final int repeatIntervalDays;
   final List<int> activeDays;
+  final String? systemKey;
+  final String actionType;
 
   const ReminderModel({
     required this.id,
@@ -24,6 +26,8 @@ class ReminderModel {
     required this.iconName,
     required this.repeatIntervalDays,
     required this.activeDays,
+    this.systemKey,
+    this.actionType = 'reminder_management',
   });
 
   String get formattedTime {
@@ -76,6 +80,8 @@ class ReminderModel {
               ?.map((e) => (e as num).toInt())
               .toList() ??
           [1, 2, 3, 4, 5, 6, 7],
+      systemKey: json['system_key'] as String?,
+      actionType: json['action_type'] as String? ?? 'reminder_management',
     );
   }
 
@@ -91,6 +97,8 @@ class ReminderModel {
       'icon_name': iconName,
       'repeat_interval_days': repeatIntervalDays,
       'active_days': activeDays,
+      'system_key': systemKey,
+      'action_type': actionType,
     };
   }
 
@@ -105,6 +113,8 @@ class ReminderModel {
     String? iconName,
     int? repeatIntervalDays,
     List<int>? activeDays,
+    String? systemKey,
+    String? actionType,
   }) {
     return ReminderModel(
       id: id ?? this.id,
@@ -117,6 +127,8 @@ class ReminderModel {
       iconName: iconName ?? this.iconName,
       repeatIntervalDays: repeatIntervalDays ?? this.repeatIntervalDays,
       activeDays: activeDays ?? this.activeDays,
+      systemKey: systemKey ?? this.systemKey,
+      actionType: actionType ?? this.actionType,
     );
   }
 }

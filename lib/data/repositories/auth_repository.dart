@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,6 +10,8 @@ import '../../core/network/api_exception.dart';
 import '../../core/network/auth_interceptor.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/services/local_notification_service.dart';
+import '../../core/services/firebase_messaging_service.dart';
+import '../../core/services/notification_deduplicator.dart';
 import '../../features/onboarding/models/onboarding_form_state.dart';
 
 abstract class IAuthRepository {
@@ -103,6 +106,12 @@ class AuthRepository implements IAuthRepository {
         accessToken: tokens['access_token'] as String,
         refreshToken: tokens['refresh_token'] as String,
         userId: user['id'] as String?,
+      );
+
+      unawaited(
+        LocalNotificationService.instance.cleanupLegacyScheduledNotifications(
+          force: true,
+        ),
       );
 
       return data;
@@ -451,10 +460,13 @@ class AuthRepository implements IAuthRepository {
     await _storage.delete(key: AppConstants.keyAuthToken);
     await _storage.delete(key: AppConstants.keyRefreshToken);
     await _storage.delete(key: AppConstants.keyUserId);
+    await _storage.delete(key: AppConstants.keyNotificationUsername);
+    await firebaseMessagingService.invalidateLocalToken();
     // Keep keyOnboardingComplete, keyBiometricEnabled, and keyPreTestCompleted
     // so returning users or session expiries do not wipe offline progress/preferences.
     try {
       await LocalNotificationService.instance.cancelAllNotifications();
+      await NotificationDeduplicator.clear();
     } catch (_) {
       // Ignore failure during local notification cleanup
     }

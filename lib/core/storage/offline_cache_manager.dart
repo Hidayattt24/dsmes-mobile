@@ -21,10 +21,13 @@ class OfflineCacheManager {
   static const String keyReminders = 'offline_cache_reminders';
   static const String keyHistory = 'offline_cache_history';
   static const String keyEducationArticles = 'offline_cache_education_articles';
-  static const String keyEducationCategories = 'offline_cache_education_categories';
+  static const String keyEducationCategories =
+      'offline_cache_education_categories';
   static const String keyEducationDetailPrefix = 'offline_cache_edu_detail_';
-  static const String keyQuestionnairesList = 'offline_cache_questionnaires_list';
-  static const String keyQuestionnaireHistory = 'offline_cache_questionnaire_history';
+  static const String keyQuestionnairesList =
+      'offline_cache_questionnaires_list';
+  static const String keyQuestionnaireHistory =
+      'offline_cache_questionnaire_history';
   static const String keySurveysList = 'offline_cache_surveys_list';
   static const String keyLastSyncPrefix = 'offline_cache_sync_';
 
@@ -40,6 +43,14 @@ class OfflineCacheManager {
     try {
       final userId = await _resolveUserId();
       await _localStorage.writeEncryptedJson(key, data, userId: userId);
+      if (key == keyDashboardProfile && data is Map<String, dynamic>) {
+        final nickname = (data['nickname'] as String? ?? '').trim();
+        final fullName = (data['full_name'] as String? ?? '').trim();
+        await _secureStorage.write(
+          key: AppConstants.keyNotificationUsername,
+          value: nickname.isNotEmpty ? nickname : fullName,
+        );
+      }
       await _secureStorage.write(
         key: '$keyLastSyncPrefix${userId ?? "global"}_$key',
         value: DateTime.now().toIso8601String(),
@@ -47,6 +58,13 @@ class OfflineCacheManager {
     } catch (_) {
       // Graceful degradation if storage write fails
     }
+  }
+
+  Future<String?> getNotificationUsername() async {
+    final value = await _secureStorage.read(
+      key: AppConstants.keyNotificationUsername,
+    );
+    return value?.trim();
   }
 
   Future<dynamic> getCache(String key) async {

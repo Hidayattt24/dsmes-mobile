@@ -11,6 +11,9 @@ class NotificationModel {
   final String? iconName;
   final String? activityName;
   final String? category;
+  final String actionType;
+  final String? occurrenceId;
+  final String? scheduledAt;
 
   const NotificationModel({
     required this.id,
@@ -23,6 +26,9 @@ class NotificationModel {
     this.iconName,
     this.activityName,
     this.category,
+    this.actionType = 'reminder_management',
+    this.occurrenceId,
+    this.scheduledAt,
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +43,9 @@ class NotificationModel {
       iconName: json['icon_name'] as String?,
       activityName: json['activity_name'] as String?,
       category: json['category'] as String?,
+      actionType: json['action_type'] as String? ?? 'reminder_management',
+      occurrenceId: json['occurrence_id'] as String?,
+      scheduledAt: json['scheduled_at'] as String?,
     );
   }
 }

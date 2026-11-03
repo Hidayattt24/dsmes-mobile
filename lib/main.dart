@@ -24,6 +24,9 @@ void main() async {
 
   // Initialize System Local Notifications (Android Status Bar / Pop-up)
   await LocalNotificationService.instance.initialize();
+  await LocalNotificationService.instance.cleanupLegacyScheduledNotifications(
+    force: true,
+  );
 
   // Global Flutter error handler
   FlutterError.onError = (details) {

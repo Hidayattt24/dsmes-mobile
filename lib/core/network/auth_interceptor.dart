@@ -5,6 +5,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
+import '../services/firebase_messaging_service.dart';
+import '../services/local_notification_service.dart';
 import '../router/app_router.dart';
 import '../router/route_names.dart';
 
@@ -174,6 +176,9 @@ class AuthInterceptor extends Interceptor {
         await storage.delete(key: AppConstants.keyAuthToken);
         await storage.delete(key: AppConstants.keyRefreshToken);
         await storage.delete(key: AppConstants.keyUserId);
+        await storage.delete(key: AppConstants.keyNotificationUsername);
+        await firebaseMessagingService.invalidateLocalToken();
+        await LocalNotificationService.instance.cancelAllNotifications();
         // Do NOT delete keyOnboardingComplete or keyPreTestCompleted!
         _triggerSessionExpiredNavigation();
         return null;

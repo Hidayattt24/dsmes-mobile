@@ -10,10 +10,44 @@ class NotificationCopywriter {
     String? iconName,
     String? activityName,
     String? category,
+    String? username,
+    String? actionType,
+  }) {
+    final (title, description) = _getInteractiveCopy(
+      rawTitle: rawTitle,
+      rawDescription: rawDescription,
+      type: type,
+      iconName: iconName,
+      activityName: activityName,
+      category: category,
+      actionType: actionType,
+    );
+    final name = username?.trim() ?? '';
+    final alreadyPersonalized = description.toLowerCase().startsWith('hai,');
+    return (
+      title,
+      name.isEmpty || alreadyPersonalized
+          ? description
+          : 'Hai, $name! $description',
+    );
+  }
+
+  static (String title, String description) _getInteractiveCopy({
+    required String rawTitle,
+    required String rawDescription,
+    required NotificationType type,
+    String? iconName,
+    String? activityName,
+    String? category,
+    String? actionType,
   }) {
     final lowerTitle = rawTitle.toLowerCase();
     final lowerDesc = rawDescription.toLowerCase();
     final lowerIcon = (iconName ?? '').toLowerCase();
+    final hasKnownIcon = const {
+      'blood', 'medicine', 'pill', 'walk', 'run', 'exercise', 'bike',
+      'yoga', 'water', 'coffee', 'breakfast', 'lunch', 'dinner', 'restaurant',
+    }.contains(lowerIcon);
     final lowerCategory = (category ?? '').toLowerCase();
 
     // Determine clean activity name
@@ -32,6 +66,21 @@ class NotificationCopywriter {
                 .replaceAll('.', '')
                 .trim();
       }
+    }
+
+    switch (actionType) {
+      case 'meal_entry':
+        return ('Waktunya Catat Makanan 🥗', 'Jangan lupa mencatat makanan yang kamu konsumsi hari ini, ya.');
+      case 'activity_entry':
+        if (rawTitle == 'Waktunya Bergerak 🏃' || cleanActivity.isEmpty) {
+          return ('Waktunya Bergerak 🏃', 'Yuk luangkan waktu untuk berolahraga dan tetap aktif sore ini.');
+        }
+        return ('Waktunya $cleanActivity! 🏃‍♂️', 'Yuk lakukan $cleanActivity sejenak untuk membantu menjaga kadar gula darah tetap stabil 🌟');
+      case 'blood_sugar_entry':
+        return ('Saatnya Cek Gula Darah 🩸', 'Jangan lupa cek dan catat gula darahmu hari ini, ya.');
+      case 'medication_entry':
+        final medicine = cleanActivity.isEmpty ? 'obatmu' : cleanActivity;
+        return ('Waktunya $medicine 💊', 'Saatnya minum $medicine sesuai jadwal yang sudah kamu atur.');
     }
 
     // ── 1. Education Notifications ──────────────────────────────────────────
@@ -85,24 +134,12 @@ class NotificationCopywriter {
       );
     }
 
-    if (lowerIcon == 'water' ||
-        lowerIcon == 'coffee' ||
-        lowerCategory == 'nutrisi_air') {
-      final activity =
-          cleanActivity.isNotEmpty ? cleanActivity : 'minum air putih';
-      return (
-        'Waktunya $activity! 💧',
-        'Segelas air putih bantu menjaga hidrasi tubuhmu tetap lancar 🌊',
-      );
-    }
-
     // ── 3. Blood Sugar (Icon: blood or keywords) ─────────────────────────────
     if (lowerIcon == 'blood' ||
-        lowerTitle.contains('gula') ||
-        lowerDesc.contains('gula') ||
-        lowerTitle.contains('glukosa') ||
-        lowerTitle.contains('cek_gula') ||
-        cleanActivity.toLowerCase().contains('gula')) {
+        (!hasKnownIcon &&
+            (lowerTitle.contains('gula') || lowerDesc.contains('gula') ||
+             lowerTitle.contains('glukosa') || lowerTitle.contains('cek_gula') ||
+             cleanActivity.toLowerCase().contains('gula')))) {
       if (lowerDesc.contains('tinggi') || lowerDesc.contains('hiperglikemia')) {
         return (
           'Waspada Gula Darah Tinggi 🚨',
@@ -131,12 +168,10 @@ class NotificationCopywriter {
     // ── 4. Medication / Insulin (Icon: medicine, pill or keywords) ─────────
     if (lowerIcon == 'medicine' ||
         lowerIcon == 'pill' ||
-        lowerTitle.contains('obat') ||
-        lowerDesc.contains('obat') ||
-        lowerTitle.contains('insulin') ||
-        lowerDesc.contains('insulin') ||
-        cleanActivity.toLowerCase().contains('obat') ||
-        cleanActivity.toLowerCase().contains('insulin')) {
+        (!hasKnownIcon && (lowerTitle.contains('obat') || lowerDesc.contains('obat') ||
+            lowerTitle.contains('insulin') || lowerDesc.contains('insulin') ||
+            cleanActivity.toLowerCase().contains('obat') ||
+            cleanActivity.toLowerCase().contains('insulin')))) {
       final title =
           cleanActivity.isNotEmpty
               ? (cleanActivity.toLowerCase().startsWith('waktunya')
@@ -178,17 +213,27 @@ class NotificationCopywriter {
     }
 
     // ── 6. Nutrition / Meal (Icon: breakfast, lunch, dinner, restaurant) ─────
-    if (lowerIcon == 'breakfast' ||
+    final isMealIcon =
+        lowerIcon == 'breakfast' ||
         lowerIcon == 'lunch' ||
         lowerIcon == 'dinner' ||
-        lowerIcon == 'restaurant' ||
+        lowerIcon == 'restaurant';
+    final isMealText =
         lowerTitle.contains('makan') ||
         lowerDesc.contains('makan') ||
         lowerTitle.contains('sarapan') ||
         lowerTitle.contains('nutrisi') ||
         lowerTitle.contains('asupan') ||
         cleanActivity.toLowerCase().contains('makan') ||
-        cleanActivity.toLowerCase().contains('sarapan')) {
+        cleanActivity.toLowerCase().contains('sarapan');
+
+    if (isMealIcon ||
+        isMealText ||
+        (lowerCategory == 'nutrisi_air' &&
+            lowerIcon != 'water' &&
+            lowerIcon != 'coffee' &&
+            !cleanActivity.toLowerCase().contains('air') &&
+            !cleanActivity.toLowerCase().contains('minum'))) {
       final title =
           cleanActivity.isNotEmpty
               ? (cleanActivity.toLowerCase().startsWith('waktunya')
@@ -204,10 +249,13 @@ class NotificationCopywriter {
 
     // ── 7. Hydration (Icon: water or keywords) ───────────────────────────────
     if (lowerIcon == 'water' ||
+        lowerIcon == 'coffee' ||
         lowerTitle.contains('air') ||
         lowerDesc.contains('air') ||
         lowerTitle.contains('minum') ||
-        cleanActivity.toLowerCase().contains('air')) {
+        cleanActivity.toLowerCase().contains('air') ||
+        cleanActivity.toLowerCase().contains('minum') ||
+        lowerCategory == 'nutrisi_air') {
       final title =
           cleanActivity.isNotEmpty
               ? (cleanActivity.toLowerCase().startsWith('waktunya')

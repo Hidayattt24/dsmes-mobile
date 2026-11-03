@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/local_notification_service.dart';
+import '../../../core/storage/offline_cache_manager.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../data/repositories/notification_repository.dart';
 import '../helpers/notification_copywriter.dart';
@@ -10,10 +11,11 @@ import '../models/notification_item.dart';
 
 class NotificationsNotifier extends Notifier<List<NotificationItem>> {
   final Map<String, Timer> _scheduledTimers = {};
-  final Set<String> _shownEducationIds = {};
+  String? _username;
 
   @override
   List<NotificationItem> build() {
+    unawaited(_loadUsername());
     ref.onDispose(() {
       for (final timer in _scheduledTimers.values) {
         timer.cancel();
@@ -23,12 +25,23 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     return const [];
   }
 
+  Future<void> _loadUsername() async {
+    try {
+      _username =
+          await ref.read(offlineCacheManagerProvider).getNotificationUsername();
+    } catch (error) {
+      debugPrint('[NOTIFICATIONS][ERROR] username cache read failed: $error');
+    }
+  }
+
   /// Fetch notifications from the backend and merge them into the inbox state.
   /// Locally-generated items (reminders scheduled in-app) are preserved.
   Future<void> loadFromBackend() async {
     try {
       final repo = ref.read(notificationRepositoryProvider);
       final items = await repo.getNotifications();
+      _username =
+          await ref.read(offlineCacheManagerProvider).getNotificationUsername();
 
       final backendItems = items.map(_toItem).toList();
       final localItems = state.where((n) => n.id.startsWith('notif_')).toList();
@@ -45,8 +58,9 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       state = merged;
       // Note: System push notifications are delivered in real-time via FCM.
       // We do not re-trigger status-bar alerts for historical unread items on every launch.
-    } catch (_) {
-      // Silently ignore network/auth failures (e.g. app opened pre-login).
+    } catch (error, stackTrace) {
+      debugPrint('[NOTIFICATIONS][ERROR] inbox sync failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 
@@ -61,6 +75,8 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       iconName: n.iconName,
       activityName: n.activityName,
       category: n.category,
+      username: _username,
+      actionType: n.actionType,
     );
     return NotificationItem(
       id: n.id,
@@ -74,26 +90,10 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       iconName: n.iconName,
       activityName: n.activityName,
       category: n.category,
+      reminderId: n.reminderId,
+      actionType: n.actionType,
+      occurrenceId: n.occurrenceId,
     );
-  }
-
-  void _triggerIncomingPopups(List<NotificationItem> backendItems) {
-    for (final item in backendItems) {
-      if (item.isUnread && _shownEducationIds.add(item.id)) {
-        LocalNotificationService.instance.showNotification(
-          id: item.id.hashCode.abs(),
-          title: item.title,
-          body: item.description,
-          payload: jsonEncode({
-            'type':
-                item.type == NotificationType.education
-                    ? 'education'
-                    : 'reminder',
-            'article_id': item.articleId,
-          }),
-        );
-      }
-    }
   }
 
   String _groupFor(String notifiedAt) {
@@ -189,7 +189,7 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     required String description,
     NotificationType type = NotificationType.medication,
     String? customTimestamp,
-    bool showSystemPopup = true,
+    bool showSystemPopup = false,
   }) {
     final (
       interactiveTitle,
@@ -198,6 +198,7 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
       rawTitle: title,
       rawDescription: description,
       type: type,
+      username: _username,
     );
     final newItem = NotificationItem(
       id: 'notif_${DateTime.now().millisecondsSinceEpoch}',

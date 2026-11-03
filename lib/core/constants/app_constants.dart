@@ -19,6 +19,7 @@ abstract final class AppConstants {
   static const String keyRefreshToken = 'refresh_token';
   static const String keyOnboardingComplete = 'onboarding_complete';
   static const String keyUserId = 'user_id';
+  static const String keyNotificationUsername = 'notification_username';
   static const String keyBiometricEnabled = 'biometric_enabled';
   static const String keyPreTestCompleted = 'pre_test_completed';
 

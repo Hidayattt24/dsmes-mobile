@@ -12,6 +12,9 @@ class NotificationItem {
   final String? iconName;
   final String? activityName;
   final String? category;
+  final String? reminderId;
+  final String actionType;
+  final String? occurrenceId;
 
   const NotificationItem({
     required this.id,
@@ -25,6 +28,9 @@ class NotificationItem {
     this.iconName,
     this.activityName,
     this.category,
+    this.reminderId,
+    this.actionType = 'reminder_management',
+    this.occurrenceId,
   });
 
   NotificationItem copyWith({
@@ -39,6 +45,9 @@ class NotificationItem {
     String? iconName,
     String? activityName,
     String? category,
+    String? reminderId,
+    String? actionType,
+    String? occurrenceId,
   }) {
     return NotificationItem(
       id: id ?? this.id,
@@ -52,6 +61,9 @@ class NotificationItem {
       iconName: iconName ?? this.iconName,
       activityName: activityName ?? this.activityName,
       category: category ?? this.category,
+      reminderId: reminderId ?? this.reminderId,
+      actionType: actionType ?? this.actionType,
+      occurrenceId: occurrenceId ?? this.occurrenceId,
     );
   }
 }
