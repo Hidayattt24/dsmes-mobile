@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/router/route_names.dart';
+import '../../../core/router/notification_action_router.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -33,42 +33,48 @@ class NotificationDetailBottomSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => NotificationDetailBottomSheet(
-        item: item,
-        interactiveTitle: interactiveTitle,
-        interactiveDescription: interactiveDescription,
-        onDelete: onDelete,
-      ),
+      builder:
+          (ctx) => NotificationDetailBottomSheet(
+            item: item,
+            interactiveTitle: interactiveTitle,
+            interactiveDescription: interactiveDescription,
+            onDelete: onDelete,
+          ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final (IconData iconData, Color primaryColor, Color bgColor, String tagLabel) = switch (item.type) {
+    final (
+      IconData iconData,
+      Color primaryColor,
+      Color bgColor,
+      String tagLabel,
+    ) = switch (item.type) {
       NotificationType.warning => (
-          Icons.warning_rounded,
-          AppColors.error,
-          AppColors.errorContainer.withValues(alpha: 0.5),
-          'PERINGATAN KESEHATAN 🚨',
-        ),
+        Icons.warning_rounded,
+        AppColors.error,
+        AppColors.errorContainer.withValues(alpha: 0.5),
+        'PERINGATAN KESEHATAN 🚨',
+      ),
       NotificationType.medication => (
-          Icons.alarm_on_rounded,
-          AppColors.primary,
-          const Color(0xFFE6F2F1),
-          'PENGINGAT RUTIN 💊',
-        ),
+        Icons.alarm_on_rounded,
+        AppColors.primary,
+        const Color(0xFFE6F2F1),
+        'PENGINGAT RUTIN 💊',
+      ),
       NotificationType.education => (
-          Icons.menu_book_rounded,
-          const Color(0xFFD97706),
-          const Color(0xFFFFFBEB),
-          'EDUKASI KESEHATAN 💡',
-        ),
+        Icons.menu_book_rounded,
+        const Color(0xFFD97706),
+        const Color(0xFFFFFBEB),
+        'EDUKASI KESEHATAN 💡',
+      ),
       NotificationType.targetAchieved => (
-          Icons.emoji_events_rounded,
-          const Color(0xFF059669),
-          const Color(0xFFECFDF5),
-          'PENCAPAIAN DIRI 🏆',
-        ),
+        Icons.emoji_events_rounded,
+        const Color(0xFF059669),
+        const Color(0xFFECFDF5),
+        'PENCAPAIAN DIRI 🏆',
+      ),
     };
 
     return BackdropFilter(
@@ -126,13 +132,12 @@ class NotificationDetailBottomSheet extends StatelessWidget {
               decoration: BoxDecoration(
                 color: bgColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: primaryColor.withValues(alpha: 0.4), width: 2),
+                border: Border.all(
+                  color: primaryColor.withValues(alpha: 0.4),
+                  width: 2,
+                ),
               ),
-              child: Icon(
-                iconData,
-                color: primaryColor,
-                size: 32,
-              ),
+              child: Icon(iconData, color: primaryColor, size: 32),
             ),
             const SizedBox(height: 16),
 
@@ -183,7 +188,8 @@ class NotificationDetailBottomSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (item.type == NotificationType.education && item.articleId != null) ...[
+                if (item.type == NotificationType.education &&
+                    item.articleId != null) ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
@@ -197,10 +203,19 @@ class NotificationDetailBottomSheet extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
+                        final rootContext = appNavigatorKey.currentContext;
                         Navigator.of(context).pop();
-                        context.push(
-                          '${RouteNames.educationDetail}/${item.articleId}',
-                        );
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (rootContext == null || !rootContext.mounted) {
+                            return;
+                          }
+                          NotificationActionRouter.open(
+                            rootContext,
+                            actionType: item.actionType,
+                            articleId: item.articleId,
+                            legacyType: 'education',
+                          );
+                        });
                       },
                       child: Text(
                         'Baca Artikel',
@@ -211,7 +226,8 @@ class NotificationDetailBottomSheet extends StatelessWidget {
                       ),
                     ),
                   ),
-                ] else if (item.type == NotificationType.warning || item.type == NotificationType.medication) ...[
+                ] else if (item.type == NotificationType.warning ||
+                    item.type == NotificationType.medication) ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
@@ -225,8 +241,19 @@ class NotificationDetailBottomSheet extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
+                        final rootContext = appNavigatorKey.currentContext;
                         Navigator.of(context).pop();
-                        context.push(RouteNames.bloodSugarEntry);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (rootContext == null || !rootContext.mounted) {
+                            return;
+                          }
+                          NotificationActionRouter.open(
+                            rootContext,
+                            actionType: item.actionType,
+                            articleId: item.articleId,
+                            legacyType: 'reminder',
+                          );
+                        });
                       },
                       child: Text(
                         'Catat Sekarang',
@@ -247,7 +274,11 @@ class NotificationDetailBottomSheet extends StatelessWidget {
                   Navigator.of(context).pop();
                   onDelete!();
                 },
-                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  size: 18,
+                  color: AppColors.error,
+                ),
                 label: Text(
                   'Hapus Notifikasi',
                   style: AppTextStyles.labelMd.copyWith(

@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../core/router/route_names.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_smart_image.dart';
@@ -33,6 +35,14 @@ class EducationDetailScreen extends ConsumerStatefulWidget {
 
 class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   final ScrollController _scrollController = ScrollController();
+
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('${RouteNames.home}?tab=education');
+    }
+  }
 
   // ──────────────────────────────────────────────────────────────
   // Cached Notifier Reference (Safe for lifecycle/deactivate)
@@ -682,91 +692,97 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   Widget build(BuildContext context) {
     final articleAsync = ref.watch(educationDetailProvider(widget.articleId));
 
-    return articleAsync.when(
-      loading:
-          () => Scaffold(
-            backgroundColor: AppColors.surface,
-            appBar: AppBar(
+    return PopScope(
+      canPop: context.canPop(),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBack();
+      },
+      child: articleAsync.when(
+        loading:
+            () => Scaffold(
               backgroundColor: AppColors.surface,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: AppColors.primary,
+              appBar: AppBar(
+                backgroundColor: AppColors.surface,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: _goBack,
                 ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              title: Text(
-                'Detail Edukasi',
-                style: AppTextStyles.headlineMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+                title: Text(
+                  'Detail Edukasi',
+                  style: AppTextStyles.headlineMd.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              body: const EducationDetailSkeleton(),
             ),
-            body: const EducationDetailSkeleton(),
-          ),
-      error:
-          (e, _) => Scaffold(
-            backgroundColor: AppColors.surface,
-            appBar: AppBar(
+        error:
+            (e, _) => Scaffold(
               backgroundColor: AppColors.surface,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: AppColors.primary,
+              appBar: AppBar(
+                backgroundColor: AppColors.surface,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: AppColors.primary,
+                  ),
+                  onPressed: _goBack,
                 ),
-                onPressed: () => Navigator.of(context).pop(),
+                title: Text(
+                  'Detail Edukasi',
+                  style: AppTextStyles.headlineMd.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-              title: Text(
-                'Detail Edukasi',
-                style: AppTextStyles.headlineMd.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.cloud_off_rounded,
+                        size: 56,
+                        color: AppColors.outline,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Artikel Belum Tersedia Offline',
+                        style: AppTextStyles.headlineMd.copyWith(
+                          color: AppColors.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Konten lengkap artikel ini belum sempat diunduh ke perangkat. Hubungkan ke internet untuk memuatnya.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodyMd.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed:
+                            () => ref.invalidate(
+                              educationDetailProvider(widget.articleId),
+                            ),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.cloud_off_rounded,
-                      size: 56,
-                      color: AppColors.outline,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Artikel Belum Tersedia Offline',
-                      style: AppTextStyles.headlineMd.copyWith(
-                        color: AppColors.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Konten lengkap artikel ini belum sempat diunduh ke perangkat. Hubungkan ke internet untuk memuatnya.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMd.copyWith(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed:
-                          () => ref.invalidate(
-                            educationDetailProvider(widget.articleId),
-                          ),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Coba Lagi'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      data: (article) => _buildContent(article),
+        data: (article) => _buildContent(article),
+      ),
     );
   }
 
@@ -790,7 +806,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
         shadowColor: AppColors.primaryContainer.withValues(alpha: 0.1),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primary),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _goBack,
         ),
         title: Text(
           'Detail Edukasi',

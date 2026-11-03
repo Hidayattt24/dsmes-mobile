@@ -25,19 +25,53 @@ import '../widgets/record_action_card.dart';
 import '../widgets/record_timeline_section.dart';
 
 class RecordView extends ConsumerStatefulWidget {
-  const RecordView({super.key});
+  const RecordView({super.key, this.initialAction, this.actionRequestId});
+  final String? initialAction;
+  final String? actionRequestId;
 
   @override
   ConsumerState<RecordView> createState() => _RecordViewState();
 }
 
 class _RecordViewState extends ConsumerState<RecordView> {
+  static String? _lastOpenedRequestId;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(recordProvider.notifier).loadData();
+      _openInitialAction();
     });
+  }
+
+  void _openInitialAction() {
+    if (!mounted) return;
+    final requestId = widget.actionRequestId;
+    if (requestId != null && _lastOpenedRequestId == requestId) return;
+    if (requestId != null) _lastOpenedRequestId = requestId;
+    final pageState = ref.read(recordProvider);
+    if (widget.initialAction == 'activity_entry') {
+      showActivityEntrySheet(
+        context,
+        initialActivityName: pageState.activityName,
+        initialDuration:
+            pageState.activityDuration == 0 ? 30 : pageState.activityDuration,
+        initialIntensity: pageState.activityIntensity,
+        onSaved: _onActivitySaved,
+      );
+    } else if (widget.initialAction == 'medication_entry') {
+      showMedicationEntrySheet(
+        context,
+        initialMedicationName:
+            pageState.medicationName == '-'
+                ? 'Metformin'
+                : pageState.medicationName,
+        initialDosage: pageState.medicationDosage,
+        initialSchedule: pageState.medicationSchedule,
+        initialIsTaken: pageState.isMedicationTaken,
+        onSaved: _onMedicationSaved,
+      );
+    }
   }
 
   void _openCalendarHistoryBottomSheet() {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/router/safe_back_navigation.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -10,7 +10,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/info_card.dart';
-import '../../../../core/services/local_notification_service.dart';
 import '../../../onboarding/constants/routine_icons.dart';
 import '../../../onboarding/widgets/icon_picker_bottom_sheet.dart';
 import '../models/reminder_model.dart';
@@ -24,40 +23,43 @@ class RemindersManagementScreen extends ConsumerWidget {
     final remindersAsync = ref.watch(reminderListProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(context),
-            Expanded(
-              child: remindersAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error:
-                    (err, _) => Center(
-                      child: Text(
-                        'Gagal memuat: $err',
-                        style: AppTextStyles.bodyMd.copyWith(
-                          color: AppColors.error,
+    return SafeBackScope(
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: remindersAsync.when(
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error:
+                      (err, _) => Center(
+                        child: Text(
+                          'Gagal memuat: $err',
+                          style: AppTextStyles.bodyMd.copyWith(
+                            color: AppColors.error,
+                          ),
                         ),
                       ),
-                    ),
-                data:
-                    (reminders) => SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.page,
-                        0,
-                        AppSpacing.page,
-                        AppSpacing.md,
+                  data:
+                      (reminders) => SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.page,
+                          0,
+                          AppSpacing.page,
+                          AppSpacing.md,
+                        ),
+                        child: _buildBody(context, ref, reminders),
                       ),
-                      child: _buildBody(context, ref, reminders),
-                    ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        bottomNavigationBar: _buildFooter(context, ref, bottomPadding),
       ),
-      bottomNavigationBar: _buildFooter(context, ref, bottomPadding),
     );
   }
 
@@ -70,7 +72,7 @@ class RemindersManagementScreen extends ConsumerWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-              onPressed: () => context.pop(),
+              onPressed: () => SafeBackNavigation.popOrGoHome(context),
             ),
             const SizedBox(width: AppSpacing.xs),
             Text(
@@ -199,11 +201,7 @@ class RemindersManagementScreen extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.auto_awesome,
-              size: 18,
-              color: AppColors.primary,
-            ),
+            const Icon(Icons.auto_awesome, size: 18, color: AppColors.primary),
             const SizedBox(width: AppSpacing.xs),
             Flexible(
               child: Text(
@@ -1289,7 +1287,7 @@ class RemindersManagementScreen extends ConsumerWidget {
       ),
       child: AppButton(
         label: 'Simpan Pengaturan Pengingat',
-        onPressed: () => context.pop(),
+        onPressed: () => SafeBackNavigation.popOrGoHome(context),
       ),
     );
   }

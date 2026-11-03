@@ -53,8 +53,14 @@ app.*.map.json
 .env.staging.local
 .env.production.local
 
-#test
-test/
+# Tests are normally local; keep navigation regression coverage in Git.
+test/*
+!test/features/
+test/features/*
+!test/features/education/
+test/features/education/*
+!test/features/education/education_detail_back_test.dart
+!test/features/education/notification_action_router_test.dart
 widget_test.dart
 
 

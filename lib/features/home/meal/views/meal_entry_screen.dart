@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/router/safe_back_navigation.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -69,396 +70,416 @@ class _MealEntryScreenState extends ConsumerState<MealEntryScreen> {
     final notifier = ref.read(mealEntryProvider.notifier);
     final foods = state.recommendedFoods;
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
+    return SafeBackScope(
+      child: Scaffold(
         backgroundColor: AppColors.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Tambah Log Makanan',
-          style: AppTextStyles.headlineMdMobile.copyWith(
-            fontWeight: FontWeight.w600,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
+            onPressed: () => SafeBackNavigation.popOrGoHome(context),
           ),
+          title: Text(
+            'Tambah Log Makanan',
+            style: AppTextStyles.headlineMdMobile.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Meal Type Tabs ──────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          for (final type in MealEntryScreen.mealTypes) ...[
-                            _MealTypeTab(
-                              label: type.label,
-                              icon: type.icon,
-                              isSelected: state.selectedMealType == type.label,
-                              onTap: () => notifier.setMealType(type.label),
-                            ),
-                            if (type != MealEntryScreen.mealTypes.last)
-                              const SizedBox(width: 12),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Meal Type Tabs ──────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final type in MealEntryScreen.mealTypes) ...[
+                              _MealTypeTab(
+                                label: type.label,
+                                icon: type.icon,
+                                isSelected:
+                                    state.selectedMealType == type.label,
+                                onTap: () => notifier.setMealType(type.label),
+                              ),
+                              if (type != MealEntryScreen.mealTypes.last)
+                                const SizedBox(width: 12),
+                            ],
                           ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── Search Bar ──────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.outlineVariant),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: notifier.setSearchQuery,
+                          style: AppTextStyles.bodyLg,
+                          decoration: InputDecoration(
+                            hintText: 'Cari makanan atau minuman...',
+                            hintStyle: AppTextStyles.bodyLg.copyWith(
+                              color: AppColors.outline,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: AppColors.outline,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // ── Recent Searches ─────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Pencatatan Terakhir',
+                            style: AppTextStyles.labelLg.copyWith(
+                              color: AppColors.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final search in state.recentSearches.take(4))
+                                GestureDetector(
+                                  onTap: () {
+                                    _searchController.value = TextEditingValue(
+                                      text: search,
+                                      selection: TextSelection.collapsed(
+                                        offset: search.length,
+                                      ),
+                                    );
+                                    FocusManager.instance.primaryFocus
+                                        ?.unfocus();
+                                    notifier.selectRecentSearch(search);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceContainer,
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(
+                                        color: AppColors.outlineVariant,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      search,
+                                      style: AppTextStyles.bodyMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 40),
 
-                  // ── Search Bar ──────────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Container(
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.outlineVariant),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: notifier.setSearchQuery,
-                        style: AppTextStyles.bodyLg,
-                        decoration: InputDecoration(
-                          hintText: 'Cari makanan atau minuman...',
-                          hintStyle: AppTextStyles.bodyLg.copyWith(
-                            color: AppColors.outline,
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search,
-                            color: AppColors.outline,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
+                    // ── Food Recommendation List ────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        'Rekomendasi Makanan Sehat',
+                        style: AppTextStyles.headlineMd.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // ── Recent Searches ─────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pencatatan Terakhir',
-                          style: AppTextStyles.labelLg.copyWith(
-                            color: AppColors.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final search in state.recentSearches.take(4))
-                              GestureDetector(
-                                onTap: () {
-                                  _searchController.value = TextEditingValue(
-                                    text: search,
-                                    selection: TextSelection.collapsed(
-                                      offset: search.length,
-                                    ),
-                                  );
-                                  FocusManager.instance.primaryFocus?.unfocus();
-                                  notifier.selectRecentSearch(search);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surfaceContainer,
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(
-                                      color: AppColors.outlineVariant,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    search,
-                                    style: AppTextStyles.bodyMd.copyWith(
-                                      color: AppColors.onSurfaceVariant,
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child:
+                          state.isLoading
+                              ? ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: 4,
+                                separatorBuilder:
+                                    (context, index) =>
+                                        const SizedBox(height: 16),
+                                itemBuilder:
+                                    (context, index) => const FoodSkeleton(),
+                              )
+                              : foods.isEmpty
+                              ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 32,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceContainerLowest,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: AppColors.outlineVariant.withValues(
+                                      alpha: 0.5,
                                     ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // ── Food Recommendation List ────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'Rekomendasi Makanan Sehat',
-                      style: AppTextStyles.headlineMd.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child:
-                        state.isLoading
-                            ? ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: 4,
-                              separatorBuilder:
-                                  (context, index) =>
-                                      const SizedBox(height: 16),
-                              itemBuilder:
-                                  (context, index) => const FoodSkeleton(),
-                            )
-                            : foods.isEmpty
-                            ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 32,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceContainerLowest,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: AppColors.outlineVariant.withValues(
-                                    alpha: 0.5,
-                                  ),
+                                alignment: Alignment.center,
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryContainer
+                                            .withValues(alpha: 0.3),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.restaurant_menu_rounded,
+                                        size: 32,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Makanan tidak ditemukan',
+                                      style: AppTextStyles.labelLg.copyWith(
+                                        color: AppColors.onSurface,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Menu "${state.searchQuery.isNotEmpty ? state.searchQuery : 'ini'}" belum ada di database? Ajukan makanan baru agar dapat ditinjau oleh tim kami.',
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.bodyMd.copyWith(
+                                        color: AppColors.onSurfaceVariant,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    ElevatedButton.icon(
+                                      onPressed:
+                                          () => _showFoodRequestSheet(
+                                            context,
+                                            ref,
+                                          ),
+                                      icon: const Icon(
+                                        Icons.add_circle_outline_rounded,
+                                        size: 20,
+                                      ),
+                                      label: const Text('Ajukan Makanan Baru'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        elevation: 1,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              alignment: Alignment.center,
-                              child: Column(
+                              )
+                              : Column(
                                 children: [
-                                  Container(
-                                    width: 64,
-                                    height: 64,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryContainer
-                                          .withValues(alpha: 0.3),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.restaurant_menu_rounded,
-                                      size: 32,
-                                      color: AppColors.primary,
-                                    ),
+                                  ListView.separated(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: foods.length,
+                                    separatorBuilder:
+                                        (context, index) =>
+                                            const SizedBox(height: 16),
+                                    itemBuilder: (context, index) {
+                                      final food = foods[index];
+                                      return FoodCard(
+                                        food: food,
+                                        isSelected: state.selectedFoodIds
+                                            .contains(food.id),
+                                        onAddPressed:
+                                            () => _onFoodAddPressed(
+                                              context,
+                                              ref,
+                                              food,
+                                            ),
+                                      );
+                                    },
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Makanan tidak ditemukan',
-                                    style: AppTextStyles.labelLg.copyWith(
-                                      color: AppColors.onSurface,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                  if (state.isMoreLoading)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Menu "${state.searchQuery.isNotEmpty ? state.searchQuery : 'ini'}" belum ada di database? Ajukan makanan baru agar dapat ditinjau oleh tim kami.',
-                                    textAlign: TextAlign.center,
-                                    style: AppTextStyles.bodyMd.copyWith(
-                                      color: AppColors.onSurfaceVariant,
-                                      height: 1.4,
-                                    ),
-                                  ),
                                   const SizedBox(height: 20),
-                                  ElevatedButton.icon(
-                                    onPressed:
-                                        () =>
-                                            _showFoodRequestSheet(context, ref),
-                                    icon: const Icon(
-                                      Icons.add_circle_outline_rounded,
-                                      size: 20,
+                                  // Inline subtle request prompt
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
                                     ),
-                                    label: const Text('Ajukan Makanan Baru'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: Colors.white,
-                                      elevation: 1,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 12,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceContainerLow,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: AppColors.outlineVariant
+                                            .withValues(alpha: 0.4),
                                       ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.help_outline_rounded,
+                                          size: 20,
+                                          color: AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            'Tidak menemukan makanan yang dicari?',
+                                            style: AppTextStyles.bodySm
+                                                .copyWith(
+                                                  color:
+                                                      AppColors
+                                                          .onSurfaceVariant,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed:
+                                              () => _showFoodRequestSheet(
+                                                context,
+                                                ref,
+                                              ),
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                          ),
+                                          child: Text(
+                                            'Ajukan Baru',
+                                            style: AppTextStyles.labelMd
+                                                .copyWith(
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            )
-                            : Column(
-                              children: [
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: foods.length,
-                                  separatorBuilder:
-                                      (context, index) =>
-                                          const SizedBox(height: 16),
-                                  itemBuilder: (context, index) {
-                                    final food = foods[index];
-                                    return FoodCard(
-                                      food: food,
-                                      isSelected: state.selectedFoodIds
-                                          .contains(food.id),
-                                      onAddPressed:
-                                          () => _onFoodAddPressed(
-                                            context,
-                                            ref,
-                                            food,
-                                          ),
-                                    );
-                                  },
-                                ),
-                                if (state.isMoreLoading)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 16),
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(height: 20),
-                                // Inline subtle request prompt
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surfaceContainerLow,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: AppColors.outlineVariant
-                                          .withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.help_outline_rounded,
-                                        size: 20,
-                                        color: AppColors.primary,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          'Tidak menemukan makanan yang dicari?',
-                                          style: AppTextStyles.bodySm.copyWith(
-                                            color: AppColors.onSurfaceVariant,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed:
-                                            () => _showFoodRequestSheet(
-                                              context,
-                                              ref,
-                                            ),
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                        child: Text(
-                                          'Ajukan Baru',
-                                          style: AppTextStyles.labelMd.copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                  ),
-                  const SizedBox(height: 160),
-                ],
+                    ),
+                    const SizedBox(height: 160),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // ── Sticky Footer ──────────────────────────────────────────────
-          _StickyFooter(
-            totalCalories: state.totalCalories,
-            selectedCount: state.selectedFoodIds.length,
-            onViewDetails:
-                state.selectedFoodIds.isNotEmpty
-                    ? () => _showSelectedFoodsSheet(context, ref)
-                    : null,
-            onSave: () async {
-              if (state.selectedFoodIds.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Pilih minimal satu makanan terlebih dahulu'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-
-              final dashState = ref.read(homeDashboardProvider).valueOrNull;
-              final currentConsumed = dashState?.consumedCalories ?? 0;
-              final target = dashState?.dailyCalorieTarget ?? 2000;
-              final isTargetMetOrExceeded =
-                  target > 0 &&
-                  (currentConsumed + state.totalCalories) >= target;
-
-              final success = await notifier.saveMealLogs();
-              if (context.mounted) {
-                final message =
-                    success
-                        ? (isTargetMetOrExceeded
-                            ? 'Catatan berhasil disimpan! Asupan kalori Anda hari ini telah mencapai target. Pastikan cukup minum air putih dan pertimbangkan aktivitas fisik ringan (seperti jalan santai 15 menit) untuk membantu menjaga stabilitas gula darah.'
-                            : 'Log makanan berhasil disimpan!')
-                        : 'Gagal menyimpan log makanan.';
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(message),
-                    behavior: SnackBarBehavior.floating,
-                    duration: Duration(seconds: isTargetMetOrExceeded ? 5 : 3),
-                  ),
-                );
-                if (success) {
-                  Navigator.of(context).pop();
+            // ── Sticky Footer ──────────────────────────────────────────────
+            _StickyFooter(
+              totalCalories: state.totalCalories,
+              selectedCount: state.selectedFoodIds.length,
+              onViewDetails:
+                  state.selectedFoodIds.isNotEmpty
+                      ? () => _showSelectedFoodsSheet(context, ref)
+                      : null,
+              onSave: () async {
+                if (state.selectedFoodIds.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Pilih minimal satu makanan terlebih dahulu',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
                 }
-              }
-            },
-          ),
-        ],
+
+                final dashState = ref.read(homeDashboardProvider).valueOrNull;
+                final currentConsumed = dashState?.consumedCalories ?? 0;
+                final target = dashState?.dailyCalorieTarget ?? 2000;
+                final isTargetMetOrExceeded =
+                    target > 0 &&
+                    (currentConsumed + state.totalCalories) >= target;
+
+                final success = await notifier.saveMealLogs();
+                if (context.mounted) {
+                  final message =
+                      success
+                          ? (isTargetMetOrExceeded
+                              ? 'Catatan berhasil disimpan! Asupan kalori Anda hari ini telah mencapai target. Pastikan cukup minum air putih dan pertimbangkan aktivitas fisik ringan (seperti jalan santai 15 menit) untuk membantu menjaga stabilitas gula darah.'
+                              : 'Log makanan berhasil disimpan!')
+                          : 'Gagal menyimpan log makanan.';
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(message),
+                      behavior: SnackBarBehavior.floating,
+                      duration: Duration(
+                        seconds: isTargetMetOrExceeded ? 5 : 3,
+                      ),
+                    ),
+                  );
+                  if (success) {
+                    SafeBackNavigation.popOrGoHome(context);
+                  }
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

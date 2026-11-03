@@ -249,8 +249,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteNames.home,
         name: RouteNames.nameHome,
         pageBuilder:
-            (context, state) =>
-                _buildFadeTransition(state: state, child: const AppShell()),
+            (context, state) => _buildFadeTransition(
+              state: state,
+              child: AppShell(
+                initialTab: state.uri.queryParameters['tab'],
+                initialAction: state.uri.queryParameters['action'],
+                actionRequestId: state.uri.queryParameters['request'],
+              ),
+            ),
       ),
 
       // ── Notifications ──────────────────────────────────────────────────

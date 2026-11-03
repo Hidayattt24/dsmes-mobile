@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
+import '../../../core/router/safe_back_navigation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -72,14 +73,20 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
   }
 
   List<EducationArticle> _applyFilters(List<EducationArticle> all) {
-    var result = all.where((article) {
-      final matchesQuery =
-          article.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              article.quoteText.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesCategory = _selectedCategory == 'Semua' ||
-          article.category.toLowerCase() == _selectedCategory.toLowerCase();
-      return matchesQuery && matchesCategory;
-    }).toList();
+    var result =
+        all.where((article) {
+          final matchesQuery =
+              article.title.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ||
+              article.quoteText.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              );
+          final matchesCategory =
+              _selectedCategory == 'Semua' ||
+              article.category.toLowerCase() == _selectedCategory.toLowerCase();
+          return matchesQuery && matchesCategory;
+        }).toList();
 
     switch (_selectedSortBy) {
       case 'Terpopuler':
@@ -87,8 +94,10 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
       case 'Durasi':
         // Parse "X menit" → int for sorting
         result.sort((a, b) {
-          final aMin = int.tryParse(a.readTime.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-          final bMin = int.tryParse(b.readTime.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+          final aMin =
+              int.tryParse(a.readTime.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+          final bMin =
+              int.tryParse(b.readTime.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
           return aMin.compareTo(bMin);
         });
       default: // 'Terbaru' — keep original order (already sorted by created_at DESC from backend)
@@ -106,59 +115,83 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
     final categories = categoriesAsync.value ?? const ['Semua'];
     final filteredArticles = _applyFilters(allArticles);
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
+    return SafeBackScope(
+      education: true,
+      child: Scaffold(
         backgroundColor: AppColors.surface,
-        elevation: 1,
-        shadowColor: AppColors.primaryContainer.withValues(alpha: 0.1),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.primary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Semua Artikel Edukasi',
-          style: AppTextStyles.headlineMd.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          if (educationListAsync.isLoading && educationListAsync.hasValue)
-            const Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))),
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          elevation: 1,
+          shadowColor: AppColors.primaryContainer.withValues(alpha: 0.1),
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppColors.primary,
             ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(educationListProvider);
-          ref.invalidate(educationCategoriesProvider);
-        },
-        child: educationListAsync.isLoading && !educationListAsync.hasValue
-            ? const EducationScreenSkeleton()
-            : educationListAsync.hasError && !educationListAsync.hasValue
-                ? Center(
+            onPressed:
+                () => SafeBackNavigation.popOrGoHome(context, education: true),
+          ),
+          title: Text(
+            'Semua Artikel Edukasi',
+            style: AppTextStyles.headlineMd.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            if (educationListAsync.isLoading && educationListAsync.hasValue)
+              const Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(educationListProvider);
+            ref.invalidate(educationCategoriesProvider);
+          },
+          child:
+              educationListAsync.isLoading && !educationListAsync.hasValue
+                  ? const EducationScreenSkeleton()
+                  : educationListAsync.hasError && !educationListAsync.hasValue
+                  ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.outline),
+                        const Icon(
+                          Icons.wifi_off_rounded,
+                          size: 48,
+                          color: AppColors.outline,
+                        ),
                         const SizedBox(height: 16),
-                        Text('Gagal memuat artikel',
-                            style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurface)),
+                        Text(
+                          'Gagal memuat artikel',
+                          style: AppTextStyles.headlineMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         ElevatedButton.icon(
-                          onPressed: () => ref.invalidate(educationListProvider),
+                          onPressed:
+                              () => ref.invalidate(educationListProvider),
                           icon: const Icon(Icons.refresh_rounded),
                           label: const Text('Coba Lagi'),
                         ),
                       ],
                     ),
                   )
-                : SingleChildScrollView(
+                  : SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.page,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -200,35 +233,54 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
                               child: SingleChildScrollView(
                                 scrollDirection: Axis.horizontal,
                                 child: Row(
-                                  children: _sortOptions.map((opt) {
-                                    final isSelected = opt == _selectedSortBy;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: FilterChip(
-                                        label: Text(opt),
-                                        selected: isSelected,
-                                        selectedColor: AppColors.primary,
-                                        checkmarkColor: Colors.white,
-                                        labelStyle: AppTextStyles.labelMd.copyWith(
-                                          color: isSelected
-                                              ? Colors.white
-                                              : AppColors.onSurfaceVariant,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                          side: BorderSide(
-                                            color: isSelected
-                                                ? AppColors.primary
-                                                : AppColors.outlineVariant.withValues(alpha: 0.3),
+                                  children:
+                                      _sortOptions.map((opt) {
+                                        final isSelected =
+                                            opt == _selectedSortBy;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
                                           ),
-                                        ),
-                                        onSelected: (val) {
-                                          if (val) setState(() => _selectedSortBy = opt);
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
+                                          child: FilterChip(
+                                            label: Text(opt),
+                                            selected: isSelected,
+                                            selectedColor: AppColors.primary,
+                                            checkmarkColor: Colors.white,
+                                            labelStyle: AppTextStyles.labelMd
+                                                .copyWith(
+                                                  color:
+                                                      isSelected
+                                                          ? Colors.white
+                                                          : AppColors
+                                                              .onSurfaceVariant,
+                                                  fontWeight:
+                                                      isSelected
+                                                          ? FontWeight.bold
+                                                          : FontWeight.w500,
+                                                ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              side: BorderSide(
+                                                color:
+                                                    isSelected
+                                                        ? AppColors.primary
+                                                        : AppColors
+                                                            .outlineVariant
+                                                            .withValues(
+                                                              alpha: 0.3,
+                                                            ),
+                                              ),
+                                            ),
+                                            onSelected: (val) {
+                                              if (val)
+                                                setState(
+                                                  () => _selectedSortBy = opt,
+                                                );
+                                            },
+                                          ),
+                                        );
+                                      }).toList(),
                                 ),
                               ),
                             ),
@@ -250,7 +302,10 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
                         if (filteredArticles.isEmpty)
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 40,
+                              horizontal: 20,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(24),
@@ -286,13 +341,15 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: filteredArticles.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            separatorBuilder:
+                                (context, index) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final article = filteredArticles[index];
                               return EducationCard(
                                 article: article,
                                 onTap: () => _navigateToDetail(article),
-                                onBookmarkTap: () => _toggleBookmark(article.id),
+                                onBookmarkTap:
+                                    () => _toggleBookmark(article.id),
                               );
                             },
                           ),
@@ -301,6 +358,7 @@ class _AllArticlesScreenState extends ConsumerState<AllArticlesScreen> {
                       ],
                     ),
                   ),
+        ),
       ),
     );
   }
