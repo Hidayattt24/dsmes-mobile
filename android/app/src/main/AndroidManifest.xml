@@ -11,6 +11,7 @@
         android:label="DIBA"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
+        android:usesCleartextTraffic="true"
         android:enableOnBackInvokedCallback="true">
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"

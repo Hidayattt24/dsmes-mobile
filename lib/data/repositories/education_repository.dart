@@ -23,12 +23,14 @@ abstract class IEducationRepository {
     required int watchDuration,
     required int lastTimestamp,
   });
-  Future<Map<String, dynamic>> getPatientProgress(String id);
-  Future<void> submitReview(
+  Future<void> markAudioListened(
     String id, {
-    required int rating,
-    String? note,
+    required int listenDuration,
+    required int lastTimestamp,
+    bool isCompleted = false,
   });
+  Future<Map<String, dynamic>> getPatientProgress(String id);
+  Future<void> submitReview(String id, {required int rating, String? note});
   Future<Map<String, dynamic>> getArticleRating(String id);
 }
 
@@ -42,7 +44,10 @@ class EducationRepository implements IEducationRepository {
     try {
       final response = await _dio.get('/education/categories');
       final list = response.data['data'] as List<dynamic>? ?? [];
-      return list.map((e) => (e['name'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+      return list
+          .map((e) => (e['name'] ?? '').toString())
+          .where((n) => n.isNotEmpty)
+          .toList();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -52,10 +57,15 @@ class EducationRepository implements IEducationRepository {
   Future<List<EducationArticle>> getArticles({String? categoryId}) async {
     try {
       final queryParams = <String, dynamic>{};
-      if (categoryId != null && categoryId.isNotEmpty && categoryId != 'Semua') {
+      if (categoryId != null &&
+          categoryId.isNotEmpty &&
+          categoryId != 'Semua') {
         queryParams['category_id'] = categoryId;
       }
-      final response = await _dio.get('/education/articles', queryParameters: queryParams);
+      final response = await _dio.get(
+        '/education/articles',
+        queryParameters: queryParams,
+      );
       final list = response.data['data'] as List<dynamic>? ?? [];
       return list.map((json) => EducationArticle.fromJson(json)).toList();
     } on DioException catch (e) {
@@ -68,7 +78,36 @@ class EducationRepository implements IEducationRepository {
     try {
       final response = await _dio.get('/education/articles/$id');
       final data = response.data['data'] as Map<String, dynamic>;
-      return EducationArticle.fromJson(data);
+      var article = EducationArticle.fromJson(data);
+
+      try {
+        final progressResponse = await _dio.get(
+          '/patient/education/$id/progress',
+        );
+        final progress =
+            progressResponse.data['data'] as Map<String, dynamic>? ?? const {};
+        final audioListened = progress['audio_listened'] == true;
+        final completed = progress['completed'] == true;
+
+        article = article.copyWith(
+          isAudioListened: audioListened,
+          audioListenDuration:
+              (progress['audio_listen_duration'] as num?)?.toInt() ?? 0,
+          audioLastTimestamp:
+              (progress['audio_last_timestamp'] as num?)?.toInt() ?? 0,
+          isCompleted: article.isCompleted || completed,
+          readStatus:
+              article.isCompleted || completed ? 'Selesai' : article.readStatus,
+          readProgress:
+              article.isCompleted || completed ? 1.0 : article.readProgress,
+        );
+      } on DioException catch (e) {
+        // A patient who has never opened this media has no progress row yet.
+        // Keep the article detail usable and treat that response as not started.
+        if (e.response?.statusCode != 404) rethrow;
+      }
+
+      return article;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -144,6 +183,27 @@ class EducationRepository implements IEducationRepository {
   }
 
   @override
+  Future<void> markAudioListened(
+    String id, {
+    required int listenDuration,
+    required int lastTimestamp,
+    bool isCompleted = false,
+  }) async {
+    try {
+      await _dio.post(
+        '/patient/education/$id/listen-audio',
+        data: {
+          'listen_duration': listenDuration,
+          'audio_last_timestamp': lastTimestamp,
+          'is_completed': isCompleted,
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
   Future<Map<String, dynamic>> getPatientProgress(String id) async {
     try {
       final response = await _dio.get('/patient/education/$id/progress');
@@ -162,10 +222,7 @@ class EducationRepository implements IEducationRepository {
     try {
       await _dio.post(
         '/patient/education/$id/review',
-        data: {
-          'rating': rating,
-          'note': note ?? '',
-        },
+        data: {'rating': rating, 'note': note ?? ''},
       );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -182,7 +239,6 @@ class EducationRepository implements IEducationRepository {
     }
   }
 }
-
 
 final educationRepositoryProvider = Provider<IEducationRepository>((ref) {
   final dio = ref.watch(dioClientProvider);

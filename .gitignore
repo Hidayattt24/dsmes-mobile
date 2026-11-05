@@ -55,6 +55,7 @@ app.*.map.json
 
 # Tests are normally local; keep navigation regression coverage in Git.
 test/*
+!test/education_media_and_cache_test.dart
 !test/features/
 test/features/*
 !test/features/education/

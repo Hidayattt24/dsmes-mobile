@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:encrypt/encrypt.dart' as enc;
@@ -5,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../network/auth_interceptor.dart';
 
@@ -17,18 +19,26 @@ class LocalStorageService {
   enc.Key? _masterKey;
   Directory? _storageDir;
   bool _isInitialized = false;
+  Future<void>? _initializationFuture;
+  static final Map<String, Future<void>> _pendingWrites = {};
 
   static const String masterKeyStorageKey = 'diba_storage_master_key_v1';
 
-  LocalStorageService(
-    this._secureStorage, {
-    Directory? overrideDirectory,
-  }) : _overrideDirectory = overrideDirectory;
+  LocalStorageService(this._secureStorage, {Directory? overrideDirectory})
+    : _overrideDirectory = overrideDirectory;
 
   /// Ensures master key and storage directory are loaded and ready.
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<void> initialize() {
+    if (_isInitialized) return Future<void>.value();
+    return _initializationFuture ??= _initializeOnce().catchError((
+      Object error,
+    ) {
+      _initializationFuture = null;
+      throw error;
+    });
+  }
 
+  Future<void> _initializeOnce() async {
     // 1. Resolve or generate 256-bit AES Master Key
     String? base64Key;
     try {
@@ -41,10 +51,7 @@ class LocalStorageService {
       final newKey = enc.Key.fromSecureRandom(32);
       base64Key = newKey.base64;
       try {
-        await _secureStorage.write(
-          key: masterKeyStorageKey,
-          value: base64Key,
-        );
+        await _secureStorage.write(key: masterKeyStorageKey, value: base64Key);
       } catch (e) {
         debugPrint('[LocalStorageService] KeyStore write failure: $e');
       }
@@ -69,7 +76,8 @@ class LocalStorageService {
         final entries = _storageDir!.listSync();
         for (final entry in entries) {
           if (entry is File && entry.path.endsWith('.tmp')) {
-            entry.deleteSync();
+            final age = DateTime.now().difference(entry.lastModifiedSync());
+            if (age > const Duration(hours: 1)) entry.deleteSync();
           }
         }
       } catch (_) {}
@@ -79,9 +87,10 @@ class LocalStorageService {
   }
 
   File _resolveFile(String key, String? userId) {
-    final sanitizedUser = (userId != null && userId.isNotEmpty)
-        ? userId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_')
-        : 'global';
+    final sanitizedUser =
+        (userId != null && userId.isNotEmpty)
+            ? userId.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_')
+            : 'global';
     final sanitizedKey = key.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     final filename = 'usr_${sanitizedUser}_$sanitizedKey.enc';
     return File('${_storageDir!.path}/$filename');
@@ -96,7 +105,27 @@ class LocalStorageService {
     await initialize();
 
     final targetFile = _resolveFile(key, userId);
-    final tmpFile = File('${targetFile.path}.tmp');
+    final path = targetFile.path;
+    final previous = _pendingWrites[path] ?? Future<void>.value();
+    final write = previous
+        .catchError((Object _) {})
+        .then((_) => _writeEncryptedJsonFile(key, data, targetFile));
+    _pendingWrites[path] = write;
+    try {
+      await write;
+    } finally {
+      if (identical(_pendingWrites[path], write)) {
+        unawaited(_pendingWrites.remove(path)!);
+      }
+    }
+  }
+
+  Future<void> _writeEncryptedJsonFile(
+    String key,
+    dynamic data,
+    File targetFile,
+  ) async {
+    final tmpFile = File('${targetFile.path}.${const Uuid().v4()}.tmp');
 
     try {
       final jsonPlaintext = jsonEncode(data);
@@ -104,7 +133,9 @@ class LocalStorageService {
       // NIST SP 800-38D: 12-byte (96-bit) IV is the standard recommended nonce for AES-GCM
       // Directly processed by GHASH without reduction, optimal performance and security.
       final iv = enc.IV.fromSecureRandom(12);
-      final encrypter = enc.Encrypter(enc.AES(_masterKey!, mode: enc.AESMode.gcm));
+      final encrypter = enc.Encrypter(
+        enc.AES(_masterKey!, mode: enc.AESMode.gcm),
+      );
 
       final encrypted = encrypter.encrypt(jsonPlaintext, iv: iv);
 
@@ -128,10 +159,7 @@ class LocalStorageService {
   }
 
   /// Reads and decrypts JSON data. Recovers gracefully if file is corrupted.
-  Future<dynamic> readEncryptedJson(
-    String key, {
-    String? userId,
-  }) async {
+  Future<dynamic> readEncryptedJson(String key, {String? userId}) async {
     await initialize();
 
     final file = _resolveFile(key, userId);
@@ -153,12 +181,16 @@ class LocalStorageService {
       final iv = enc.IV.fromBase64(parts[0]);
       final encrypted = enc.Encrypted.fromBase64(parts[1]);
 
-      final encrypter = enc.Encrypter(enc.AES(_masterKey!, mode: enc.AESMode.gcm));
+      final encrypter = enc.Encrypter(
+        enc.AES(_masterKey!, mode: enc.AESMode.gcm),
+      );
       final decryptedJson = encrypter.decrypt(encrypted, iv: iv);
 
       return jsonDecode(decryptedJson);
     } catch (e) {
-      debugPrint('[LocalStorageService] Decryption or integrity check failed for $key: $e');
+      debugPrint(
+        '[LocalStorageService] Decryption or integrity check failed for $key: $e',
+      );
       // Corruption recovery: Quarantine corrupted file to avoid repeated parse crashes
       try {
         final corruptFile = File(
@@ -171,10 +203,7 @@ class LocalStorageService {
   }
 
   /// Deletes an encrypted file.
-  Future<bool> deleteEncrypted(
-    String key, {
-    String? userId,
-  }) async {
+  Future<bool> deleteEncrypted(String key, {String? userId}) async {
     await initialize();
     final file = _resolveFile(key, userId);
     if (await file.exists()) {
@@ -212,10 +241,7 @@ class LocalStorageService {
   }
 
   /// Returns last modified timestamp of the encrypted file.
-  Future<DateTime?> getLastModified(
-    String key, {
-    String? userId,
-  }) async {
+  Future<DateTime?> getLastModified(String key, {String? userId}) async {
     await initialize();
     final file = _resolveFile(key, userId);
     if (await file.exists()) {

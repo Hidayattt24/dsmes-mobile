@@ -67,15 +67,9 @@ class ArticleStepData {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'step_order': stepOrder,
-      'step_text': stepText,
-    };
+    return {'id': id, 'step_order': stepOrder, 'step_text': stepText};
   }
 }
-
-
 
 @immutable
 class EducationArticle {
@@ -104,6 +98,11 @@ class EducationArticle {
   final String? videoUrl;
   final String? videoDuration;
   final String? channelName;
+  final bool hasAudio;
+  final String? audioUrl;
+  final bool isAudioListened;
+  final int audioListenDuration;
+  final int audioLastTimestamp;
 
   const EducationArticle({
     required this.id,
@@ -131,6 +130,11 @@ class EducationArticle {
     this.videoUrl,
     this.videoDuration,
     this.channelName,
+    this.hasAudio = false,
+    this.audioUrl,
+    this.isAudioListened = false,
+    this.audioListenDuration = 0,
+    this.audioLastTimestamp = 0,
   });
 
   EducationArticle copyWith({
@@ -159,6 +163,11 @@ class EducationArticle {
     String? videoUrl,
     String? videoDuration,
     String? channelName,
+    bool? hasAudio,
+    String? audioUrl,
+    bool? isAudioListened,
+    int? audioListenDuration,
+    int? audioLastTimestamp,
   }) {
     return EducationArticle(
       id: id ?? this.id,
@@ -186,13 +195,18 @@ class EducationArticle {
       videoUrl: videoUrl ?? this.videoUrl,
       videoDuration: videoDuration ?? this.videoDuration,
       channelName: channelName ?? this.channelName,
+      hasAudio: hasAudio ?? this.hasAudio,
+      audioUrl: audioUrl ?? this.audioUrl,
+      isAudioListened: isAudioListened ?? this.isAudioListened,
+      audioListenDuration: audioListenDuration ?? this.audioListenDuration,
+      audioLastTimestamp: audioLastTimestamp ?? this.audioLastTimestamp,
     );
   }
 
   String? get youtubeVideoId {
     if (videoUrl == null || videoUrl!.trim().isEmpty) return null;
     final regExp = RegExp(
-      r'^.*(?:youtu.be\/|v\/|e\/|u\/\w\/|embed\/|v=|\&v=)([^#\&\?]*).*',
+      r'^.*(?:youtu.be\/|v\/|e\/|u\/\w\/|embed\/|shorts\/|v=|\&v=)([^#\&\?]*).*',
       caseSensitive: false,
     );
     final match = regExp.firstMatch(videoUrl!);
@@ -203,25 +217,75 @@ class EducationArticle {
     return null;
   }
 
+  String? get audioYoutubeVideoId {
+    if (audioUrl != null && audioUrl!.trim().isNotEmpty) {
+      final regExp = RegExp(
+        r'^.*(?:youtu.be\/|v\/|e\/|u\/\w\/|embed\/|shorts\/|v=|\&v=)([^#\&\?]*).*',
+        caseSensitive: false,
+      );
+      final match = regExp.firstMatch(audioUrl!);
+      if (match != null && match.groupCount >= 1) {
+        final id = match.group(1);
+        if (id != null && id.length == 11) return id;
+      }
+    }
+    for (final p in bodyParagraphs) {
+      final match = RegExp(r'data-audio-youtube-id="([^"]+)"').firstMatch(p);
+      if (match != null && match.group(1)?.length == 11) {
+        return match.group(1);
+      }
+    }
+    return null;
+  }
+
   factory EducationArticle.fromJson(Map<String, dynamic> json) {
     var rawSections = json['sections'] as List? ?? [];
-    List<ArticleSectionData> parsedSections = rawSections
-        .map((s) => ArticleSectionData.fromJson(s))
-        .toList();
+    List<ArticleSectionData> parsedSections =
+        rawSections.map((s) => ArticleSectionData.fromJson(s)).toList();
 
     // Map fields from backend
     String title = json['title'] ?? '';
     String categoryName = json['category_name'] ?? 'Umum';
-    int readMin = json['estimated_read_minutes'] ?? 5;
+    int readSec =
+        json['estimated_read_seconds'] ??
+        (json['estimated_read_minutes'] != null
+            ? (json['estimated_read_minutes'] as int) * 60
+            : 60);
+    String formattedReadTime;
+    if (readSec < 60) {
+      formattedReadTime = '$readSec detik';
+    } else if (readSec % 60 == 0) {
+      formattedReadTime = '${readSec ~/ 60} menit';
+    } else {
+      formattedReadTime = '${readSec ~/ 60} mnt ${readSec % 60} dtk';
+    }
     String author = json['author_name'] ?? 'Tim Medis DIBA';
     String bannerUrl = json['banner_image_url'] ?? '';
     String rawSummary = json['summary'] ?? '';
     String rawContent = json['content'] ?? '';
     String youtubeLink = json['youtube_link'] ?? '';
+    String audioUrl = json['audio_url'] ?? '';
+    if (audioUrl.isEmpty && rawContent.isNotEmpty) {
+      final audioMatch =
+          RegExp(r'data-audio-url="([^"]+)"').firstMatch(rawContent) ??
+          RegExp(r'data-audio-youtube-id="([^"]+)"').firstMatch(rawContent) ??
+          RegExp(r'<audio[^>]*src="([^"]+)"').firstMatch(rawContent);
+      if (audioMatch != null) {
+        final val = audioMatch.group(1) ?? '';
+        if (val.length == 11 && !val.contains('/')) {
+          audioUrl = 'https://www.youtube.com/watch?v=$val';
+        } else {
+          audioUrl = val;
+        }
+      }
+    }
     bool bookmarked = json['is_bookmarked'] ?? false;
     bool completed = json['is_completed'] ?? false;
     bool youtubeWatched = json['youtube_watched'] ?? false;
     bool articleRead = json['article_read'] ?? false;
+    bool audioListened = json['audio_listened'] ?? false;
+    int audioListenDuration = json['audio_listen_duration'] ?? 0;
+    int audioLastTimestamp = json['audio_last_timestamp'] ?? 0;
     String createdAt = json['created_at'] ?? '';
 
     // Parse date nicely
@@ -237,18 +301,20 @@ class EducationArticle {
 
     String cleanedContent = _cleanHtmlContent(rawContent);
 
+    final isDone = completed || youtubeWatched || articleRead || audioListened;
+
     return EducationArticle(
       id: json['id'] ?? '',
       title: title,
       category: categoryName,
-      readTime: '$readMin menit',
+      readTime: formattedReadTime,
       author: author.isEmpty ? 'Tim Medis DIBA' : author,
       date: formattedDate,
       views: json['read_count'] ?? 0,
       imageUrl: bannerUrl,
       tagText: null,
-      readStatus: (completed || youtubeWatched || articleRead) ? 'Selesai' : 'Belum Selesai',
-      readProgress: (completed || youtubeWatched || articleRead) ? 1.0 : 0.0,
+      readStatus: isDone ? 'Selesai' : 'Belum Selesai',
+      readProgress: isDone ? 1.0 : 0.0,
       quoteText: rawSummary,
       bodyParagraphs: cleanedContent.isNotEmpty ? [cleanedContent] : const [],
       galleryImageUrls: const [],
@@ -256,22 +322,35 @@ class EducationArticle {
       calloutText: '',
       tags: const [],
       isBookmarked: bookmarked,
-      isCompleted: completed || youtubeWatched || articleRead,
+      isCompleted: isDone,
       isYoutubeWatched: youtubeWatched,
       isArticleRead: articleRead,
       hasVideo: youtubeLink.isNotEmpty,
       videoUrl: youtubeLink,
       videoDuration: 'Edukasi Video',
       channelName: 'DIBA Official',
+      hasAudio: audioUrl.isNotEmpty,
+      audioUrl: audioUrl.isNotEmpty ? audioUrl : null,
+      isAudioListened: audioListened,
+      audioListenDuration: audioListenDuration,
+      audioLastTimestamp: audioLastTimestamp,
     );
   }
 
   Map<String, dynamic> toJson() {
+    int parsedSec = 60;
+    final parts = readTime.split(' ');
+    if (readTime.contains('detik')) {
+      parsedSec = int.tryParse(parts.first) ?? 60;
+    } else if (readTime.contains('menit')) {
+      parsedSec = (int.tryParse(parts.first) ?? 1) * 60;
+    }
     return {
       'id': id,
       'title': title,
       'category_name': category,
-      'estimated_read_minutes': int.tryParse(readTime.split(' ').first) ?? 5,
+      'estimated_read_seconds': parsedSec,
+      'estimated_read_minutes': (parsedSec + 59) ~/ 60,
       'author_name': author,
       'created_at': date,
       'read_count': views,
@@ -283,7 +362,11 @@ class EducationArticle {
       'is_completed': isCompleted,
       'youtube_watched': isYoutubeWatched,
       'article_read': isArticleRead,
+      'audio_listened': isAudioListened,
+      'audio_listen_duration': audioListenDuration,
+      'audio_last_timestamp': audioLastTimestamp,
       'youtube_link': videoUrl ?? '',
+      'audio_url': audioUrl ?? '',
     };
   }
 }
@@ -293,12 +376,32 @@ String _cleanHtmlContent(String html) {
   if (html.isEmpty) return html;
   var cleaned = html;
   // Remove button tags and their inner content (e.g., edit, delete buttons)
-  cleaned = cleaned.replaceAll(RegExp(r'<button[^>]*>.*?</button>', caseSensitive: false, dotAll: true), '');
+  cleaned = cleaned.replaceAll(
+    RegExp(r'<button[^>]*>.*?</button>', caseSensitive: false, dotAll: true),
+    '',
+  );
   // Remove editor action divs
-  cleaned = cleaned.replaceAll(RegExp(r'<div[^>]*class="[^"]*editor-actions[^"]*"[^>]*>.*?</div>', caseSensitive: false, dotAll: true), '');
+  cleaned = cleaned.replaceAll(
+    RegExp(
+      r'<div[^>]*class="[^"]*editor-actions[^"]*"[^>]*>.*?</div>',
+      caseSensitive: false,
+      dotAll: true,
+    ),
+    '',
+  );
   // Remove editor overlay divs
-  cleaned = cleaned.replaceAll(RegExp(r'<div[^>]*class="[^"]*editor-only-overlay[^"]*"[^>]*>.*?</div>', caseSensitive: false, dotAll: true), '');
+  cleaned = cleaned.replaceAll(
+    RegExp(
+      r'<div[^>]*class="[^"]*editor-only-overlay[^"]*"[^>]*>.*?</div>',
+      caseSensitive: false,
+      dotAll: true,
+    ),
+    '',
+  );
   // Remove onclick attributes
-  cleaned = cleaned.replaceAll(RegExp(r'onclick="[^"]*"', caseSensitive: false), '');
+  cleaned = cleaned.replaceAll(
+    RegExp(r'onclick="[^"]*"', caseSensitive: false),
+    '',
+  );
   return cleaned;
 }

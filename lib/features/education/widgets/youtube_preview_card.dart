@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -22,7 +23,9 @@ class YouTubePreviewCard extends StatefulWidget {
     required this.channelName,
     required this.imageUrl,
     this.videoUrl,
+    this.isShorts = false,
     this.isWatched = false,
+    this.isAudioMode = false,
     this.onWatchProgress,
     this.onVideoEnded,
     this.externalController,
@@ -35,7 +38,9 @@ class YouTubePreviewCard extends StatefulWidget {
   final String channelName;
   final String imageUrl;
   final String? videoUrl;
+  final bool isShorts;
   final bool isWatched;
+  final bool isAudioMode;
 
   /// Called periodically while video is playing.
   /// [watchedSeconds] = cumulative seconds watched, [lastTimestamp] = current position.
@@ -75,9 +80,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
   String? _fetchedTitle;
   String? _fetchedAuthor;
 
-  // ── Controls overlay ──────────────────────────────────────────────────────
-  bool _showControls = false;
-  Timer? _controlsHideTimer;
+  int _playerErrorCode = 0;
 
   // ── Fullscreen ────────────────────────────────────────────────────────────
   bool _isFullscreen = false;
@@ -140,9 +143,9 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           autoPlay: false,
           mute: false,
           enableCaption: true,
-          // We handle fullscreen ourselves
-          showLiveFullscreenButton: false,
-          hideControls: true, // use our custom overlay
+          hideControls: false,
+          controlsVisibleAtStart: true,
+          showLiveFullscreenButton: true,
         ),
       )..addListener(_videoListener);
 
@@ -178,8 +181,13 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
 
   // ── Video listener ───────────────────────────────────────────────────────
   void _videoListener() {
-    if (_controller == null) return;
-    final state = _controller!.value.playerState;
+    if (!mounted || _controller == null) return;
+    final value = _controller!.value;
+    final state = value.playerState;
+
+    if (value.errorCode != _playerErrorCode) {
+      setState(() => _playerErrorCode = value.errorCode);
+    }
 
     if (state == PlayerState.playing) {
       _startWatchTimer();
@@ -207,55 +215,29 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
     _watchTimer = null;
   }
 
-  // ── Custom controls visibility ───────────────────────────────────────────
-  void _onTapPlayer() {
-    if (!_showControls) {
-      setState(() => _showControls = true);
-      _scheduleHideControls();
-    } else {
-      _togglePlayPause();
-      _scheduleHideControls();
-    }
-  }
+  bool get _isShorts =>
+      widget.isShorts ||
+      (Uri.tryParse(widget.videoUrl ?? '')?.pathSegments.contains('shorts') ??
+          false);
 
-  void _scheduleHideControls() {
-    _controlsHideTimer?.cancel();
-    _controlsHideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showControls = false);
-    });
-  }
-
-  void _togglePlayPause() {
-    if (_controller == null) return;
-    final state = _controller!.value.playerState;
-    if (state == PlayerState.playing) {
-      _controller!.pause();
-    } else {
-      _controller!.play();
-    }
-  }
-
-  void _seekBackward() {
-    if (_controller == null) return;
-    final pos = _controller!.value.position;
-    final target = pos - const Duration(seconds: 10);
-    _controller!.seekTo(target < Duration.zero ? Duration.zero : target);
-    _scheduleHideControls();
-  }
-
-  void _seekForward() {
-    if (_controller == null) return;
-    final pos = _controller!.value.position;
-    _controller!.seekTo(pos + const Duration(seconds: 10));
-    _scheduleHideControls();
+  Future<void> _openInYoutube() async {
+    final id = _extractedVideoId;
+    if (id == null) return;
+    final url = Uri.tryParse(widget.videoUrl ?? '');
+    final target =
+        url != null && url.hasScheme
+            ? url
+            : Uri.parse('https://www.youtube.com/watch?v=$id');
+    await launchUrl(target, mode: LaunchMode.externalApplication);
   }
 
   // ── Fullscreen ───────────────────────────────────────────────────────────
   Future<void> _enterFullscreen() async {
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+    await SystemChrome.setPreferredOrientations(
+      _isShorts
+          ? [DeviceOrientation.portraitUp]
+          : [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
+    );
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     if (mounted) setState(() => _isFullscreen = true);
   }
@@ -270,7 +252,6 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
   @override
   void dispose() {
     _stopWatchTimer();
-    _controlsHideTimer?.cancel();
     _entryCtrl.dispose();
 
     _controller?.removeListener(_videoListener);
@@ -312,6 +293,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
       onExitFullScreen: _exitFullscreen,
       player: YoutubePlayer(
         controller: _controller!,
+        aspectRatio: _isShorts ? 9 / 16 : 16 / 9,
         showVideoProgressIndicator: true,
         progressIndicatorColor: Colors.red,
         progressColors: const ProgressBarColors(
@@ -330,7 +312,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
             child:
                 _isFullscreen
                     ? _buildFullscreenShell(player)
-                    : _buildCardShell(_buildInteractivePlayer(player)),
+                    : _buildCardShell(_buildPlayerWithErrorFallback(player)),
           ),
         );
       },
@@ -339,23 +321,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
 
   // ── Fullscreen shell ─────────────────────────────────────────────────────
   Widget _buildFullscreenShell(Widget player) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTap: _onTapPlayer,
-        child: Stack(
-          children: [
-            Center(child: player),
-            // Controls overlay
-            AnimatedOpacity(
-              opacity: _showControls ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: _buildControlsOverlay(isFullscreen: true),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Scaffold(backgroundColor: Colors.black, body: Center(child: player));
   }
 
   // ── Card shell (normal mode) ─────────────────────────────────────────────
@@ -384,7 +350,15 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
             // ── Video area ──────────────────────────────────────────────
             Container(
               color: Colors.black,
-              child: AspectRatio(aspectRatio: 16 / 9, child: mediaWidget),
+              width: double.infinity,
+              constraints:
+                  _isShorts ? const BoxConstraints(maxHeight: 460) : null,
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: _isShorts ? 9 / 16 : 16 / 9,
+                  child: mediaWidget,
+                ),
+              ),
             ),
 
             // ── Info row ────────────────────────────────────────────────
@@ -401,118 +375,25 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
     );
   }
 
-  // ── Interactive player with gesture overlay ──────────────────────────────
-  Widget _buildInteractivePlayer(Widget player) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _onTapPlayer,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          player,
-          // Controls overlay (normal mode)
-          AnimatedOpacity(
-            opacity: _showControls ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: _buildControlsOverlay(isFullscreen: false),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Controls overlay ─────────────────────────────────────────────────────
-  Widget _buildControlsOverlay({required bool isFullscreen}) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withValues(alpha: 0.15),
-            Colors.black.withValues(alpha: 0.65),
+  Widget _buildPlayerWithErrorFallback(Widget player) {
+    if (_playerErrorCode == 0) return player;
+    return ColoredBox(
+      color: Colors.black87,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Video tidak dapat diputar di aplikasi.',
+              style: TextStyle(color: Colors.white),
+            ),
+            TextButton.icon(
+              onPressed: _openInYoutube,
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Buka di YouTube'),
+            ),
           ],
         ),
-      ),
-      child: Stack(
-        children: [
-          // ── Centre: seek + play/pause ─────────────────────────────────
-          Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _ControlButton(
-                  icon: Icons.replay_10_rounded,
-                  tooltip: 'Mundur 10 detik',
-                  onTap: _seekBackward,
-                ),
-                const SizedBox(width: 24),
-                _PlayPauseButton(controller: _controller),
-                const SizedBox(width: 24),
-                _ControlButton(
-                  icon: Icons.forward_10_rounded,
-                  tooltip: 'Maju 10 detik',
-                  onTap: _seekForward,
-                ),
-              ],
-            ),
-          ),
-
-          // ── Top-right: Mini Player ─────────────────────────────────────
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Row(
-              children: [
-                if (widget.onMinimize != null && !isFullscreen)
-                  _ControlButton(
-                    icon: Icons.picture_in_picture_alt_rounded,
-                    tooltip: 'Mini player',
-                    onTap: widget.onMinimize!,
-                    size: 18,
-                  ),
-              ],
-            ),
-          ),
-
-          // ── Bottom: position + duration ──────────────────────────────
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 8,
-            child: ValueListenableBuilder<YoutubePlayerValue>(
-              valueListenable: _controller!,
-              builder: (context, value, child) {
-                final pos = value.position;
-                final dur = value.metaData.duration;
-                return Row(
-                  children: [
-                    Text(
-                      _formatDuration(pos),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '/ ${_formatDuration(dur)}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        fontSize: 11,
-                        shadows: const [
-                          Shadow(color: Colors.black54, blurRadius: 4),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -532,20 +413,26 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF0000),
+              color: widget.isAudioMode
+                  ? const Color(0xFF7E22CE)
+                  : const Color(0xFFFF0000),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.play_circle_fill_rounded,
+                Icon(
+                  widget.isAudioMode
+                      ? Icons.headphones_rounded
+                      : Icons.play_circle_fill_rounded,
                   color: Colors.white,
                   size: 12,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'YOUTUBE',
+                  widget.isAudioMode
+                      ? 'AUDIO EDUKASI'
+                      : (_isShorts ? 'SHORTS' : 'YOUTUBE'),
                   style: AppTextStyles.labelMd.copyWith(
                     color: Colors.white,
                     fontSize: 10,
@@ -635,11 +522,14 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
 
     controller.seekTo(Duration.zero);
     controller.play();
-    setState(() => _showControls = true);
-    _scheduleHideControls();
   }
 
   Widget _buildWatchedButton() {
+    final activeBg = widget.isAudioMode
+        ? const Color(0xFF7E22CE)
+        : AppColors.primaryContainer;
+    const doneBg = Color(0xFF16A34A);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
       child: SizedBox(
@@ -650,13 +540,10 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           child: ElevatedButton.icon(
             key: ValueKey(_isWatchedManual),
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  _isWatchedManual
-                      ? AppColors.primary
-                      : AppColors.primaryContainer,
+              backgroundColor: _isWatchedManual ? doneBg : activeBg,
               foregroundColor: Colors.white,
-              elevation: _isWatchedManual ? 2 : 2,
-              shadowColor: AppColors.primaryContainer.withValues(alpha: 0.3),
+              elevation: 2,
+              shadowColor: activeBg.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -668,27 +555,36 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
                       setState(() => _isWatchedManual = true);
                       widget.onVideoEnded?.call();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text(
-                            'Video edukasi berhasil ditandai selesai menonton! 🎉',
+                            widget.isAudioMode
+                                ? 'Audio edukasi berhasil ditandai selesai didengarkan! 🎉'
+                                : 'Video edukasi berhasil ditandai selesai menonton! 🎉',
                           ),
-                          backgroundColor: AppColors.primaryContainer,
-                          duration: Duration(seconds: 2),
+                          backgroundColor:
+                              widget.isAudioMode
+                                  ? const Color(0xFF7E22CE)
+                                  : AppColors.primaryContainer,
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     },
             icon: Icon(
               _isWatchedManual
                   ? Icons.replay_rounded
-                  : Icons.play_circle_fill_rounded,
+                  : (widget.isAudioMode
+                      ? Icons.headphones_rounded
+                      : Icons.play_circle_fill_rounded),
               size: 20,
               color: Colors.white,
             ),
             label: Text(
               _isWatchedManual
-                  ? 'Tonton Ulang Video'
-                  : 'Tandai Selesai Menonton Video',
-              style: TextStyle(
+                  ? (widget.isAudioMode ? 'Putar Ulang Audio' : 'Tonton Ulang Video')
+                  : (widget.isAudioMode
+                      ? 'Tandai Selesai Mendengarkan Audio'
+                      : 'Tandai Selesai Menonton Video'),
+              style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -720,126 +616,6 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           ),
         ),
       ],
-    );
-  }
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  String _formatDuration(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '${d.inHours > 0 ? '${d.inHours}:' : ''}$m:$s';
-  }
-}
-
-// ── Private sub-widgets ───────────────────────────────────────────────────
-
-/// Circular semi-transparent icon button for the controls overlay.
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    this.size = 20,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.45),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.white, size: size),
-        ),
-      ),
-    );
-  }
-}
-
-/// Animated play / pause button that listens to the controller state.
-class _PlayPauseButton extends StatefulWidget {
-  const _PlayPauseButton({required this.controller});
-
-  final YoutubePlayerController? controller;
-
-  @override
-  State<_PlayPauseButton> createState() => _PlayPauseButtonState();
-}
-
-class _PlayPauseButtonState extends State<_PlayPauseButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _iconCtrl;
-  bool _isPlaying = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _iconCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-    );
-    widget.controller?.addListener(_onUpdate);
-  }
-
-  void _onUpdate() {
-    if (!mounted) return;
-    final playing = widget.controller?.value.playerState == PlayerState.playing;
-    if (playing != _isPlaying) {
-      setState(() => _isPlaying = playing);
-      playing ? _iconCtrl.forward() : _iconCtrl.reverse();
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.controller?.removeListener(_onUpdate);
-    _iconCtrl.dispose();
-    super.dispose();
-  }
-
-  void _toggle() {
-    if (widget.controller == null) return;
-    if (_isPlaying) {
-      widget.controller!.pause();
-    } else {
-      widget.controller!.play();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _toggle,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: AnimatedIcon(
-          icon: AnimatedIcons.play_pause,
-          progress: _iconCtrl,
-          color: Colors.black87,
-          size: 30,
-        ),
-      ),
     );
   }
 }

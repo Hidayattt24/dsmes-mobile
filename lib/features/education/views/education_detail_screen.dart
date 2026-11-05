@@ -17,9 +17,10 @@ import '../viewmodels/education_notifier.dart';
 import '../widgets/article_information.dart';
 import '../widgets/education_review_dialog.dart';
 import '../widgets/education_skeleton.dart';
+import '../widgets/education_audio_player_card.dart';
+import '../widgets/education_youtube_audio_card.dart';
 import '../widgets/youtube_mini_player.dart';
 import '../widgets/youtube_preview_card.dart';
-import '../../questionnaire/models/questionnaire_detail_model.dart';
 import '../../questionnaire/viewmodels/questionnaire_notifier.dart';
 import '../../questionnaire/views/questionnaire_questions_screen.dart';
 
@@ -75,10 +76,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   /// GlobalKey on the [YouTubePreviewCard] container so we can calculate
   /// when the video widget scrolls out of view.
   final GlobalKey _videoCardKey = GlobalKey();
-
-  /// Cached bottom-Y of the video card widget (in scroll coordinates).
-  /// Updated lazily on first scroll event after controller is ready.
-  double? _videoCardBottomOffset;
 
   // ──────────────────────────────────────────────────────────────
   // Overlay entry for the floating mini player
@@ -231,7 +228,16 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   // ──────────────────────────────────────────────────────────────
 
   void _showMiniPlayerOverlay(String title) {
-    if (_sharedVideoController == null) return;
+    if (!mounted || _sharedVideoController == null) return;
+
+    final renderObject = _videoCardKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.attached ||
+        !renderObject.hasSize ||
+        renderObject.size.isEmpty) {
+      return;
+    }
+
     _removeMiniPlayerOverlay();
 
     _miniPlayerOverlay = OverlayEntry(
@@ -248,7 +254,12 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
           ),
     );
 
-    Overlay.of(context).insert(_miniPlayerOverlay!);
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) {
+      _miniPlayerOverlay = null;
+      return;
+    }
+    overlay.insert(_miniPlayerOverlay!);
     setState(() => _showMiniPlayer = true);
   }
 
@@ -267,15 +278,24 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
     _removeMiniPlayerOverlay();
     if (mounted) setState(() => _showMiniPlayer = false);
 
-    // Scroll back to video position
+    // Scroll back only after the video card has a valid render box.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_videoCardBottomOffset != null && _scrollController.hasClients) {
-        _scrollController.animateTo(
-          (_videoCardBottomOffset! - 400).clamp(0.0, double.infinity),
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        );
+      if (!mounted) return;
+      final videoContext = _videoCardKey.currentContext;
+      final renderObject = videoContext?.findRenderObject();
+      if (videoContext == null ||
+          renderObject is! RenderBox ||
+          !renderObject.attached ||
+          !renderObject.hasSize ||
+          renderObject.size.isEmpty) {
+        return;
       }
+      Scrollable.ensureVisible(
+        videoContext,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.08,
+      );
     });
   }
 
@@ -319,15 +339,21 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
   }
 
   /// Shows mini player when video card is scrolled out of view upward.
-  void _updateMiniPlayerVisibility(double scrollPixels) {
-    if (_sharedVideoController == null) return;
+  void _updateMiniPlayerVisibility(double _) {
+    if (_sharedVideoController == null || !_scrollController.hasClients) return;
 
-    // Lazily compute the video card's bottom offset
-    _videoCardBottomOffset ??= _computeVideoCardBottom();
-    final cardBottom = _videoCardBottomOffset;
-    if (cardBottom == null) return;
+    final renderObject = _videoCardKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox ||
+        !renderObject.attached ||
+        !renderObject.hasSize ||
+        renderObject.size.isEmpty) {
+      return;
+    }
 
-    final videoIsOutOfView = scrollPixels > cardBottom;
+    final cardTop = renderObject.localToGlobal(Offset.zero).dy;
+    final cardBottom = cardTop + renderObject.size.height;
+    final safeTop = MediaQuery.paddingOf(context).top + kToolbarHeight;
+    final videoIsOutOfView = cardBottom <= safeTop;
 
     if (videoIsOutOfView && !_showMiniPlayer) {
       _showMiniPlayerOverlay(_videoTitle);
@@ -335,19 +361,6 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
       _removeMiniPlayerOverlay();
       if (mounted) setState(() => _showMiniPlayer = false);
     }
-  }
-
-  /// Computes how many pixels from the top of the scroll content the bottom
-  /// edge of the video card widget is located.
-  double? _computeVideoCardBottom() {
-    final ro = _videoCardKey.currentContext?.findRenderObject();
-    if (ro == null || ro is! RenderBox || !ro.hasSize) return null;
-    // Convert widget's local top to scroll coordinate
-    final scrollRo =
-        _scrollController.position.context.storageContext.findRenderObject();
-    if (scrollRo == null || scrollRo is! RenderBox) return null;
-    final localOffset = ro.localToGlobal(Offset.zero, ancestor: scrollRo);
-    return localOffset.dy + ro.size.height;
   }
 
   void _flushReadProgress({int? scrollPct}) {
@@ -996,12 +1009,92 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                           ),
                         ),
                       ],
+                      if (article.hasAudio &&
+                          article.audioUrl != null &&
+                          !article.bodyParagraphs.any(
+                            (paragraph) =>
+                                paragraph.contains('data-audio-url') ||
+                                paragraph.contains('data-audio-youtube-id') ||
+                                paragraph.contains('audio-youtube-block') ||
+                                paragraph.contains('<audio') ||
+                                paragraph.contains('audio-block'),
+                          )) ...[
+                        const SizedBox(height: 20),
+                        if (article.audioYoutubeVideoId != null) ...[
+                          EducationYoutubeAudioCard(
+                            videoUrl: article.audioUrl ??
+                                'https://www.youtube.com/watch?v=${article.audioYoutubeVideoId}',
+                            title: article.title,
+                            isListened: article.isAudioListened,
+                            onAudioProgress: (duration, lastPos) {
+                              ref
+                                  .read(
+                                    educationDetailProvider(
+                                      widget.articleId,
+                                    ).notifier,
+                                  )
+                                  .reportAudioProgress(
+                                    duration: duration,
+                                    lastTimestamp: lastPos,
+                                  );
+                            },
+                            onAudioEnded: () {
+                              ref
+                                  .read(
+                                    educationDetailProvider(
+                                      widget.articleId,
+                                    ).notifier,
+                                  )
+                                  .markAudioListened(
+                                    duration: 60,
+                                    lastTimestamp: 60,
+                                  );
+                            },
+                          ),
+                        ] else ...[
+                          EducationAudioPlayerCard(
+                            audioUrl: article.audioUrl!,
+                            title: article.title,
+                            isListened: article.isAudioListened,
+                            onAudioProgress: (duration, lastPos) {
+                              ref
+                                  .read(
+                                    educationDetailProvider(
+                                      widget.articleId,
+                                    ).notifier,
+                                  )
+                                  .reportAudioProgress(
+                                    duration: duration,
+                                    lastTimestamp: lastPos,
+                                  );
+                            },
+                            onAudioEnded: (listenDuration, lastPosition) async {
+                              await ref
+                                  .read(
+                                    educationDetailProvider(
+                                      widget.articleId,
+                                    ).notifier,
+                                  )
+                                  .markAudioListened(
+                                    duration: listenDuration,
+                                    lastTimestamp: lastPosition,
+                                  );
+                            },
+                          ),
+                        ],
+                      ],
                       if (article.youtubeVideoId != null &&
                           !article.bodyParagraphs.any(
                             (paragraph) =>
-                                paragraph.contains('youtube.com') ||
-                                paragraph.contains('youtu.be') ||
-                                paragraph.contains('data-youtube-id'),
+                                paragraph.contains('data-youtube-id') ||
+                                (paragraph.contains('youtube.com') &&
+                                    !paragraph.contains(
+                                      'data-audio-youtube-id',
+                                    )) ||
+                                (paragraph.contains('youtu.be') &&
+                                    !paragraph.contains(
+                                      'data-audio-youtube-id',
+                                    )),
                           )) ...[
                         const SizedBox(height: 20),
                         KeyedSubtree(
@@ -1052,6 +1145,10 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                                     : null);
 
                             if (youtubeId != null && youtubeId.isNotEmpty) {
+                              final sourceUrl =
+                                  article.youtubeVideoId == youtubeId
+                                      ? article.videoUrl
+                                      : element.attributes['href'];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 8,
@@ -1068,6 +1165,11 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                                     imageUrl: article.imageUrl,
                                     videoUrl:
                                         'https://www.youtube.com/watch?v=$youtubeId',
+                                    isShorts:
+                                        Uri.tryParse(
+                                          sourceUrl ?? '',
+                                        )?.pathSegments.contains('shorts') ??
+                                        false,
                                     isWatched:
                                         article.isYoutubeWatched ||
                                         article.isCompleted,
@@ -1077,6 +1179,112 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                                   ),
                                 ),
                               );
+                            }
+
+                            // ── Audio YouTube block embed ───────────
+                            if (element.classes.contains('audio-youtube-block') ||
+                                element.attributes.containsKey('data-audio-youtube-id') ||
+                                (element.attributes['data-audio-url']?.contains('youtube.com') ?? false) ||
+                                (element.attributes['data-audio-url']?.contains('youtu.be') ?? false)) {
+                              final rawAudioUrl = element.attributes['data-audio-url'] ?? '';
+                              final ytId = element.attributes['data-audio-youtube-id'] ??
+                                  RegExp(
+                                    r'^.*(?:youtu.be\/|v\/|e\/|u\/\w\/|embed\/|shorts\/|v=|\&v=)([^#\&\?]*).*',
+                                    caseSensitive: false,
+                                  ).firstMatch(rawAudioUrl)?.group(1);
+
+                              if (ytId != null && ytId.length == 11) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  child: EducationYoutubeAudioCard(
+                                    videoUrl: 'https://www.youtube.com/watch?v=$ytId',
+                                    title: article.title,
+                                    isListened: article.isAudioListened,
+                                    onAudioProgress: (duration, lastPos) {
+                                      ref
+                                          .read(
+                                            educationDetailProvider(
+                                              widget.articleId,
+                                            ).notifier,
+                                          )
+                                          .reportAudioProgress(
+                                            duration: duration,
+                                            lastTimestamp: lastPos,
+                                          );
+                                    },
+                                    onAudioEnded: () {
+                                      ref
+                                          .read(
+                                            educationDetailProvider(
+                                              widget.articleId,
+                                            ).notifier,
+                                          )
+                                          .markAudioListened(
+                                            duration: 60,
+                                            lastTimestamp: 60,
+                                          );
+                                    },
+                                  ),
+                                );
+                              }
+                            }
+
+                            // ── Native Audio block embed ─────────────
+                            if (element.classes.contains('audio-block') ||
+                                element.attributes.containsKey(
+                                  'data-audio-url',
+                                )) {
+                              final audioUrl =
+                                  element.attributes['data-audio-url'] ??
+                                  (element.localName == 'audio' &&
+                                          element.attributes['src'] != null
+                                      ? element.attributes['src']
+                                      : null);
+
+                              if (audioUrl != null && audioUrl.isNotEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  child: EducationAudioPlayerCard(
+                                    audioUrl: audioUrl,
+                                    title: article.title,
+                                    isListened: article.isAudioListened,
+                                    onAudioProgress: (duration, lastPos) {
+                                      ref
+                                          .read(
+                                            educationDetailProvider(
+                                              widget.articleId,
+                                            ).notifier,
+                                          )
+                                          .reportAudioProgress(
+                                            duration: duration,
+                                            lastTimestamp: lastPos,
+                                          );
+                                    },
+                                    onAudioEnded: (
+                                      listenDuration,
+                                      lastPosition,
+                                    ) async {
+                                      await ref
+                                          .read(
+                                            educationDetailProvider(
+                                              widget.articleId,
+                                            ).notifier,
+                                          )
+                                          .markAudioListened(
+                                            duration: listenDuration,
+                                            lastTimestamp: lastPosition,
+                                          );
+                                    },
+                                  ),
+                                );
+                              }
+                            }
+
+                            // Prevent child <audio> tags from producing a second player
+                            if (element.localName == 'audio') {
+                              return const SizedBox.shrink();
                             }
 
                             // ── Inline image ────────────────────────

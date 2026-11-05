@@ -108,6 +108,22 @@ class EducationCard extends StatelessWidget {
                             color: AppColors.onSurfaceVariant,
                           ),
                         ),
+                        if (article.hasAudio) ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.headphones_rounded,
+                            size: 13,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                        if (article.hasVideo) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.play_circle_fill_rounded,
+                            size: 13,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ],
                       ],
                     ),
                   ],

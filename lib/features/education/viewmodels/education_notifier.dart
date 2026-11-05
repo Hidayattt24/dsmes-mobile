@@ -8,7 +8,8 @@ import '../models/education_article.dart';
 // ── Categories Provider ──────────────────────────────────────────────────────
 
 /// Fetches category names from the backend and prepends 'Semua'.
-class EducationCategoriesNotifier extends AutoDisposeAsyncNotifier<List<String>> {
+class EducationCategoriesNotifier
+    extends AutoDisposeAsyncNotifier<List<String>> {
   @override
   FutureOr<List<String>> build() => _fetch();
 
@@ -43,11 +44,12 @@ class EducationCategoriesNotifier extends AutoDisposeAsyncNotifier<List<String>>
 
 final educationCategoriesProvider =
     AutoDisposeAsyncNotifierProvider<EducationCategoriesNotifier, List<String>>(
-  () => EducationCategoriesNotifier(),
-);
+      () => EducationCategoriesNotifier(),
+    );
 
 // Notifier for fetching and managing all articles
-class EducationListNotifier extends AutoDisposeAsyncNotifier<List<EducationArticle>> {
+class EducationListNotifier
+    extends AutoDisposeAsyncNotifier<List<EducationArticle>> {
   @override
   FutureOr<List<EducationArticle>> build() {
     return _fetchArticles();
@@ -71,10 +73,11 @@ class EducationListNotifier extends AutoDisposeAsyncNotifier<List<EducationArtic
           OfflineCacheManager.keyEducationArticles,
         );
         if (cached is List && cached.isNotEmpty) {
-          final list = cached
-              .whereType<Map<String, dynamic>>()
-              .map(EducationArticle.fromJson)
-              .toList();
+          final list =
+              cached
+                  .whereType<Map<String, dynamic>>()
+                  .map(EducationArticle.fromJson)
+                  .toList();
           if (categoryId != null &&
               categoryId.isNotEmpty &&
               categoryId != 'Semua') {
@@ -89,7 +92,9 @@ class EducationListNotifier extends AutoDisposeAsyncNotifier<List<EducationArtic
 
   Future<void> filterByCategory(String categoryId) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _fetchArticles(categoryId: categoryId));
+    state = await AsyncValue.guard(
+      () => _fetchArticles(categoryId: categoryId),
+    );
   }
 
   Future<void> refresh() async {
@@ -111,7 +116,9 @@ class EducationListNotifier extends AutoDisposeAsyncNotifier<List<EducationArtic
 
     // 1. Update UI optimistically
     final updatedArticles = List<EducationArticle>.from(currentArticles);
-    updatedArticles[index] = targetArticle.copyWith(isBookmarked: newBookmarkStatus);
+    updatedArticles[index] = targetArticle.copyWith(
+      isBookmarked: newBookmarkStatus,
+    );
     state = AsyncValue.data(updatedArticles);
 
     try {
@@ -131,13 +138,16 @@ class EducationListNotifier extends AutoDisposeAsyncNotifier<List<EducationArtic
   }
 }
 
-final educationListProvider =
-    AutoDisposeAsyncNotifierProvider<EducationListNotifier, List<EducationArticle>>(() {
+final educationListProvider = AutoDisposeAsyncNotifierProvider<
+  EducationListNotifier,
+  List<EducationArticle>
+>(() {
   return EducationListNotifier();
 });
 
 // Notifier for fetching saved (bookmarked) articles
-class SavedArticlesNotifier extends AutoDisposeAsyncNotifier<List<EducationArticle>> {
+class SavedArticlesNotifier
+    extends AutoDisposeAsyncNotifier<List<EducationArticle>> {
   @override
   FutureOr<List<EducationArticle>> build() {
     return _fetchSaved();
@@ -154,13 +164,16 @@ class SavedArticlesNotifier extends AutoDisposeAsyncNotifier<List<EducationArtic
   }
 }
 
-final savedArticlesProvider =
-    AutoDisposeAsyncNotifierProvider<SavedArticlesNotifier, List<EducationArticle>>(() {
+final savedArticlesProvider = AutoDisposeAsyncNotifierProvider<
+  SavedArticlesNotifier,
+  List<EducationArticle>
+>(() {
   return SavedArticlesNotifier();
 });
 
 // Notifier for detail article view
-class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationArticle, String> {
+class EducationDetailNotifier
+    extends AutoDisposeFamilyAsyncNotifier<EducationArticle, String> {
   @override
   FutureOr<EducationArticle> build(String arg) {
     return _fetchDetail(arg);
@@ -168,7 +181,8 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
 
   Future<EducationArticle> _fetchDetail(String articleId) async {
     final cacheManager = ref.read(offlineCacheManagerProvider);
-    final cacheKey = '${OfflineCacheManager.keyEducationDetailPrefix}$articleId';
+    final cacheKey =
+        '${OfflineCacheManager.keyEducationDetailPrefix}$articleId';
 
     try {
       final repo = ref.read(educationRepositoryProvider);
@@ -198,7 +212,9 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
     final newBookmarkStatus = !currentArticle.isBookmarked;
 
     // Update locally
-    state = AsyncValue.data(currentArticle.copyWith(isBookmarked: newBookmarkStatus));
+    state = AsyncValue.data(
+      currentArticle.copyWith(isBookmarked: newBookmarkStatus),
+    );
 
     try {
       final repo = ref.read(educationRepositoryProvider);
@@ -227,7 +243,8 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
         arg,
         readingDuration: duration,
         lastScroll: scrollPercentage,
-        isCompleted: false, // Scroll telemetry only - completion is ONLY triggered via explicit button press
+        isCompleted:
+            false, // Scroll telemetry only - completion is ONLY triggered via explicit button press
       );
     } catch (_) {
       // Keep silent to prevent disrupting user experience on network hiccups
@@ -262,11 +279,7 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
   Future<void> markVideoWatched() async {
     try {
       final repo = ref.read(educationRepositoryProvider);
-      await repo.markVideoWatched(
-        arg,
-        watchDuration: 60,
-        lastTimestamp: 60,
-      );
+      await repo.markVideoWatched(arg, watchDuration: 60, lastTimestamp: 60);
       if (state.hasValue) {
         state = AsyncValue.data(
           state.value!.copyWith(
@@ -280,6 +293,53 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
       ref.invalidate(educationListProvider);
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<void> markAudioListened({
+    required int duration,
+    required int lastTimestamp,
+  }) async {
+    try {
+      final repo = ref.read(educationRepositoryProvider);
+      await repo.markAudioListened(
+        arg,
+        listenDuration: duration,
+        lastTimestamp: lastTimestamp,
+        isCompleted: true,
+      );
+      if (state.hasValue) {
+        state = AsyncValue.data(
+          state.value!.copyWith(
+            isCompleted: true,
+            isAudioListened: true,
+            audioListenDuration: duration,
+            audioLastTimestamp: lastTimestamp,
+            readStatus: 'Selesai',
+            readProgress: 1.0,
+          ),
+        );
+      }
+      ref.invalidate(educationListProvider);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> reportAudioProgress({
+    required int duration,
+    required int lastTimestamp,
+  }) async {
+    try {
+      final repo = ref.read(educationRepositoryProvider);
+      await repo.markAudioListened(
+        arg,
+        listenDuration: duration,
+        lastTimestamp: lastTimestamp,
+        isCompleted: false,
+      );
+    } catch (_) {
+      // Keep silent
     }
   }
 
@@ -330,8 +390,10 @@ class EducationDetailNotifier extends AutoDisposeFamilyAsyncNotifier<EducationAr
   }
 }
 
-
-final educationDetailProvider =
-    AutoDisposeAsyncNotifierProviderFamily<EducationDetailNotifier, EducationArticle, String>(() {
+final educationDetailProvider = AutoDisposeAsyncNotifierProviderFamily<
+  EducationDetailNotifier,
+  EducationArticle,
+  String
+>(() {
   return EducationDetailNotifier();
 });
