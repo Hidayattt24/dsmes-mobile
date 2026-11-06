@@ -68,22 +68,43 @@ class ReminderSection extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Pengingat Hari Ini',
-                style: AppTextStyles.headlineMd.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
-                  fontSize: 18,
+              Expanded(
+                child: Text(
+                  'Pengingat Hari Ini',
+                  style: AppTextStyles.headlineMd.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onSurface,
+                    fontSize: 18,
+                  ),
                 ),
               ),
-              GestureDetector(
-                onTap: onViewAllPressed,
-                child: Text(
-                  'Lihat Semua',
-                  style: AppTextStyles.labelMd.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
+              const SizedBox(width: AppSpacing.xs),
+              TextButton(
+                onPressed: onViewAllPressed,
+                style: TextButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                  minimumSize: const Size(0, 44),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Lihat Semua',
+                      style: AppTextStyles.labelMd.copyWith(
+                        color: AppColors.onPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xxs),
+                    const Icon(Icons.arrow_forward_rounded, size: 16),
+                  ],
                 ),
               ),
             ],

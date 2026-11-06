@@ -27,10 +27,10 @@ class HomeSkeleton extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Blood Sugar Skeleton Card
+          // Reminders Skeleton Card
           Container(
             width: double.infinity,
-            height: 140,
+            height: 120,
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(24),
@@ -38,10 +38,10 @@ class HomeSkeleton extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Reminders Skeleton Card
+          // Blood Sugar Skeleton Card
           Container(
             width: double.infinity,
-            height: 120,
+            height: 140,
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(24),

@@ -220,24 +220,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        if (latestBs != null)
-          BloodSugarCard(
-            value: latestBs.glucoseValue.toString(),
-            unit: 'mg/dL',
-            statusLabel: latestBs.classificationLabel,
-            statusColor: _parseHexColor(latestBs.colorIndicator),
-            timeAndMealText: latestBs.formattedTimeAndType,
-            percentagePosition: (latestBs.glucoseValue / 200.0).clamp(0.1, 0.9),
-            isToday: isSelectedToday,
-            onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
-          )
-        else
-          BloodSugarCard.empty(
-            isToday: isSelectedToday,
-            onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
-          ),
-        const SizedBox(height: AppSpacing.lg),
-
         DailyCaloriesCard(
           consumed: state.consumedCalories,
           remaining: state.remainingCalories,
@@ -259,7 +241,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
             reminders: const [],
             emptyMessage: 'Belum ada pengingat hari ini.',
             onViewAllPressed: () => context.push(RouteNames.reminders),
-            onReminderTapped: (id) {},
           ),
           data: (reminders) {
             final todayReminders =
@@ -273,10 +254,30 @@ class _HomeViewState extends ConsumerState<HomeView> {
               reminders: todayReminders,
               emptyMessage: 'Belum ada pengingat hari ini.',
               onViewAllPressed: () => context.push(RouteNames.reminders),
-              onReminderTapped: (id) {},
+              onReminderTapped:
+                  (id) => context.push(RouteNames.reminders, extra: id),
             );
           },
         ),
+        if (remindersAsync.hasValue || remindersAsync.hasError)
+          const SizedBox(height: AppSpacing.lg),
+
+        if (latestBs != null)
+          BloodSugarCard(
+            value: latestBs.glucoseValue.toString(),
+            unit: 'mg/dL',
+            statusLabel: latestBs.classificationLabel,
+            statusColor: _parseHexColor(latestBs.colorIndicator),
+            timeAndMealText: latestBs.formattedTimeAndType,
+            percentagePosition: (latestBs.glucoseValue / 200.0).clamp(0.1, 0.9),
+            isToday: isSelectedToday,
+            onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
+          )
+        else
+          BloodSugarCard.empty(
+            isToday: isSelectedToday,
+            onRecordPressed: () => context.push(RouteNames.bloodSugarEntry),
+          ),
         const SizedBox(height: AppSpacing.lg),
 
         Row(

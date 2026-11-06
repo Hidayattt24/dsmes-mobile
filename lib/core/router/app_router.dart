@@ -288,7 +288,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder:
             (context, state) => _buildSlideTransition(
               state: state,
-              child: const RemindersManagementScreen(),
+              child: RemindersManagementScreen(
+                initialReminderId:
+                    state.extra is String ? state.extra as String : null,
+              ),
             ),
       ),
 

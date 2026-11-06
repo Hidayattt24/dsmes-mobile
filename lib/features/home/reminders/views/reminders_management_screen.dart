@@ -15,11 +15,22 @@ import '../../../onboarding/widgets/icon_picker_bottom_sheet.dart';
 import '../models/reminder_model.dart';
 import '../viewmodels/reminder_provider.dart';
 
-class RemindersManagementScreen extends ConsumerWidget {
-  const RemindersManagementScreen({super.key});
+class RemindersManagementScreen extends ConsumerStatefulWidget {
+  const RemindersManagementScreen({super.key, this.initialReminderId});
+
+  final String? initialReminderId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RemindersManagementScreen> createState() =>
+      _RemindersManagementScreenState();
+}
+
+class _RemindersManagementScreenState
+    extends ConsumerState<RemindersManagementScreen> {
+  bool _initialReminderOpened = false;
+
+  @override
+  Widget build(BuildContext context) {
     final remindersAsync = ref.watch(reminderListProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -43,16 +54,18 @@ class RemindersManagementScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                  data:
-                      (reminders) => SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.page,
-                          0,
-                          AppSpacing.page,
-                          AppSpacing.md,
-                        ),
-                        child: _buildBody(context, ref, reminders),
+                  data: (reminders) {
+                    _openInitialReminder(reminders);
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.page,
+                        0,
+                        AppSpacing.page,
+                        AppSpacing.md,
                       ),
+                      child: _buildBody(context, ref, reminders),
+                    );
+                  },
                 ),
               ),
             ],
@@ -61,6 +74,18 @@ class RemindersManagementScreen extends ConsumerWidget {
         bottomNavigationBar: _buildFooter(context, ref, bottomPadding),
       ),
     );
+  }
+
+  void _openInitialReminder(List<ReminderModel> reminders) {
+    if (_initialReminderOpened || widget.initialReminderId == null) return;
+    for (final reminder in reminders) {
+      if (reminder.id != widget.initialReminderId) continue;
+      _initialReminderOpened = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _onEditReminder(context, ref, reminder);
+      });
+      return;
+    }
   }
 
   Widget _buildHeader(BuildContext context) {
