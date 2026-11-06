@@ -182,6 +182,17 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
     final value = _controller!.value;
     final state = value.playerState;
 
+    // Prevent default landscape fullscreen toggle from youtube_player_flutter
+    if (value.isFullScreen) {
+      _controller!.updateValue(value.copyWith(isFullScreen: false));
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+      _openPortraitFullscreen();
+      return;
+    }
+
     if (value.errorCode != _playerErrorCode) {
       setState(() => _playerErrorCode = value.errorCode);
     }
@@ -236,12 +247,11 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
     final startPosition = controller.value.position;
     final wasPlaying = controller.value.playerState == PlayerState.playing;
     controller.pause();
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    if (!mounted) {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      return;
-    }
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+    if (!mounted) return;
+
     _PortraitPlaybackResult? result;
     try {
       result = await Navigator.of(
@@ -261,7 +271,10 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
         ),
       );
     } finally {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
     }
     if (!mounted) return;
     controller.seekTo(result?.position ?? startPosition);
@@ -676,6 +689,9 @@ class _PortraitVideoScreenState extends State<_PortraitVideoScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
     _controller = YoutubePlayerController(
       initialVideoId: widget.videoId,
       flags: const YoutubePlayerFlags(
@@ -688,6 +704,12 @@ class _PortraitVideoScreenState extends State<_PortraitVideoScreen> {
   }
 
   void _handlePlayerChange() {
+    if (_controller.value.isFullScreen) {
+      _controller.updateValue(_controller.value.copyWith(isFullScreen: false));
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+    }
     if (!_endedReported && _controller.value.playerState == PlayerState.ended) {
       _endedReported = true;
       widget.onVideoEnded?.call();
@@ -710,6 +732,10 @@ class _PortraitVideoScreenState extends State<_PortraitVideoScreen> {
   void dispose() {
     _controller.removeListener(_handlePlayerChange);
     _controller.dispose();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     super.dispose();
   }
 
@@ -726,55 +752,65 @@ class _PortraitVideoScreenState extends State<_PortraitVideoScreen> {
         appBar: AppBar(
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
+          elevation: 0,
           leading: IconButton(
             tooltip: 'Kembali ke artikel',
             onPressed: _close,
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close_rounded, size: 26),
           ),
           title: Text(
             widget.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final videoWidth =
-                (constraints.maxHeight * ratio)
-                    .clamp(0.0, constraints.maxWidth)
-                    .toDouble();
-            return Center(
-              child: SizedBox(
-                width: videoWidth,
-                child: YoutubePlayer(
-                  controller: _controller,
-                  aspectRatio: ratio,
-                  showVideoProgressIndicator: true,
-                  progressIndicatorColor: Colors.red,
-                  bottomActions: [
-                    const SizedBox(width: 14),
-                    const CurrentPosition(),
-                    const SizedBox(width: 8),
-                    const ProgressBar(isExpanded: true),
-                    const RemainingDuration(),
-                    const PlaybackSpeedButton(),
-                    IconButton(
-                      tooltip: 'Tutup tampilan penuh',
-                      onPressed: _close,
-                      icon: const Icon(
-                        Icons.fullscreen_exit,
-                        color: Colors.white,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double width;
+              final double height;
+              if (widget.isShorts) {
+                height = constraints.maxHeight;
+                width = (height * ratio).clamp(0.0, constraints.maxWidth);
+              } else {
+                width = constraints.maxWidth;
+                height = (width / ratio).clamp(0.0, constraints.maxHeight);
+              }
+              return Center(
+                child: SizedBox(
+                  width: width,
+                  height: height,
+                  child: YoutubePlayer(
+                    controller: _controller,
+                    aspectRatio: ratio,
+                    showVideoProgressIndicator: true,
+                    progressIndicatorColor: Colors.red,
+                    bottomActions: [
+                      const SizedBox(width: 14),
+                      const CurrentPosition(),
+                      const SizedBox(width: 8),
+                      const ProgressBar(isExpanded: true),
+                      const RemainingDuration(),
+                      const PlaybackSpeedButton(),
+                      IconButton(
+                        tooltip: 'Tutup tampilan penuh',
+                        onPressed: _close,
+                        icon: const Icon(
+                          Icons.fullscreen_exit_rounded,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                  ],
-                  onReady: () {
-                    _controller.seekTo(widget.startPosition);
-                    if (widget.autoPlay) _controller.play();
-                  },
+                    ],
+                    onReady: () {
+                      _controller.seekTo(widget.startPosition);
+                      if (widget.autoPlay) _controller.play();
+                    },
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
