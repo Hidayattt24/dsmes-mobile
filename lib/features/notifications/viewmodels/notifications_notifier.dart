@@ -68,16 +68,25 @@ class NotificationsNotifier extends Notifier<List<NotificationItem>> {
     final isEducation = n.notifType == 'education';
     final notifType =
         isEducation ? NotificationType.education : NotificationType.medication;
-    final (title, desc) = NotificationCopywriter.getInteractiveCopy(
-      rawTitle: isEducation ? 'Materi Edukasi Baru' : 'Pengingat DIBA',
-      rawDescription: n.messageText,
-      type: notifType,
-      iconName: n.iconName,
-      activityName: n.activityName,
-      category: n.category,
-      username: _username,
-      actionType: n.actionType,
-    );
+    final isEducationFollowup =
+        isEducation &&
+        (n.occurrenceId?.startsWith('education-followup:') ?? false);
+    final (title, desc) =
+        isEducationFollowup
+            ? NotificationCopywriter.getEducationFollowupCopy(
+              articleTitle: n.activityName ?? '',
+              username: _username,
+            )
+            : NotificationCopywriter.getInteractiveCopy(
+              rawTitle: isEducation ? 'Materi Edukasi Baru' : 'Pengingat DIBA',
+              rawDescription: n.messageText,
+              type: notifType,
+              iconName: n.iconName,
+              activityName: n.activityName,
+              category: n.category,
+              username: _username,
+              actionType: n.actionType,
+            );
     return NotificationItem(
       id: n.id,
       title: title,

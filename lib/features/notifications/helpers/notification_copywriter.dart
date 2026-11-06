@@ -3,6 +3,19 @@ import '../models/notification_item.dart';
 class NotificationCopywriter {
   NotificationCopywriter._();
 
+  static (String title, String description) getEducationFollowupCopy({
+    required String articleTitle,
+    String? username,
+  }) {
+    final cleanTitle = articleTitle.trim();
+    final name = username?.trim() ?? '';
+    final title = cleanTitle.isEmpty
+        ? 'Pengingat Edukasi 📖'
+        : 'Pengingat Edukasi: $cleanTitle 📖';
+    const message = 'Kamu belum membuka materi ini. Yuk pelajari saat sempat.';
+    return (title, name.isEmpty ? message : 'Hai, $name! $message');
+  }
+
   static (String title, String description) getInteractiveCopy({
     required String rawTitle,
     required String rawDescription,
