@@ -6,10 +6,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../models/education_article.dart';
 
 class ArticleInformation extends StatelessWidget {
-  const ArticleInformation({
-    super.key,
-    required this.article,
-  });
+  const ArticleInformation({super.key, required this.article});
 
   final EducationArticle article;
 
@@ -41,7 +38,10 @@ class ArticleInformation extends StatelessWidget {
             ),
             if (article.tagText != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.secondaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(100),
@@ -74,12 +74,16 @@ class ArticleInformation extends StatelessWidget {
                   color: AppColors.primary,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  article.author,
-                  style: AppTextStyles.bodyMd.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                Flexible(
+                  child: Text(
+                    article.author,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodyMd.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ],

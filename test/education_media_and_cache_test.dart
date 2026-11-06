@@ -1,12 +1,46 @@
 import 'dart:io';
 
 import 'package:dsmes_mobile/core/storage/local_storage_service.dart';
+import 'package:dsmes_mobile/core/widgets/app_smart_image.dart';
 import 'package:dsmes_mobile/features/education/models/education_article.dart';
 import 'package:dsmes_mobile/features/education/widgets/education_audio_player_card.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('data URI with expanding width uses a finite decode size', (
+    tester,
+  ) async {
+    const image =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==';
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 200,
+            height: 200,
+            child: AppSmartImage(imageUrl: image, width: double.infinity),
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  test('education list skips article HTML while detail retains it', () {
+    final payload = <String, dynamic>{
+      'id': 'article-1',
+      'title': 'Artikel',
+      'content': '<p>Isi artikel</p>',
+    };
+    expect(
+      EducationArticle.fromJson(payload, includeContent: false).bodyParagraphs,
+      isEmpty,
+    );
+    expect(EducationArticle.fromJson(payload).bodyParagraphs, isNotEmpty);
+  });
   test('audio upload path uses the configured API host', () {
     expect(
       resolveEducationAudioUri(

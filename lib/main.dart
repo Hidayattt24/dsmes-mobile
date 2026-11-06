@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +34,11 @@ void main() async {
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     // TODO: Log to Crashlytics in production
+  };
+
+  ui.PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('[APP][UNHANDLED] $error\n$stack');
+    return true;
   };
 
   runApp(const ProviderScope(child: App()));

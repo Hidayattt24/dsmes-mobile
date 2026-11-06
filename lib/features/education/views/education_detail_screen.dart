@@ -313,6 +313,7 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
     final pos = _scrollController.position;
 
     // ── Article read-progress ──────────────────────────────────
+    if (!pos.pixels.isFinite || !pos.maxScrollExtent.isFinite) return;
     if (pos.maxScrollExtent <= 0) {
       if (!_hasScrolledToBottom) {
         setState(() => _hasScrolledToBottom = true);
@@ -1022,7 +1023,8 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                         const SizedBox(height: 20),
                         if (article.audioYoutubeVideoId != null) ...[
                           EducationYoutubeAudioCard(
-                            videoUrl: article.audioUrl ??
+                            videoUrl:
+                                article.audioUrl ??
                                 'https://www.youtube.com/watch?v=${article.audioYoutubeVideoId}',
                             title: article.title,
                             isListened: article.isAudioListened,
@@ -1182,12 +1184,24 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
                             }
 
                             // ── Audio YouTube block embed ───────────
-                            if (element.classes.contains('audio-youtube-block') ||
-                                element.attributes.containsKey('data-audio-youtube-id') ||
-                                (element.attributes['data-audio-url']?.contains('youtube.com') ?? false) ||
-                                (element.attributes['data-audio-url']?.contains('youtu.be') ?? false)) {
-                              final rawAudioUrl = element.attributes['data-audio-url'] ?? '';
-                              final ytId = element.attributes['data-audio-youtube-id'] ??
+                            if (element.classes.contains(
+                                  'audio-youtube-block',
+                                ) ||
+                                element.attributes.containsKey(
+                                  'data-audio-youtube-id',
+                                ) ||
+                                (element.attributes['data-audio-url']?.contains(
+                                      'youtube.com',
+                                    ) ??
+                                    false) ||
+                                (element.attributes['data-audio-url']?.contains(
+                                      'youtu.be',
+                                    ) ??
+                                    false)) {
+                              final rawAudioUrl =
+                                  element.attributes['data-audio-url'] ?? '';
+                              final ytId =
+                                  element.attributes['data-audio-youtube-id'] ??
                                   RegExp(
                                     r'^.*(?:youtu.be\/|v\/|e\/|u\/\w\/|embed\/|shorts\/|v=|\&v=)([^#\&\?]*).*',
                                     caseSensitive: false,
@@ -1195,9 +1209,12 @@ class _EducationDetailScreenState extends ConsumerState<EducationDetailScreen> {
 
                               if (ytId != null && ytId.length == 11) {
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   child: EducationYoutubeAudioCard(
-                                    videoUrl: 'https://www.youtube.com/watch?v=$ytId',
+                                    videoUrl:
+                                        'https://www.youtube.com/watch?v=$ytId',
                                     title: article.title,
                                     isListened: article.isAudioListened,
                                     onAudioProgress: (duration, lastPos) {

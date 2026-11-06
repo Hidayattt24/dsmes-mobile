@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_exception.dart';
@@ -56,6 +57,7 @@ class EducationRepository implements IEducationRepository {
   @override
   Future<List<EducationArticle>> getArticles({String? categoryId}) async {
     try {
+      final started = DateTime.now();
       final queryParams = <String, dynamic>{};
       if (categoryId != null &&
           categoryId.isNotEmpty &&
@@ -66,8 +68,19 @@ class EducationRepository implements IEducationRepository {
         '/education/articles',
         queryParameters: queryParams,
       );
+      final networkMs = DateTime.now().difference(started).inMilliseconds;
       final list = response.data['data'] as List<dynamic>? ?? [];
-      return list.map((json) => EducationArticle.fromJson(json)).toList();
+      final articles =
+          list
+              .map(
+                (json) =>
+                    EducationArticle.fromJson(json, includeContent: false),
+              )
+              .toList();
+      debugPrint(
+        '[EDUCATION][LIST] network_ms=$networkMs parse_ms=${DateTime.now().difference(started).inMilliseconds - networkMs} count=${articles.length}',
+      );
+      return articles;
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -78,36 +91,7 @@ class EducationRepository implements IEducationRepository {
     try {
       final response = await _dio.get('/education/articles/$id');
       final data = response.data['data'] as Map<String, dynamic>;
-      var article = EducationArticle.fromJson(data);
-
-      try {
-        final progressResponse = await _dio.get(
-          '/patient/education/$id/progress',
-        );
-        final progress =
-            progressResponse.data['data'] as Map<String, dynamic>? ?? const {};
-        final audioListened = progress['audio_listened'] == true;
-        final completed = progress['completed'] == true;
-
-        article = article.copyWith(
-          isAudioListened: audioListened,
-          audioListenDuration:
-              (progress['audio_listen_duration'] as num?)?.toInt() ?? 0,
-          audioLastTimestamp:
-              (progress['audio_last_timestamp'] as num?)?.toInt() ?? 0,
-          isCompleted: article.isCompleted || completed,
-          readStatus:
-              article.isCompleted || completed ? 'Selesai' : article.readStatus,
-          readProgress:
-              article.isCompleted || completed ? 1.0 : article.readProgress,
-        );
-      } on DioException catch (e) {
-        // A patient who has never opened this media has no progress row yet.
-        // Keep the article detail usable and treat that response as not started.
-        if (e.response?.statusCode != 404) rethrow;
-      }
-
-      return article;
+      return EducationArticle.fromJson(data);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -136,7 +120,9 @@ class EducationRepository implements IEducationRepository {
     try {
       final response = await _dio.get('/patient/education/saved');
       final list = response.data['data'] as List<dynamic>? ?? [];
-      return list.map((json) => EducationArticle.fromJson(json)).toList();
+      return list
+          .map((json) => EducationArticle.fromJson(json, includeContent: false))
+          .toList();
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

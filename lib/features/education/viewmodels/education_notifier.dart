@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/offline_cache_manager.dart';
@@ -23,7 +24,7 @@ class EducationCategoriesNotifier
         names,
       );
       return ['Semua', ...names];
-    } catch (_) {
+    } catch (error) {
       try {
         final cached = await cacheManager.getCache(
           OfflineCacheManager.keyEducationCategories,
@@ -59,15 +60,43 @@ class EducationListNotifier
     final cacheManager = ref.read(offlineCacheManagerProvider);
     try {
       final repo = ref.read(educationRepositoryProvider);
+      final started = DateTime.now();
       final articles = await repo.getArticles(categoryId: categoryId);
+      debugPrint(
+        '[EDUCATION][LIST] api_ms=${DateTime.now().difference(started).inMilliseconds} count=${articles.length}',
+      );
       if (categoryId == null || categoryId == 'Semua' || categoryId.isEmpty) {
-        await cacheManager.saveCache(
-          OfflineCacheManager.keyEducationArticles,
-          articles.map((e) => e.toJson()).toList(),
+        final cacheStarted = DateTime.now();
+        // Banner data URIs are about 800 KB each. Encrypting several of them
+        // synchronously for the offline list can stall the UI isolate.
+        final cacheArticles =
+            articles.map((article) {
+              final json = article.toJson();
+              final banner = json['banner_image_url'] as String? ?? '';
+              if (banner.startsWith('data:image/')) {
+                json['banner_image_url'] = '';
+              }
+              return json;
+            }).toList();
+        unawaited(
+          cacheManager
+              .saveCache(
+                OfflineCacheManager.keyEducationArticles,
+                cacheArticles,
+              )
+              .then(
+                (_) => debugPrint(
+                  '[EDUCATION][LIST] cache_ms=${DateTime.now().difference(cacheStarted).inMilliseconds}',
+                ),
+              )
+              .catchError(
+                (Object error) =>
+                    debugPrint('[EDUCATION][LIST] cache_failed=$error'),
+              ),
         );
       }
       return articles;
-    } catch (_) {
+    } catch (error) {
       try {
         final cached = await cacheManager.getCache(
           OfflineCacheManager.keyEducationArticles,
@@ -76,7 +105,10 @@ class EducationListNotifier
           final list =
               cached
                   .whereType<Map<String, dynamic>>()
-                  .map(EducationArticle.fromJson)
+                  .map(
+                    (json) =>
+                        EducationArticle.fromJson(json, includeContent: false),
+                  )
                   .toList();
           if (categoryId != null &&
               categoryId.isNotEmpty &&
@@ -86,7 +118,8 @@ class EducationListNotifier
           return list;
         }
       } catch (_) {}
-      return const <EducationArticle>[];
+      debugPrint('[EDUCATION][LIST] api/cache unavailable: $error');
+      rethrow;
     }
   }
 
@@ -186,8 +219,17 @@ class EducationDetailNotifier
 
     try {
       final repo = ref.read(educationRepositoryProvider);
+      final started = DateTime.now();
       final article = await repo.getArticleDetail(articleId);
-      await cacheManager.saveCache(cacheKey, article.toJson());
+      debugPrint(
+        '[EDUCATION][DETAIL] api_ms=${DateTime.now().difference(started).inMilliseconds}',
+      );
+      unawaited(
+        cacheManager
+            .saveCache(cacheKey, article.toJson())
+            .then((_) => debugPrint('[EDUCATION][DETAIL] cache_saved')),
+      );
+      unawaited(_loadProgress(articleId, article, cacheKey));
       return article;
     } catch (e) {
       try {
@@ -197,6 +239,49 @@ class EducationDetailNotifier
         }
       } catch (_) {}
       rethrow;
+    }
+  }
+
+  Future<void> _loadProgress(
+    String articleId,
+    EducationArticle initial,
+    String cacheKey,
+  ) async {
+    final started = DateTime.now();
+    try {
+      final progress = await ref
+          .read(educationRepositoryProvider)
+          .getPatientProgress(articleId)
+          .timeout(const Duration(seconds: 8));
+      final listened = progress['audio_listened'] == true;
+      final completed = progress['completed'] == true;
+      final merged = initial.copyWith(
+        isAudioListened: listened,
+        audioListenDuration:
+            (progress['audio_listen_duration'] as num?)?.toInt() ?? 0,
+        audioLastTimestamp:
+            (progress['audio_last_timestamp'] as num?)?.toInt() ?? 0,
+        isCompleted: initial.isCompleted || completed,
+        readStatus:
+            initial.isCompleted || completed ? 'Selesai' : initial.readStatus,
+        readProgress:
+            initial.isCompleted || completed ? 1.0 : initial.readProgress,
+      );
+      if (state.hasValue && state.value?.id == articleId) {
+        state = AsyncValue.data(merged);
+      }
+      unawaited(
+        ref
+            .read(offlineCacheManagerProvider)
+            .saveCache(cacheKey, merged.toJson()),
+      );
+      debugPrint(
+        '[EDUCATION][PROGRESS] api_ms=${DateTime.now().difference(started).inMilliseconds}',
+      );
+    } catch (error) {
+      debugPrint(
+        '[EDUCATION][PROGRESS] unavailable after ${DateTime.now().difference(started).inMilliseconds}ms: $error',
+      );
     }
   }
 

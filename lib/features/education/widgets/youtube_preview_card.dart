@@ -82,9 +82,6 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
 
   int _playerErrorCode = 0;
 
-  // ── Fullscreen ────────────────────────────────────────────────────────────
-  bool _isFullscreen = false;
-
   // ── Entry animation ───────────────────────────────────────────────────────
   late final AnimationController _entryCtrl;
   late final Animation<double> _entryFade;
@@ -145,7 +142,7 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           enableCaption: true,
           hideControls: false,
           controlsVisibleAtStart: true,
-          showLiveFullscreenButton: true,
+          showLiveFullscreenButton: false,
         ),
       )..addListener(_videoListener);
 
@@ -231,21 +228,44 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
     await launchUrl(target, mode: LaunchMode.externalApplication);
   }
 
-  // ── Fullscreen ───────────────────────────────────────────────────────────
-  Future<void> _enterFullscreen() async {
-    await SystemChrome.setPreferredOrientations(
-      _isShorts
-          ? [DeviceOrientation.portraitUp]
-          : [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight],
-    );
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    if (mounted) setState(() => _isFullscreen = true);
-  }
+  Future<void> _openPortraitFullscreen() async {
+    final controller = _controller;
+    final videoId = _extractedVideoId;
+    if (controller == null || videoId == null || !mounted) return;
 
-  Future<void> _exitFullscreen() async {
+    final startPosition = controller.value.position;
+    final wasPlaying = controller.value.playerState == PlayerState.playing;
+    controller.pause();
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    if (mounted) setState(() => _isFullscreen = false);
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    if (!mounted) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      return;
+    }
+    _PortraitPlaybackResult? result;
+    try {
+      result = await Navigator.of(
+        context,
+        rootNavigator: true,
+      ).push<_PortraitPlaybackResult>(
+        MaterialPageRoute(
+          builder:
+              (_) => _PortraitVideoScreen(
+                videoId: videoId,
+                title: widget.videoTitle,
+                isShorts: _isShorts,
+                startPosition: startPosition,
+                autoPlay: wasPlaying,
+                onVideoEnded: widget.onVideoEnded,
+              ),
+        ),
+      );
+    } finally {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+    if (!mounted) return;
+    controller.seekTo(result?.position ?? startPosition);
+    if (result?.playing ?? wasPlaying) controller.play();
   }
 
   // ── Dispose ──────────────────────────────────────────────────────────────
@@ -260,9 +280,6 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
       _controller?.dispose();
     }
 
-    // Restore orientation / system UI when card leaves the tree
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -288,40 +305,39 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
       );
     }
 
-    return YoutubePlayerBuilder(
-      onEnterFullScreen: _enterFullscreen,
-      onExitFullScreen: _exitFullscreen,
-      player: YoutubePlayer(
-        controller: _controller!,
-        aspectRatio: _isShorts ? 9 / 16 : 16 / 9,
-        showVideoProgressIndicator: true,
-        progressIndicatorColor: Colors.red,
-        progressColors: const ProgressBarColors(
-          playedColor: Colors.red,
-          handleColor: Colors.redAccent,
-        ),
-        onReady: () {
-          if (mounted) widget.onControllerReady?.call(_controller!);
-        },
+    final player = YoutubePlayer(
+      controller: _controller!,
+      aspectRatio: _isShorts ? 9 / 16 : 16 / 9,
+      showVideoProgressIndicator: true,
+      progressIndicatorColor: Colors.red,
+      progressColors: const ProgressBarColors(
+        playedColor: Colors.red,
+        handleColor: Colors.redAccent,
       ),
-      builder: (context, player) {
-        return FadeTransition(
-          opacity: _entryFade,
-          child: SlideTransition(
-            position: _entrySlide,
-            child:
-                _isFullscreen
-                    ? _buildFullscreenShell(player)
-                    : _buildCardShell(_buildPlayerWithErrorFallback(player)),
-          ),
-        );
+      bottomActions: [
+        const SizedBox(width: 14),
+        const CurrentPosition(),
+        const SizedBox(width: 8),
+        const ProgressBar(isExpanded: true),
+        const RemainingDuration(),
+        const PlaybackSpeedButton(),
+        IconButton(
+          tooltip: 'Perbesar video',
+          onPressed: _openPortraitFullscreen,
+          icon: const Icon(Icons.fullscreen, color: Colors.white),
+        ),
+      ],
+      onReady: () {
+        if (mounted) widget.onControllerReady?.call(_controller!);
       },
     );
-  }
-
-  // ── Fullscreen shell ─────────────────────────────────────────────────────
-  Widget _buildFullscreenShell(Widget player) {
-    return Scaffold(backgroundColor: Colors.black, body: Center(child: player));
+    return FadeTransition(
+      opacity: _entryFade,
+      child: SlideTransition(
+        position: _entrySlide,
+        child: _buildCardShell(_buildPlayerWithErrorFallback(player)),
+      ),
+    );
   }
 
   // ── Card shell (normal mode) ─────────────────────────────────────────────
@@ -413,9 +429,10 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: widget.isAudioMode
-                  ? const Color(0xFF7E22CE)
-                  : const Color(0xFFFF0000),
+              color:
+                  widget.isAudioMode
+                      ? const Color(0xFF7E22CE)
+                      : const Color(0xFFFF0000),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Row(
@@ -525,9 +542,10 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
   }
 
   Widget _buildWatchedButton() {
-    final activeBg = widget.isAudioMode
-        ? const Color(0xFF7E22CE)
-        : AppColors.primaryContainer;
+    final activeBg =
+        widget.isAudioMode
+            ? const Color(0xFF7E22CE)
+            : AppColors.primaryContainer;
     const doneBg = Color(0xFF16A34A);
 
     return Padding(
@@ -580,7 +598,9 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
             ),
             label: Text(
               _isWatchedManual
-                  ? (widget.isAudioMode ? 'Putar Ulang Audio' : 'Tonton Ulang Video')
+                  ? (widget.isAudioMode
+                      ? 'Putar Ulang Audio'
+                      : 'Tonton Ulang Video')
                   : (widget.isAudioMode
                       ? 'Tandai Selesai Mendengarkan Audio'
                       : 'Tandai Selesai Menonton Video'),
@@ -616,6 +636,147 @@ class _YouTubePreviewCardState extends State<YouTubePreviewCard>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PortraitPlaybackResult {
+  const _PortraitPlaybackResult(this.position, this.playing);
+
+  final Duration position;
+  final bool playing;
+}
+
+class _PortraitVideoScreen extends StatefulWidget {
+  const _PortraitVideoScreen({
+    required this.videoId,
+    required this.title,
+    required this.isShorts,
+    required this.startPosition,
+    required this.autoPlay,
+    this.onVideoEnded,
+  });
+
+  final String videoId;
+  final String title;
+  final bool isShorts;
+  final Duration startPosition;
+  final bool autoPlay;
+  final VoidCallback? onVideoEnded;
+
+  @override
+  State<_PortraitVideoScreen> createState() => _PortraitVideoScreenState();
+}
+
+class _PortraitVideoScreenState extends State<_PortraitVideoScreen> {
+  late final YoutubePlayerController _controller;
+  bool _closing = false;
+  bool _endedReported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = YoutubePlayerController(
+      initialVideoId: widget.videoId,
+      flags: const YoutubePlayerFlags(
+        autoPlay: false,
+        hideControls: false,
+        controlsVisibleAtStart: true,
+        showLiveFullscreenButton: false,
+      ),
+    )..addListener(_handlePlayerChange);
+  }
+
+  void _handlePlayerChange() {
+    if (!_endedReported && _controller.value.playerState == PlayerState.ended) {
+      _endedReported = true;
+      widget.onVideoEnded?.call();
+    }
+  }
+
+  void _close() {
+    if (_closing) return;
+    final result = _PortraitPlaybackResult(
+      _controller.value.position,
+      _controller.value.playerState == PlayerState.playing,
+    );
+    setState(() => _closing = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop(result);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_handlePlayerChange);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = widget.isShorts ? 9 / 16 : 16 / 9;
+    return PopScope(
+      canPop: _closing,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _close();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            tooltip: 'Kembali ke artikel',
+            onPressed: _close,
+            icon: const Icon(Icons.close),
+          ),
+          title: Text(
+            widget.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final videoWidth =
+                (constraints.maxHeight * ratio)
+                    .clamp(0.0, constraints.maxWidth)
+                    .toDouble();
+            return Center(
+              child: SizedBox(
+                width: videoWidth,
+                child: YoutubePlayer(
+                  controller: _controller,
+                  aspectRatio: ratio,
+                  showVideoProgressIndicator: true,
+                  progressIndicatorColor: Colors.red,
+                  bottomActions: [
+                    const SizedBox(width: 14),
+                    const CurrentPosition(),
+                    const SizedBox(width: 8),
+                    const ProgressBar(isExpanded: true),
+                    const RemainingDuration(),
+                    const PlaybackSpeedButton(),
+                    IconButton(
+                      tooltip: 'Tutup tampilan penuh',
+                      onPressed: _close,
+                      icon: const Icon(
+                        Icons.fullscreen_exit,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                  onReady: () {
+                    _controller.seekTo(widget.startPosition);
+                    if (widget.autoPlay) _controller.play();
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -11,7 +11,19 @@ import '../theme/app_colors.dart';
 /// - Asset images
 /// - Shimmer skeleton loading placeholder
 /// - Graceful error fallbacks
-class AppSmartImage extends StatelessWidget {
+Uint8List? _decodeImageDataUri(String dataUri) {
+  try {
+    if (dataUri.length > 11 * 1024 * 1024) return null;
+    final comma = dataUri.indexOf(',');
+    if (comma < 0) return null;
+    final bytes = base64Decode(dataUri.substring(comma + 1));
+    return bytes.lengthInBytes <= 8 * 1024 * 1024 ? bytes : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+class AppSmartImage extends StatefulWidget {
   const AppSmartImage({
     super.key,
     required this.imageUrl,
@@ -31,63 +43,93 @@ class AppSmartImage extends StatelessWidget {
   final IconData fallbackIcon;
   final Color? fallbackColor;
 
-  bool get _isBase64 => imageUrl.startsWith('data:image/');
+  @override
+  State<AppSmartImage> createState() => _AppSmartImageState();
+}
 
-  Uint8List? _decodeBase64(String dataUri) {
-    try {
-      final base64Str = dataUri.split(',').last;
-      return base64Decode(base64Str);
-    } catch (_) {
-      return null;
-    }
+class _AppSmartImageState extends State<AppSmartImage> {
+  Future<Uint8List?>? _decodedBytes;
+  double? get _finiteWidth =>
+      widget.width != null && widget.width!.isFinite ? widget.width : null;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareImage();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppSmartImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl) _prepareImage();
+  }
+
+  void _prepareImage() {
+    _decodedBytes =
+        widget.imageUrl.startsWith('data:image/')
+            ? compute(_decodeImageDataUri, widget.imageUrl)
+            : null;
   }
 
   @override
   Widget build(BuildContext context) {
     Widget imageWidget;
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    // Callers may request double.infinity to fill their parent. Image decoding
+    // needs a finite pixel width even when layout uses an expanding width.
+    final finiteWidth = _finiteWidth;
+    final displayWidth = finiteWidth ?? MediaQuery.sizeOf(context).width;
+    final decodeWidth = (displayWidth * pixelRatio).round().clamp(1, 1200);
 
-    if (imageUrl.trim().isEmpty) {
+    if (widget.imageUrl.trim().isEmpty) {
       imageWidget = _buildFallback();
-    } else if (_isBase64) {
-      final bytes = _decodeBase64(imageUrl);
-      if (bytes != null && bytes.isNotEmpty) {
-        imageWidget = Image.memory(
-          bytes,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(),
-        );
-      } else {
-        imageWidget = _buildFallback();
-      }
-    } else if (imageUrl.startsWith('http://') ||
-        imageUrl.startsWith('https://')) {
+    } else if (_decodedBytes != null) {
+      imageWidget = FutureBuilder<Uint8List?>(
+        future: _decodedBytes,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return snapshot.connectionState == ConnectionState.done
+                ? _buildFallback()
+                : _buildShimmerPlaceholder();
+          }
+          return Image.memory(
+            snapshot.data!,
+            width: finiteWidth,
+            height: widget.height,
+            cacheWidth: decodeWidth,
+            fit: widget.fit,
+            errorBuilder: (context, error, stackTrace) => _buildFallback(),
+          );
+        },
+      );
+    } else if (widget.imageUrl.startsWith('http://') ||
+        widget.imageUrl.startsWith('https://')) {
       imageWidget = Image.network(
-        imageUrl,
-        width: width,
-        height: height,
-        fit: fit,
+        widget.imageUrl,
+        width: _finiteWidth,
+        height: widget.height,
+        cacheWidth: decodeWidth,
+        fit: widget.fit,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return _buildShimmerPlaceholder();
         },
         errorBuilder: (context, error, stackTrace) => _buildFallback(),
       );
-    } else if (imageUrl.startsWith('assets/')) {
+    } else if (widget.imageUrl.startsWith('assets/')) {
       imageWidget = Image.asset(
-        imageUrl,
-        width: width,
-        height: height,
-        fit: fit,
+        widget.imageUrl,
+        width: finiteWidth,
+        height: widget.height,
+        fit: widget.fit,
         errorBuilder: (context, error, stackTrace) => _buildFallback(),
       );
     } else {
       imageWidget = _buildFallback();
     }
 
-    if (borderRadius != null) {
-      return ClipRRect(borderRadius: borderRadius!, child: imageWidget);
+    if (widget.borderRadius != null) {
+      return ClipRRect(borderRadius: widget.borderRadius!, child: imageWidget);
     }
 
     return imageWidget;
@@ -98,8 +140,8 @@ class AppSmartImage extends StatelessWidget {
       baseColor: AppColors.surfaceContainerHigh,
       highlightColor: AppColors.surfaceContainerLowest,
       child: Container(
-        width: width,
-        height: height,
+        width: _finiteWidth,
+        height: widget.height,
         color: AppColors.surfaceContainerHigh,
       ),
     );
@@ -107,16 +149,17 @@ class AppSmartImage extends StatelessWidget {
 
   Widget _buildFallback() {
     return Container(
-      width: width,
-      height: height,
+      width: _finiteWidth,
+      height: widget.height,
       decoration: BoxDecoration(
         color:
-            fallbackColor ?? AppColors.primaryContainer.withValues(alpha: 0.18),
+            widget.fallbackColor ??
+            AppColors.primaryContainer.withValues(alpha: 0.18),
       ),
       child: Center(
         child: Icon(
-          fallbackIcon,
-          size: (height != null && height! < 100) ? 32 : 44,
+          widget.fallbackIcon,
+          size: (widget.height != null && widget.height! < 100) ? 32 : 44,
           color: AppColors.primary,
         ),
       ),

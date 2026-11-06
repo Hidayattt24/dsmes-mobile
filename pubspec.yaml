@@ -27,6 +27,7 @@ dependencies:
   # UI & Fonts
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
+  flutter_native_splash: ^2.4.4
   shimmer: ^3.0.0
   flutter_widget_from_html: ^0.15.3
   youtube_player_flutter: ^9.1.1
@@ -76,7 +77,6 @@ dev_dependencies:
   custom_lint: ^0.7.5
   riverpod_lint: ^2.6.3
   flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.4
 
 flutter:
   uses-material-design: true

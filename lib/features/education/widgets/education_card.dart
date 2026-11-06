@@ -101,11 +101,15 @@ class EducationCard extends StatelessWidget {
                           color: AppColors.onSurfaceVariant,
                         ),
                         const SizedBox(width: 3),
-                        Text(
-                          article.readTime,
-                          style: AppTextStyles.labelMd.copyWith(
-                            fontSize: 11.5,
-                            color: AppColors.onSurfaceVariant,
+                        Flexible(
+                          child: Text(
+                            article.readTime,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.labelMd.copyWith(
+                              fontSize: 11.5,
+                              color: AppColors.onSurfaceVariant,
+                            ),
                           ),
                         ),
                         if (article.hasAudio) ...[
@@ -137,9 +141,10 @@ class EducationCard extends StatelessWidget {
                     article.isBookmarked
                         ? Icons.bookmark_rounded
                         : Icons.bookmark_border_rounded,
-                    color: article.isBookmarked
-                        ? AppColors.primary
-                        : AppColors.outline,
+                    color:
+                        article.isBookmarked
+                            ? AppColors.primary
+                            : AppColors.outline,
                     size: 22,
                   ),
                   onPressed: onBookmarkTap,

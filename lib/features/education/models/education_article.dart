@@ -238,7 +238,10 @@ class EducationArticle {
     return null;
   }
 
-  factory EducationArticle.fromJson(Map<String, dynamic> json) {
+  factory EducationArticle.fromJson(
+    Map<String, dynamic> json, {
+    bool includeContent = true,
+  }) {
     var rawSections = json['sections'] as List? ?? [];
     List<ArticleSectionData> parsedSections =
         rawSections.map((s) => ArticleSectionData.fromJson(s)).toList();
@@ -262,7 +265,7 @@ class EducationArticle {
     String author = json['author_name'] ?? 'Tim Medis DIBA';
     String bannerUrl = json['banner_image_url'] ?? '';
     String rawSummary = json['summary'] ?? '';
-    String rawContent = json['content'] ?? '';
+    String rawContent = includeContent ? (json['content'] ?? '') : '';
     String youtubeLink = json['youtube_link'] ?? '';
     String audioUrl = json['audio_url'] ?? '';
     if (audioUrl.isEmpty && rawContent.isNotEmpty) {

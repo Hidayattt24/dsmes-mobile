@@ -26,6 +26,8 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
+  final DateTime _openedAt = DateTime.now();
+  bool _firstListFrameLogged = false;
 
   @override
   void dispose() {
@@ -86,6 +88,15 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
     final categories = categoriesAsync.value ?? const ['Semua'];
 
     final allArticles = educationListAsync.value ?? [];
+    if (educationListAsync.hasValue && !_firstListFrameLogged) {
+      _firstListFrameLogged = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        debugPrint(
+          '[EDUCATION][LIST] first_frame_ms=${DateTime.now().difference(_openedAt).inMilliseconds} count=${allArticles.length}',
+        );
+      });
+    }
     final bookmarkedArticles =
         savedArticlesAsync.value ??
         allArticles.where((a) => a.isBookmarked).toList();
@@ -126,6 +137,24 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
           ),
         ),
         body: const EducationScreenSkeleton(),
+      );
+    }
+
+    if (educationListAsync.hasError && !educationListAsync.hasValue) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Edukasi Kesehatan')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Artikel belum dapat dimuat.'),
+              TextButton(
+                onPressed: () => ref.invalidate(educationListProvider),
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -421,7 +450,10 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredArticles.length,
+                    itemCount:
+                        _searchQuery.isEmpty && _selectedCategory == 'Semua'
+                            ? filteredArticles.length.clamp(0, 5)
+                            : filteredArticles.length,
                     separatorBuilder:
                         (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
